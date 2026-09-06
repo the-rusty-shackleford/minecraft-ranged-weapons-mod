@@ -46,6 +46,12 @@ rises and tilts muzzle-up about its grip with the same offset, exaggerated
 so the eye reads it; how much is three client config knobs. Both are scaled by the client
 config, down to zero.
 
+A spent round is the same gun: vanilla would otherwise play its re-equip
+animation, the hand dropping out of view and coming back, on every change to
+the held item's data, which at this cadence is a hand that never stops
+dropping. Only a different gun, a different slot, or the magazine going out
+or in re-equips; that last is the reload's dip.
+
 **Two hands.** In third person the gun is carried in both hands, the way a
 crossbow is. In first person, if Hold My Items is installed, the guns write
 themselves into its exclusion list on the first client tick so they are held
@@ -153,7 +159,9 @@ other two are for eyes and hands.
 - `./gradlew runPhotoBooth` -- a dev client that quick-plays the gametest
   world, poses the gun and takes pictures into `run/screenshots/booth-*.png`:
   first person, each term of the in-hand kick alone under a big kick, the
-  shipped kick at a machine gun's plateau, third person from behind and in
+  shipped kick at a machine gun's plateau, a real five-round burst in
+  survival through the real trigger path (this is the frame that shows what
+  a player sees; a synthetic kick alone does not), third person from behind and in
   front, the inventory, and each calibration item the gametest mod registers
   (an axes model under candidate display transforms, carried two-handed like
   the gun). It quits when done. Leave it alone while it runs: any input

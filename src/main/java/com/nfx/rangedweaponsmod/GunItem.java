@@ -78,6 +78,21 @@ public final class GunItem extends Item {
         return InteractionResultHolder.consume(stack);
     }
 
+    /**
+     * Vanilla plays the re-equip animation -- the hand drops out of view and
+     * comes back -- whenever the held stack's data changes, and every shot
+     * changes it: a round spent, a point of wear. At a machine gun's cadence
+     * that is a hand that never stops dropping. A spent round is the same
+     * gun. Only a different gun, a different slot, or the magazine going
+     * out or coming in re-equips; the last gives the reload its dip.
+     */
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        return slotChanged
+                || oldStack.getItem() != newStack.getItem()
+                || oldStack.has(ModData.RELOAD.get()) != newStack.has(ModData.RELOAD.get());
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         RangedWeapon weapon = RangedWeapons.resolve(stack);

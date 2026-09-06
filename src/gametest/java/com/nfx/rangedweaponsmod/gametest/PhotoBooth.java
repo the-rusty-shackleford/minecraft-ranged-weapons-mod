@@ -18,6 +18,13 @@
 package com.nfx.rangedweaponsmod.gametest;
 
 import com.nfx.rangedweaponsmod.ModItems;
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
+import com.nfx.rangedweaponsmod.net.TriggerPayload;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.client.ClientConfig;
 import com.nfx.rangedweaponsmod.client.RecoilCamera;
@@ -136,6 +143,27 @@ public final class PhotoBooth {
         s.add(new Step(t[0] += 3, () -> RecoilCamera.onShotFired(new ShotFiredPayload(0.55f, 0.25f, 0.35f))));
         s.add(new Step(t[0] += 3, () -> RecoilCamera.onShotFired(new ShotFiredPayload(0.55f, 0.25f, 0.35f))));
         s.add(new Step(t[0] += 1, () -> shoot(mc, "booth-gun-first-kick")));
+
+        // A real burst, through the real path: survival, a loaded gun, the
+        // trigger held by the same message the client sends, rounds spent
+        // on the integrated server and synced back. What the player sees.
+        s.add(new Step(t[0] += 20, () -> onServer(mc, sp -> {
+            sp.setGameMode(GameType.SURVIVAL);
+            ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());
+            RangedWeapon weapon = RangedWeapons.resolve(gun);
+            if (weapon != null) {
+                weapon.load(gun, weapon.capacity(gun));
+            }
+            sp.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        })));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-burst-0")));
+        s.add(new Step(t[0] += 1, () -> PacketDistributor.sendToServer(new TriggerPayload(true))));
+        s.add(new Step(t[0] += 2, () -> shoot(mc, "booth-burst-1")));
+        s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-2")));
+        s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-3")));
+        s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-4")));
+        s.add(new Step(t[0] += 1, () -> PacketDistributor.sendToServer(new TriggerPayload(false))));
+        s.add(new Step(t[0] += 10, () -> onServer(mc, sp -> sp.setGameMode(GameType.CREATIVE))));
         s.add(new Step(t[0] += 20, thirdBack));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-gun-third-back")));
         s.add(new Step(t[0] += 1, thirdFront));
@@ -171,6 +199,22 @@ public final class PhotoBooth {
             RecoilCamera.onShotFired(new ShotFiredPayload(5.0f, 5.0f, 0.01f));
         }));
         s.add(new Step(t[0] += 2, () -> shoot(mc, name)));
+    }
+
+    /** Runs {@code action} on the integrated server's thread for this player. */
+    private static void onServer(Minecraft mc, java.util.function.Consumer<ServerPlayer> action) {
+        var server = mc.getSingleplayerServer();
+        if (server == null || mc.player == null) {
+            RangedWeaponsMod.LOGGER.warn("photo booth: no integrated server; burst skipped");
+            return;
+        }
+        var uuid = mc.player.getUUID();
+        server.execute(() -> {
+            ServerPlayer sp = server.getPlayerList().getPlayer(uuid);
+            if (sp != null) {
+                action.accept(sp);
+            }
+        });
     }
 
     private static void hold(LocalPlayer player, Item item) {
