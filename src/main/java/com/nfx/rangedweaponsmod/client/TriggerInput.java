@@ -164,12 +164,14 @@ public final class TriggerInput {
                 PacketDistributor.sendToServer(ReloadPayload.INSTANCE);
             }
         }
+        Aiming.tick(mc, player);
         RecoilCamera.tick();
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         held = false;
+        Aiming.reset();
         RecoilCamera.reset();
     }
 }

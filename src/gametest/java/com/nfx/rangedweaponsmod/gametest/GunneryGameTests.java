@@ -20,6 +20,7 @@ package com.nfx.rangedweaponsmod.gametest;
 import com.nfx.rangedweapons.api.AmmoFamilies;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.nfx.rangedweapons.api.WeaponProfile;
 import com.nfx.rangedweapons.api.WeaponClass;
 import com.nfx.rangedweapons.fallback.Fallback;
@@ -45,6 +46,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+import java.util.List;
 
 /**
  * The gunnery on a real headless server, driven tick by tick on the
@@ -84,6 +87,10 @@ public final class GunneryGameTests {
     }
 
     private static Gunner gunner(GameTestHelper helper, GameType mode, int rounds, int ammo) {
+        return gunner(helper, mode, ModItems.MACHINE_GUN.get(), rounds, ammo);
+    }
+
+    private static Gunner gunner(GameTestHelper helper, GameType mode, net.minecraft.world.item.Item gunItem, int rounds, int ammo) {
         layFloor(helper);
         Player player = helper.makeMockPlayer(mode);
         // The mock answers isCreative() from its game type but its abilities
@@ -96,10 +103,10 @@ public final class GunneryGameTests {
         player.moveTo(at.x, at.y, at.z, -90.0f, 0.0f);
         player.setYHeadRot(-90.0f);
         player.setYBodyRot(-90.0f);
-        ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());
+        ItemStack gun = new ItemStack(gunItem);
         RangedWeapon weapon = RangedWeapons.resolve(gun);
         if (weapon == null) {
-            helper.fail("the machine gun resolves to no weapon");
+            helper.fail(gunItem + " resolves to no weapon");
         }
         weapon.load(gun, rounds);
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, gun);
@@ -214,6 +221,75 @@ public final class GunneryGameTests {
             helper.assertEntityPresent(Fallback.BULLET.get());
             helper.succeed();
         });
+    }
+
+    // --- the lineup ----------------------------------------------------------
+
+    @GameTest(template = "arena")
+    public void everyGunResolvesWithItsOwnNumbers(GameTestHelper helper) {
+        record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family) {}
+        for (Expected e : List.of(
+                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 12, 6, 1, true, "small"),
+                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 18, 6, true, "shell"),
+                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 10, 12, 1, false, "medium"),
+                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 5, 25, 1, false, "medium"),
+                new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 50, 3, 1, false, "medium"))) {
+            ItemStack stack = new ItemStack(e.item());
+            RangedWeapon weapon = RangedWeapons.resolve(stack);
+            helper.assertTrue(weapon != null, e.item() + " resolves");
+            helper.assertValueEqual(weapon.profile().weaponClass(), e.cls(), e.item() + " class");
+            helper.assertValueEqual(weapon.capacity(stack), e.capacity(), e.item() + " capacity");
+            helper.assertValueEqual(weapon.stats(stack).fireRateTicks(), e.rate(), e.item() + " fire rate");
+            helper.assertValueEqual(weapon.stats(stack).projectilesPerShot(), e.pellets(), e.item() + " projectiles");
+            helper.assertValueEqual(weapon.profile().falloff().isPresent(), e.falloff(), e.item() + " falloff");
+            helper.assertValueEqual(weapon.profile().ammoFamily().orElseThrow(), AmmoFamilies.family(e.family()), e.item() + " family");
+            helper.assertTrue(weapon.profile().acceptsAmmo(new ItemStack(BuiltInRegistries.ITEM.get(weapon.profile().ammoItem().orElseThrow()))),
+                    e.item() + " takes its own round");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void aSemiAutomaticFiresOncePerPullHoweverLongItIsHeld(GameTestHelper helper) {
+        Gunner g = gunner(helper, GameType.SURVIVAL, ModItems.PISTOL.get(), 12, 0);
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 20);                       // held twenty ticks: rate would allow four
+        helper.runAtTickTime(21, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 11, "one round per pull");
+            PlayerGunnery.onTrigger(g.player(), false);
+            PlayerGunnery.onTrigger(g.player(), true);
+        });
+        driveTicks(helper, g, 22, 22);
+        helper.runAtTickTime(23, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 10, "a second pull, a second round");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void theShotgunThrowsItsPellets(GameTestHelper helper) {
+        Gunner g = gunner(helper, GameType.SURVIVAL, ModItems.SHOTGUN.get(), 6, 0);
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 1);
+        helper.runAtTickTime(2, () -> {
+            int pellets = helper.getLevel().getEntities(Fallback.BULLET.get(), helper.getBounds(), e -> true).size();
+            helper.assertValueEqual(pellets, 6, "pellets in the air one tick after the shot");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 5, "one shell for all six");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena")
+    public void aimingIsRememberedForSpread(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        helper.assertFalse(g.player().getData(ModData.GUNNERY).aiming(), "sights down to begin with");
+        PlayerGunnery.onAim(g.player(), true);
+        helper.assertTrue(g.player().getData(ModData.GUNNERY).aiming(), "sights up");
+        PlayerGunnery.onTrigger(g.player(), true);
+        helper.assertTrue(g.player().getData(ModData.GUNNERY).aiming(), "a trigger pull does not drop them");
+        PlayerGunnery.onAim(g.player(), false);
+        helper.assertFalse(g.player().getData(ModData.GUNNERY).aiming(), "sights down");
+        helper.succeed();
     }
 
     // --- aim ---------------------------------------------------------------

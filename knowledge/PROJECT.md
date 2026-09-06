@@ -11,8 +11,9 @@ tags: [overview]
 
 A NeoForge 1.21.1 mod: guns for players, built on the Ranged Weapons
 protocol. The player half of the contract the protocol already fulfils for
-mobs -- a held trigger, a fire clock, a reload, recoil, a counter -- with the
-gun itself as data. One gun at first, the machine gun. AGPL-3.0-or-later,
+mobs -- a trigger, a fire clock, a reload, recoil, sights, a counter -- with
+the gun itself as data. Five guns: pistol, shotgun, rifle, scoped rifle,
+machine gun. AGPL-3.0-or-later,
 authored by Rusty Shackleford, to the MIT 6.031 bar: specs, rep invariants, a
 pure layer with tests, a gametest gate on a real server.
 
@@ -48,11 +49,12 @@ click is offered to the target with vanilla's own calls and then cancelled,
 because vanilla's item use drops the hand (`D-0006`, superseding `D-0005`); recoil is a camera
 offset that recovers, never the player's rotation (`D-0003`); the art is
 generated and its display transforms and the kick's signs were calibrated by
-photograph (`D-0004`).
+photograph (`D-0004`); a gun's class decides whether it fires once per
+pull or for as long as the trigger is held (`D-0007`).
 
 ## How it is verified
 
-`./gradlew check`: 58 plain-JUnit tests against `domain`, and nineteen gametests
+`./gradlew check`: 63 plain-JUnit tests against `domain`, and twenty-three gametests
 on a headless server. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
@@ -62,16 +64,16 @@ and on the shared server.
 Decided by Rusty on 2026-09-06, in this order:
 
 1. Done (protocol 1.4, this mod's round is medium): ammo families.
-2. The rest of the lineup, each with everything the machine gun got (the
-   trigger, the counter, recoil, the two-handed hold where it fits, art from
-   the generator, the booth, the tests): a pistol (small), a shotgun
-   (shell), a rifle (medium), and a scoped rifle (medium) -- a scope with
-   aim-down-sights zoom, not a spyglass; Rusty was emphatic.
+2. Done (protocol 1.5 for the shotgun's falloff): the lineup -- pistol
+   (small), shotgun (shell), rifle and scoped rifle (medium), each with
+   everything the machine gun got, the scoped rifle with a scope, not a
+   spyglass. What remains is Rusty's feel test of each.
 
 ## Depends on
 
-- `minecraft-ranged-weapons` 1.4.2 or later within 1.x (nested Jar-in-Jar;
-  built to Maven Local first). Needs 1.4 for ammunition families; 1.3 for
+- `minecraft-ranged-weapons` 1.5.0 or later within 1.x (nested Jar-in-Jar;
+  built to Maven Local first). Needs 1.5 for damage falloff; 1.4 for
+  ammunition families; 1.3 for
   the block impact and the Hold My Items hook; 1.2 for the synced data map, the muzzle origin in
   `ShotReport.play` and the non-saving fallback bullet.
 

@@ -21,7 +21,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import org.lwjgl.glfw.GLFW;
 
-/** The keys this mod adds. Firing is the vanilla use key; only reload is new. */
+/** The keys this mod adds. Firing is the vanilla use key; reload and aim are new. */
 public final class Keys {
     private Keys() {}
 
@@ -30,4 +30,8 @@ public final class Keys {
     /** Reload the held gun. R by default; rebindable in Controls. */
     public static final KeyMapping RELOAD =
             new KeyMapping("key.rangedweaponsmod.reload", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, CATEGORY);
+
+    /** Aim down the sights while held. Left Alt by default, which vanilla leaves unbound; rebindable. */
+    public static final KeyMapping AIM =
+            new KeyMapping("key.rangedweaponsmod.aim", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_LEFT_ALT, CATEGORY);
 }

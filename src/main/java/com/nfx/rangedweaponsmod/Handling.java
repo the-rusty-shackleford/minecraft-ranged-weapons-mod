@@ -46,7 +46,8 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
             Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("crouching", Factors.DEFAULT.crouching()).forGetter(Factors::crouching),
             Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("moving", Factors.DEFAULT.moving()).forGetter(Factors::moving),
             Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("sprinting", Factors.DEFAULT.sprinting()).forGetter(Factors::sprinting),
-            Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("airborne", Factors.DEFAULT.airborne()).forGetter(Factors::airborne)
+            Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("airborne", Factors.DEFAULT.airborne()).forGetter(Factors::airborne),
+            Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("aiming", Factors.DEFAULT.aiming()).forGetter(Factors::aiming)
     ).apply(i, Factors::new));
 
     /** The datapack shape: {@code recoil_pitch}, {@code recoil_yaw}, {@code recovery}, optional {@code spread} factors. */

@@ -5,6 +5,30 @@
       "rangedweaponsmod:machine_gun_shot"
     ]
   },
+  "pistol_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.pistol_shot",
+    "sounds": [
+      "rangedweaponsmod:pistol_shot"
+    ]
+  },
+  "shotgun_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.shotgun_shot",
+    "sounds": [
+      "rangedweaponsmod:shotgun_shot"
+    ]
+  },
+  "rifle_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.rifle_shot",
+    "sounds": [
+      "rangedweaponsmod:rifle_shot"
+    ]
+  },
+  "scoped_rifle_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.scoped_rifle_shot",
+    "sounds": [
+      "rangedweaponsmod:scoped_rifle_shot"
+    ]
+  },
   "far_shot": {
     "subtitle": "subtitles.rangedweaponsmod.far_shot",
     "sounds": [

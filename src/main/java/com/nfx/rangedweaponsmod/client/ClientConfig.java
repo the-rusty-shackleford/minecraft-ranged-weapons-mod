@@ -34,6 +34,8 @@ public final class ClientConfig {
     public static final ModConfigSpec.DoubleValue MODEL_RISE;
     public static final ModConfigSpec.DoubleValue MODEL_PITCH;
     public static final ModConfigSpec.DoubleValue MODEL_YAW;
+    public static final ModConfigSpec.DoubleValue AIM_ZOOM;
+    public static final ModConfigSpec.DoubleValue SCOPE_ZOOM;
     public static final ModConfigSpec.BooleanValue HUD_ENABLED;
 
     static {
@@ -67,6 +69,18 @@ public final class ClientConfig {
         MODEL_YAW = builder
                 .comment("Degrees the gun in your hand swings sideways per degree of sideways camera kick.")
                 .defineInRange("modelYawPerDegree", 1.0D, -30.0D, 30.0D);
+
+        builder.pop();
+
+        builder.comment("Aiming down the sights, on the aim key (Left Alt by default).").push("aim");
+
+        AIM_ZOOM = builder
+                .comment("How much the view narrows aiming a gun without a scope. 1 is not at all.")
+                .defineInRange("zoom", 1.25D, 1.0D, 4.0D);
+
+        SCOPE_ZOOM = builder
+                .comment("How much the view narrows looking through a scope.")
+                .defineInRange("scopeZoom", 4.0D, 1.0D, 12.0D);
 
         builder.pop();
 

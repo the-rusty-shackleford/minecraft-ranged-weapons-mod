@@ -71,11 +71,13 @@ public final class Trigger {
      * @param reloadDone       whether that reload's time is up
      * @param ammoAvailable    whether the inventory holds at least one round to load
      * @param clickedThisPress whether the dry click already sounded for this press
-     * @param fireRateTicks    ticks between shots
+     * @param automatic        whether the weapon fires for as long as the trigger is held; if not, once per pull
+ * @param firedThisPress   whether it has already fired since the trigger was pressed
+ * @param fireRateTicks    ticks between shots
      */
     public record Inputs(boolean held, boolean reloadRequested, long now, long nextShotAt, int rounds, int capacity,
                          boolean reloading, boolean reloadDone, boolean ammoAvailable, boolean clickedThisPress,
-                         int fireRateTicks) {
+                         int fireRateTicks, boolean automatic, boolean firedThisPress) {
         /**
          * @throws IllegalArgumentException if the RI does not hold
          */
@@ -117,6 +119,9 @@ public final class Trigger {
                 return Action.START_RELOAD;
             }
             return in.clickedThisPress() ? Action.IDLE : Action.CLICK_EMPTY;
+        }
+        if (!in.automatic() && in.firedThisPress()) {
+            return Action.IDLE;
         }
         return FireClock.ready(in.now(), in.nextShotAt()) ? Action.FIRE : Action.IDLE;
     }

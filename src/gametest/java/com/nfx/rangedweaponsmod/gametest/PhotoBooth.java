@@ -25,6 +25,7 @@ import net.minecraft.world.level.GameType;
 
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.client.ClientConfig;
+import com.nfx.rangedweaponsmod.client.Keys;
 import com.nfx.rangedweaponsmod.client.RecoilCamera;
 import com.nfx.rangedweaponsmod.net.ShotFiredPayload;
 import net.minecraft.client.CameraType;
@@ -78,9 +79,16 @@ public final class PhotoBooth {
     private static List<Step> steps;
     private static int tick = 0;
 
-    /** The calibration items are carried like the gun, or their photos answer the wrong question. */
+    /**
+     * The calibration items are carried like the gun being calibrated, or
+     * their photos answer the wrong question: two-handed unless
+     * {@code -Drangedweaponsmod.booth.pose=one}, for a pistol's frame.
+     */
     @SubscribeEvent
     public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
+        if ("one".equals(System.getProperty("rangedweaponsmod.booth.pose"))) {
+            return;
+        }
         event.registerItem(new IClientItemExtensions() {
             @Override
             public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
@@ -124,6 +132,12 @@ public final class PhotoBooth {
             player.setYBodyRot(0.0f);
             player.setXRot(10.0f);
             player.getInventory().setItem(1, new ItemStack(ModItems.ROUND.get(), 32));
+            player.getInventory().setItem(2, new ItemStack(ModItems.SMALL_ROUND.get(), 32));
+            player.getInventory().setItem(3, new ItemStack(ModItems.SHELL.get(), 16));
+            player.getInventory().setItem(4, new ItemStack(ModItems.PISTOL.get()));
+            player.getInventory().setItem(5, new ItemStack(ModItems.SHOTGUN.get()));
+            player.getInventory().setItem(6, new ItemStack(ModItems.RIFLE.get()));
+            player.getInventory().setItem(7, new ItemStack(ModItems.SCOPED_RIFLE.get()));
             hold(player, ModItems.MACHINE_GUN.get());
             firstPerson.run();
         }));
@@ -190,6 +204,29 @@ public final class PhotoBooth {
             mc.setScreen(new InventoryScreen(player));
         }));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-gun-inventory")));
+        s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
+
+        // Every other gun: first person, and third person from the front.
+        for (var gun : List.of(ModItems.PISTOL, ModItems.SHOTGUN, ModItems.RIFLE, ModItems.SCOPED_RIFLE)) {
+            String label = "booth-" + gun.getId().getPath();
+            s.add(new Step(t[0] += 5, () -> {
+                hold(player, gun.get());
+                firstPerson.run();
+            }));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-first")));
+            s.add(new Step(t[0] += 1, thirdFront));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third")));
+        }
+        // The scoped rifle, aimed: the mask, the zoom, the gun out of the way.
+        s.add(new Step(t[0] += 5, () -> {
+            hold(player, ModItems.SCOPED_RIFLE.get());
+            firstPerson.run();
+            KeyMapping.set(Keys.AIM.getKey(), true);
+        }));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-scoped_rifle-aimed")));
+        s.add(new Step(t[0] += 1, () -> KeyMapping.set(Keys.AIM.getKey(), false)));
+        s.add(new Step(t[0] += 10, () -> mc.setScreen(new InventoryScreen(player))));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-lineup-inventory")));
         s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
 
         char name = 'a';

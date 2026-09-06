@@ -38,6 +38,10 @@ public final class ModSounds {
 
     public static final DeferredHolder<SoundEvent, SoundEvent> MACHINE_GUN_SHOT = sound("machine_gun_shot");
     public static final DeferredHolder<SoundEvent, SoundEvent> FAR_SHOT = sound("far_shot");
+    public static final DeferredHolder<SoundEvent, SoundEvent> PISTOL_SHOT = sound("pistol_shot");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_SHOT = sound("shotgun_shot");
+    public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_SHOT = sound("rifle_shot");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SCOPED_RIFLE_SHOT = sound("scoped_rifle_shot");
     public static final DeferredHolder<SoundEvent, SoundEvent> EMPTY_CLICK = sound("empty_click");
     public static final DeferredHolder<SoundEvent, SoundEvent> RELOAD_START = sound("reload_start");
     public static final DeferredHolder<SoundEvent, SoundEvent> RELOAD_END = sound("reload_end");

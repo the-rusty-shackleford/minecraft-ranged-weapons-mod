@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "GC",
+    "R "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass_pane"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "R": {
+      "item": "rangedweaponsmod:rifle"
+    }
+  },
+  "result": {
+    "id": "rangedweaponsmod:scoped_rifle",
+    "count": 1
+  }
+}

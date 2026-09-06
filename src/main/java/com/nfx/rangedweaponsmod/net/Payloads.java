@@ -41,6 +41,8 @@ public final class Payloads {
                 (payload, context) -> PlayerGunnery.onTrigger(context.player(), payload.held()));
         registrar.playToServer(ReloadPayload.TYPE, ReloadPayload.STREAM_CODEC,
                 (payload, context) -> PlayerGunnery.onReloadKey(context.player()));
+        registrar.playToServer(AimPayload.TYPE, AimPayload.STREAM_CODEC,
+                (payload, context) -> PlayerGunnery.onAim(context.player(), payload.aiming()));
         registrar.playToClient(ShotFiredPayload.TYPE, ShotFiredPayload.STREAM_CODEC,
                 (payload, context) -> {
                     // Only ever executed on a client; the guard keeps the

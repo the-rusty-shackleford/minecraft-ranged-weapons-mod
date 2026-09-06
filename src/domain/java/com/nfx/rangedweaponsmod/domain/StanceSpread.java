@@ -40,7 +40,7 @@ public final class StanceSpread {
      * @param crouching whether the player is crouching
      * @param airborne  whether the player is off the ground
      */
-    public record Stance(boolean sprinting, boolean moving, boolean crouching, boolean airborne) {}
+    public record Stance(boolean sprinting, boolean moving, boolean crouching, boolean airborne, boolean aiming) {}
 
     /**
      * The factor each stance applies. Immutable.
@@ -52,9 +52,9 @@ public final class StanceSpread {
      * @param sprinting applied while sprinting
      * @param airborne  applied while airborne
      */
-    public record Factors(float crouching, float moving, float sprinting, float airborne) {
+    public record Factors(float crouching, float moving, float sprinting, float airborne, float aiming) {
         /** The defaults: steadier crouched, looser on the move, loosest sprinting or in the air. */
-        public static final Factors DEFAULT = new Factors(0.7f, 1.4f, 2.0f, 1.8f);
+        public static final Factors DEFAULT = new Factors(0.7f, 1.4f, 2.0f, 1.8f, 0.35f);
 
         /**
          * @throws IllegalArgumentException if any factor is not finite or not positive
@@ -64,6 +64,7 @@ public final class StanceSpread {
             requirePositive("moving", moving);
             requirePositive("sprinting", sprinting);
             requirePositive("airborne", airborne);
+            requirePositive("aiming", aiming);
         }
 
         private static void requirePositive(String name, float value) {
@@ -94,6 +95,9 @@ public final class StanceSpread {
         }
         if (stance.airborne()) {
             multiplier *= factors.airborne();
+        }
+        if (stance.aiming()) {
+            multiplier *= factors.aiming();
         }
         return Math.max(MIN_MULTIPLIER, multiplier);
     }

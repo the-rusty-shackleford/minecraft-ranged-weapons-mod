@@ -21,6 +21,7 @@ import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweapons.api.Shot;
 import com.nfx.rangedweapons.api.ShotReport;
+import com.nfx.rangedweapons.api.WeaponClass;
 import com.nfx.rangedweapons.api.WeaponProfile;
 import com.nfx.rangedweapons.api.WeaponStats;
 import com.nfx.rangedweaponsmod.domain.FireClock;
@@ -113,6 +114,20 @@ public final class PlayerGunnery {
     }
 
     /**
+     * effects: records whether {@code player} is aiming down the sights,
+     * which tightens spread by the gun's handling
+     *
+     * @param player the player
+     * @param aiming whether the sights are up
+     */
+    public static void onAim(Player player, boolean aiming) {
+        Gunnery gunnery = player.getData(ModData.GUNNERY);
+        if (gunnery.aiming() != aiming) {
+            player.setData(ModData.GUNNERY, gunnery.aiming(aiming));
+        }
+    }
+
+    /**
      * One tick of the trigger finger.
      *
      * <p>effects: if {@code player} holds a gun in its main hand that the
@@ -145,9 +160,13 @@ public final class PlayerGunnery {
         int rounds = unlimited ? capacity : weapon.rounds(stack);
         boolean ammoAvailable = unlimited || countAmmo(player, weapon.profile()) > 0;
 
+        // Only the automatic class fires for as long as the trigger is held;
+        // every other gun fires once per pull, whatever its rate allows.
+        boolean automatic = weapon.profile().weaponClass() == WeaponClass.AUTOMATIC;
         Inputs inputs = new Inputs(gunnery.held(), gunnery.reloadRequested(), now, gunnery.nextShotAt(),
                 rounds, capacity, reload != null, reload != null && reload.done(now), ammoAvailable,
-                gunnery.clickedThisPress(), Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS));
+                gunnery.clickedThisPress(), Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS),
+                automatic, gunnery.firedThisPress());
         Action action = Trigger.tick(inputs);
 
         Gunnery after = gunnery.reloadRequested() ? gunnery.reloadHandled() : gunnery;
@@ -291,7 +310,8 @@ public final class PlayerGunnery {
         double dx = player.getX() - player.xo;
         double dz = player.getZ() - player.zo;
         boolean moving = dx * dx + dz * dz > MOVING_THRESHOLD_SQR;
-        return new Stance(player.isSprinting(), moving, player.isCrouching(), !player.onGround());
+        return new Stance(player.isSprinting(), moving, player.isCrouching(), !player.onGround(),
+                player.getData(ModData.GUNNERY).aiming());
     }
 
     private static void play(ServerLevel level, Player player, SoundEvent sound, float volume, float pitch) {

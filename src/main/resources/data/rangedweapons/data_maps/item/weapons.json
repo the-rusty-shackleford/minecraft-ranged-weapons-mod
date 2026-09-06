@@ -1,5 +1,79 @@
 {
   "values": {
+    "rangedweaponsmod:pistol": {
+      "class": "sidearm",
+      "capacity": 12,
+      "reload_ticks_per_round": 2,
+      "fire_rate_ticks": 6,
+      "damage": 4.0,
+      "projectiles_per_shot": 1,
+      "spread": 0.03,
+      "engagement_range": 20.0,
+      "projectile_speed": 3.0,
+      "projectile_lifetime_ticks": 60,
+      "ammo": "rangedweaponsmod:small_round",
+      "ammo_family": "#rangedweapons:ammo/small",
+      "shot_sound": "rangedweaponsmod:pistol_shot",
+      "far_shot_sound": "rangedweaponsmod:far_shot",
+      "damage_falloff": {
+        "start": 10.0,
+        "end": 28.0,
+        "floor": 0.5
+      }
+    },
+    "rangedweaponsmod:shotgun": {
+      "class": "shotgun",
+      "capacity": 6,
+      "reload_ticks_per_round": 8,
+      "fire_rate_ticks": 18,
+      "damage": 3.5,
+      "projectiles_per_shot": 6,
+      "spread": 0.11,
+      "engagement_range": 12.0,
+      "projectile_speed": 2.5,
+      "projectile_lifetime_ticks": 40,
+      "ammo": "rangedweaponsmod:shell",
+      "ammo_family": "#rangedweapons:ammo/shell",
+      "shot_sound": "rangedweaponsmod:shotgun_shot",
+      "far_shot_sound": "rangedweaponsmod:far_shot",
+      "damage_falloff": {
+        "start": 5.0,
+        "end": 18.0,
+        "floor": 0.2
+      }
+    },
+    "rangedweaponsmod:rifle": {
+      "class": "rifle",
+      "capacity": 10,
+      "reload_ticks_per_round": 3,
+      "fire_rate_ticks": 12,
+      "damage": 9.0,
+      "projectiles_per_shot": 1,
+      "spread": 0.012,
+      "engagement_range": 40.0,
+      "projectile_speed": 5.0,
+      "projectile_lifetime_ticks": 120,
+      "ammo": "rangedweaponsmod:round",
+      "ammo_family": "#rangedweapons:ammo/medium",
+      "shot_sound": "rangedweaponsmod:rifle_shot",
+      "far_shot_sound": "rangedweaponsmod:far_shot"
+    },
+    "rangedweaponsmod:scoped_rifle": {
+      "class": "rifle",
+      "capacity": 5,
+      "reload_ticks_per_round": 6,
+      "fire_rate_ticks": 25,
+      "damage": 14.0,
+      "projectiles_per_shot": 1,
+      "spread": 0.006,
+      "engagement_range": 64.0,
+      "projectile_speed": 6.0,
+      "projectile_lifetime_ticks": 160,
+      "ammo": "rangedweaponsmod:round",
+      "ammo_family": "#rangedweapons:ammo/medium",
+      "shot_sound": "rangedweaponsmod:scoped_rifle_shot",
+      "far_shot_sound": "rangedweaponsmod:far_shot"
+    },
     "rangedweaponsmod:machine_gun": {
       "class": "automatic",
       "capacity": 50,

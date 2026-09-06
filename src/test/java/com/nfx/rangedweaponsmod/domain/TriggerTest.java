@@ -45,12 +45,12 @@ final class TriggerTest {
 
     /** A loaded gun, trigger held, clock ready, nothing else going on. */
     private static Inputs base() {
-        return new Inputs(true, false, 100, 100, 10, CAPACITY, false, false, true, false, RATE);
+        return new Inputs(true, false, 100, 100, 10, CAPACITY, false, false, true, false, RATE, true, false);
     }
 
     private static Inputs with(Inputs b, boolean held, boolean reloadRequested, long now, long nextShotAt, int rounds,
                                boolean reloading, boolean reloadDone, boolean ammo, boolean clicked) {
-        return new Inputs(held, reloadRequested, now, nextShotAt, rounds, b.capacity(), reloading, reloadDone, ammo, clicked, b.fireRateTicks());
+        return new Inputs(held, reloadRequested, now, nextShotAt, rounds, b.capacity(), reloading, reloadDone, ammo, clicked, b.fireRateTicks(), b.automatic(), b.firedThisPress());
     }
 
     // --- rule 1: reloading ---------------------------------------------------
@@ -155,19 +155,52 @@ final class TriggerTest {
 
     @Test
     void inputsRefuseAnImpossibleMagazine() {
-        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 0, 0, false, false, true, false, RATE));
-        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, CAPACITY + 1, CAPACITY, false, false, true, false, RATE));
-        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, -1, CAPACITY, false, false, true, false, RATE));
+        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 0, 0, false, false, true, false, RATE, true, false));
+        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, CAPACITY + 1, CAPACITY, false, false, true, false, RATE, true, false));
+        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, -1, CAPACITY, false, false, true, false, RATE, true, false));
     }
 
     @Test
     void inputsRefuseAnImpossibleFireRate() {
-        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 1, CAPACITY, false, false, true, false, 0));
-        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 1, CAPACITY, false, false, true, false, FireClock.MAX_RATE_TICKS + 1));
+        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 1, CAPACITY, false, false, true, false, 0, true, false));
+        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 1, CAPACITY, false, false, true, false, FireClock.MAX_RATE_TICKS + 1, true, false));
     }
 
     @Test
     void inputsRefuseAReloadDoneWithoutAReloadInProgress() {
-        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 1, CAPACITY, false, true, true, false, RATE));
+        assertThrows(IllegalArgumentException.class, () -> new Inputs(true, false, 0, 0, 1, CAPACITY, false, true, true, false, RATE, true, false));
+    }
+
+    // --- rule 5: one shot per pull unless automatic ------------------------
+
+    private static Inputs semi(boolean firedThisPress) {
+        Inputs b = base();
+        return new Inputs(b.held(), b.reloadRequested(), b.now(), b.nextShotAt(), b.rounds(), b.capacity(),
+                b.reloading(), b.reloadDone(), b.ammoAvailable(), b.clickedThisPress(), b.fireRateTicks(), false, firedThisPress);
+    }
+
+    @Test
+    void aSemiAutomaticFiresOnceThenIdlesWhileHeld() {
+        assertEquals(Action.FIRE, Trigger.tick(semi(false)), "the pull's first shot");
+        assertEquals(Action.IDLE, Trigger.tick(semi(true)), "held on: nothing, however ready the clock");
+    }
+
+    @Test
+    void anAutomaticKeepsFiringWhileHeld() {
+        Inputs b = base();
+        Inputs firedAndHeld = new Inputs(b.held(), b.reloadRequested(), b.now(), b.nextShotAt(), b.rounds(), b.capacity(),
+                b.reloading(), b.reloadDone(), b.ammoAvailable(), b.clickedThisPress(), b.fireRateTicks(), true, true);
+        assertEquals(Action.FIRE, Trigger.tick(firedAndHeld));
+    }
+
+    @Test
+    void theSemiAutomaticLatchYieldsToEveryEarlierRule() {
+        Inputs b = semi(true);
+        assertEquals(Action.START_RELOAD, Trigger.tick(new Inputs(true, true, b.now(), b.nextShotAt(), 3, b.capacity(),
+                false, false, true, false, b.fireRateTicks(), false, true)), "the reload key still reloads");
+        assertEquals(Action.START_RELOAD, Trigger.tick(new Inputs(true, false, b.now(), b.nextShotAt(), 0, b.capacity(),
+                false, false, true, false, b.fireRateTicks(), false, true)), "an empty gun still reloads");
+        assertEquals(Action.IDLE, Trigger.tick(new Inputs(false, false, b.now(), b.nextShotAt(), 3, b.capacity(),
+                false, false, true, false, b.fireRateTicks(), false, true)), "released is released");
     }
 }

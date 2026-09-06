@@ -46,13 +46,47 @@ import java.util.List;
  */
 public final class GunItem extends Item {
 
-    public GunItem(Properties properties) {
+    /** How the gun is carried in third person. */
+    public enum Grip {
+        /** One hand, the way any item is held. */
+        ONE_HANDED,
+        /** Both hands on it, the way a crossbow is carried. */
+        TWO_HANDED
+    }
+
+    private final Grip grip;
+    private final boolean scoped;
+
+    /**
+     * @param properties the item's
+     * @param grip       how it is carried
+     * @param scoped     whether aiming down its sights looks through a scope: a real
+     *                   magnification and the scope's mask, rather than a slight lean in
+     */
+    public GunItem(Properties properties, Grip grip, boolean scoped) {
         super(properties);
+        this.grip = grip;
+        this.scoped = scoped;
+    }
+
+    /** How this gun is carried in third person. */
+    public Grip grip() {
+        return grip;
+    }
+
+    /** Whether aiming down its sights looks through a scope. */
+    public boolean scoped() {
+        return scoped;
     }
 
     /** effects: returns whether {@code stack} is a gun this mod's trigger works on */
     public static boolean isGun(ItemStack stack) {
         return !stack.isEmpty() && stack.getItem() instanceof GunItem;
+    }
+
+    /** effects: returns whether {@code stack} is a gun with a scope */
+    public static boolean isScoped(ItemStack stack) {
+        return stack.getItem() instanceof GunItem gun && gun.scoped();
     }
 
     /**

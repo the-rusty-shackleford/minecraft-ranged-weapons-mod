@@ -36,10 +36,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 final class StanceSpreadTest {
 
     private static final float EPS = 1e-6f;
-    private static final Factors F = new Factors(0.5f, 2.0f, 3.0f, 4.0f);
+    private static final Factors F = new Factors(0.5f, 2.0f, 3.0f, 4.0f, 0.25f);
 
     private static float mult(boolean sprinting, boolean moving, boolean crouching, boolean airborne) {
-        return StanceSpread.multiplier(new Stance(sprinting, moving, crouching, airborne), F);
+        return StanceSpread.multiplier(new Stance(sprinting, moving, crouching, airborne, false), F);
     }
 
     @Test
@@ -71,25 +71,38 @@ final class StanceSpreadTest {
 
     @Test
     void theProductIsFlooredAtTheMinimum() {
-        Factors tiny = new Factors(0.01f, 0.01f, 0.01f, 0.01f);
+        Factors tiny = new Factors(0.01f, 0.01f, 0.01f, 0.01f, 0.01f);
         assertEquals(StanceSpread.MIN_MULTIPLIER,
-                StanceSpread.multiplier(new Stance(true, true, true, true), tiny), EPS);
+                StanceSpread.multiplier(new Stance(true, true, true, true, true), tiny), EPS);
     }
 
     @Test
     void theDefaultsTightenCrouchedAndLoosenOnTheMove() {
         Factors d = Factors.DEFAULT;
-        assertEquals(0.7f, StanceSpread.multiplier(new Stance(false, false, true, false), d), EPS);
-        assertEquals(1.4f, StanceSpread.multiplier(new Stance(false, true, false, false), d), EPS);
-        assertEquals(2.0f, StanceSpread.multiplier(new Stance(true, true, false, false), d), EPS);
-        assertEquals(1.8f, StanceSpread.multiplier(new Stance(false, false, false, true), d), EPS);
+        assertEquals(0.7f, StanceSpread.multiplier(new Stance(false, false, true, false, false), d), EPS);
+        assertEquals(1.4f, StanceSpread.multiplier(new Stance(false, true, false, false, false), d), EPS);
+        assertEquals(2.0f, StanceSpread.multiplier(new Stance(true, true, false, false, false), d), EPS);
+        assertEquals(1.8f, StanceSpread.multiplier(new Stance(false, false, false, true, false), d), EPS);
     }
 
     @Test
     void factorsMustBeFiniteAndPositive() {
-        assertThrows(IllegalArgumentException.class, () -> new Factors(0.0f, 1, 1, 1));
-        assertThrows(IllegalArgumentException.class, () -> new Factors(1, -1.0f, 1, 1));
-        assertThrows(IllegalArgumentException.class, () -> new Factors(1, 1, Float.NaN, 1));
-        assertThrows(IllegalArgumentException.class, () -> new Factors(1, 1, 1, Float.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class, () -> new Factors(0.0f, 1, 1, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new Factors(1, -1.0f, 1, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new Factors(1, 1, Float.NaN, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new Factors(1, 1, 1, Float.POSITIVE_INFINITY, 1));
+    }
+
+    @Test
+    void aimingTightensAndStacksWithTheRest() {
+        assertEquals(0.25f, StanceSpread.multiplier(new Stance(false, false, false, false, true), F), EPS, "aiming alone");
+        assertEquals(0.5f * 0.25f, StanceSpread.multiplier(new Stance(false, false, true, false, true), F), EPS, "crouched and aiming");
+        assertEquals(2.0f * 0.25f, StanceSpread.multiplier(new Stance(false, true, false, false, true), F), EPS, "walking and aiming");
+        assertEquals(0.35f, StanceSpread.multiplier(new Stance(false, false, false, false, true), Factors.DEFAULT), EPS, "the shipped default");
+    }
+
+    @Test
+    void anAimingFactorMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> new Factors(1.0f, 1.0f, 1.0f, 1.0f, 0.0f));
     }
 }

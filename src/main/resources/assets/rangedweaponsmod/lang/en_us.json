@@ -10,5 +10,16 @@
   "subtitles.rangedweaponsmod.empty_click": "Gun clicks",
   "subtitles.rangedweaponsmod.reload_start": "Magazine out",
   "subtitles.rangedweaponsmod.reload_end": "Magazine in",
-  "item.rangedweaponsmod.gun.takes": "Takes %s"
+  "item.rangedweaponsmod.gun.takes": "Takes %s",
+  "item.rangedweaponsmod.pistol": "Pistol",
+  "item.rangedweaponsmod.shotgun": "Shotgun",
+  "item.rangedweaponsmod.rifle": "Rifle",
+  "item.rangedweaponsmod.scoped_rifle": "Scoped Rifle",
+  "item.rangedweaponsmod.small_round": "Small Round",
+  "item.rangedweaponsmod.shell": "Shotgun Shell",
+  "key.rangedweaponsmod.aim": "Aim Down Sights",
+  "subtitles.rangedweaponsmod.pistol_shot": "Pistol fires",
+  "subtitles.rangedweaponsmod.shotgun_shot": "Shotgun fires",
+  "subtitles.rangedweaponsmod.rifle_shot": "Rifle fires",
+  "subtitles.rangedweaponsmod.scoped_rifle_shot": "Rifle fires"
 }

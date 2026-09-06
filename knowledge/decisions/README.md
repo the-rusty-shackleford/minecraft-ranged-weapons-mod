@@ -22,3 +22,4 @@ thought and someone later would want to know *why*.
 | D-0004 | The art is generated, and its display transforms were calibrated by photograph |
 | D-0005 | The press is vanilla's use, so interactions win; the release and the clock stay ours (superseded by D-0006) |
 | D-0006 | The click is offered to the target with vanilla's calls, then cancelled: vanilla's item use drops the hand |
+| D-0007 | The automatic class holds; every other class fires once per pull; aiming is a stance |

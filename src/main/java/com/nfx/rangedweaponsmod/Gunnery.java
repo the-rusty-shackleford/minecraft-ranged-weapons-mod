@@ -30,39 +30,47 @@ package com.nfx.rangedweaponsmod;
  * @param nextShotAt       the tick the next shot is allowed at
  * @param clickedThisPress whether the empty click sounded since the trigger was pressed
  * @param reloadRequested  whether the reload key was pressed and not yet acted on
+ * @param firedThisPress   whether the gun has fired since the trigger was pressed; a semi-automatic fires once per pull
+ * @param aiming           whether the player is aiming down the sights
  */
-public record Gunnery(boolean held, long nextShotAt, boolean clickedThisPress, boolean reloadRequested) {
+public record Gunnery(boolean held, long nextShotAt, boolean clickedThisPress, boolean reloadRequested,
+                      boolean firedThisPress, boolean aiming) {
 
-    /** Trigger released, nothing scheduled. */
-    public static final Gunnery RELEASED = new Gunnery(false, 0L, false, false);
+    /** Trigger released, nothing scheduled, sights down. */
+    public static final Gunnery RELEASED = new Gunnery(false, 0L, false, false, false, false);
 
-    /** effects: returns this with the trigger pressed and the click armed again */
+    /** effects: returns this with the trigger pressed, the click and the one-shot latch armed again */
     public Gunnery pressed() {
-        return new Gunnery(true, nextShotAt, false, reloadRequested);
+        return new Gunnery(true, nextShotAt, false, reloadRequested, false, aiming);
     }
 
     /** effects: returns this with the trigger released */
     public Gunnery released() {
-        return new Gunnery(false, nextShotAt, clickedThisPress, reloadRequested);
+        return new Gunnery(false, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming);
     }
 
-    /** effects: returns this with the next shot scheduled at {@code tick} */
+    /** effects: returns this having just fired, with the next shot allowed at {@code tick} */
     public Gunnery firedUntil(long tick) {
-        return new Gunnery(held, tick, clickedThisPress, reloadRequested);
+        return new Gunnery(held, tick, clickedThisPress, reloadRequested, true, aiming);
     }
 
-    /** effects: returns this with the click recorded for this press */
+    /** effects: returns this with the empty click spent for this press */
     public Gunnery clicked() {
-        return new Gunnery(held, nextShotAt, true, reloadRequested);
+        return new Gunnery(held, nextShotAt, true, reloadRequested, firedThisPress, aiming);
     }
 
     /** effects: returns this with a reload asked for */
     public Gunnery reloadAsked() {
-        return new Gunnery(held, nextShotAt, clickedThisPress, true);
+        return new Gunnery(held, nextShotAt, clickedThisPress, true, firedThisPress, aiming);
     }
 
     /** effects: returns this with the reload request consumed */
     public Gunnery reloadHandled() {
-        return new Gunnery(held, nextShotAt, clickedThisPress, false);
+        return new Gunnery(held, nextShotAt, clickedThisPress, false, firedThisPress, aiming);
+    }
+
+    /** effects: returns this with the sights up or down */
+    public Gunnery aiming(boolean aiming) {
+        return new Gunnery(held, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming);
     }
 }

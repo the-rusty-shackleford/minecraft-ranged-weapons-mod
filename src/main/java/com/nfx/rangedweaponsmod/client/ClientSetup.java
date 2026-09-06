@@ -18,6 +18,7 @@
 package com.nfx.rangedweaponsmod.client;
 
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
+import com.nfx.rangedweaponsmod.GunItem;
 import com.nfx.rangedweaponsmod.ModItems;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.world.InteractionHand;
@@ -44,7 +45,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 public final class ClientSetup {
     private ClientSetup() {}
 
-    /** Both hands on the gun in third person, the way a crossbow is carried. */
+    /** Both hands on the gun in third person, the way a crossbow is carried; a pistol keeps the plain one-handed pose. */
     private static final IClientItemExtensions TWO_HANDED = new IClientItemExtensions() {
         @Override
         public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
@@ -55,6 +56,7 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(Keys.RELOAD);
+        event.register(Keys.AIM);
     }
 
     @SubscribeEvent
@@ -62,10 +64,16 @@ public final class ClientSetup {
         // Above the hotbar, so it hides with the rest of the HUD on F1.
         event.registerAbove(VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "ammo"), GunHud::render);
+        // Below the crosshair: the mask must not cover it.
+        event.registerBelow(VanillaGuiLayers.CROSSHAIR,
+                ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "scope"), Aiming::renderScope);
     }
 
     @SubscribeEvent
     public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
-        event.registerItem(TWO_HANDED, ModItems.guns().toArray(Item[]::new));
+        Item[] twoHanded = ModItems.guns().stream()
+                .filter(item -> ((GunItem) item).grip() == GunItem.Grip.TWO_HANDED)
+                .toArray(Item[]::new);
+        event.registerItem(TWO_HANDED, twoHanded);
     }
 }

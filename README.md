@@ -3,10 +3,11 @@
 Guns for players, on the [Ranged Weapons](../minecraft-ranged-weapons)
 protocol. NeoForge 1.21.1.
 
-One gun so far, a machine gun. The mod is the part of a gun that is about the
-player holding it: a trigger you hold, a fire clock that is not the item
-cooldown, a reload from your inventory, recoil that settles instead of
-fighting your mouse, and an ammo counter beside the hotbar. What the gun *is*
+Five guns: a pistol, a shotgun, a rifle, a scoped rifle and a machine gun.
+The mod is the part of a gun that is about the player holding it: a trigger
+you pull or hold, a fire clock that is not the item cooldown, a reload from
+your inventory, recoil that settles instead of fighting your mouse, sights to
+aim down, and an ammo counter beside the hotbar. What each gun *is*
 -- how much it holds, how fast it fires, how hard it hits -- is data in the
 protocol's `rangedweapons:weapons` map, so a datapack can retune it, and any
 mob that arms itself through the protocol can carry it. [Armed
@@ -15,12 +16,14 @@ Pillagers](../minecraft-armed-pillagers) does, subject to its own class policy
 
 ## What it does
 
-**Hold to fire.** With a gun in the main hand, the use key first offers the
+**Pull, or hold.** With a gun in the main hand, the use key first offers the
 click to whatever is under the crosshair, with vanilla's own calls and reach,
 so a door, a chest or a villager gets it. If nothing takes it, the client
-cancels vanilla's click and tells the server the trigger is down, and the
-server runs a per-player clock that fires a round every `fire_rate_ticks`
-until the client reports the key up. Vanilla's own item use never runs: it
+cancels vanilla's click and tells the server the trigger is down. The
+machine gun, the one `automatic` gun, then fires a round every
+`fire_rate_ticks` until the client reports the key up; every other gun fires
+once per pull, and `fire_rate_ticks` is only how soon the next pull can fire:
+a pistol's quick reset, a shotgun's pump, a bolt worked. Vanilla's own item use never runs: it
 would drop the hand out of view on every press (its re-equip animation), the
 item is never "in use" and never on cooldown, so there is no hotbar strobe,
 no 0.2x movement slowdown, and the cadence is the server's, not the client's
@@ -68,6 +71,12 @@ off what it hits, and a player's rounds shatter glass at once, wear stone
 down over several, and never mark obsidian. Whose rounds may break what is
 the protocol's config.
 
+**Aim down the sights.** Hold the aim key (Left Alt by default; rebindable)
+and spread tightens by the gun's `aiming` factor and the view leans in a
+little. Through the scoped rifle it is a scope: the view narrows four times,
+the scope's mask covers all but a circle, the crosshair stays, and the gun is
+out of the way. Both zooms are client config.
+
 **The counter.** Rounds over capacity beside the hotbar while a gun is held,
 red at a fifth of a magazine, with a progress bar during a reload. Hidden with
 the rest of the HUD (`F1`).
@@ -82,29 +91,39 @@ land below the crosshair at every distance, and did until this was fixed.
 the gun's shot sound, players between sixteen and sixty-four blocks away hear
 its far report, and a puff of smoke marks the muzzle for onlookers.
 
-## The machine gun
+## The lineup
 
-| | |
-|---|---|
-| Magazine | 50 rounds; takes any `#rangedweapons:ammo/medium` round, its own `rangedweaponsmod:round` among them |
-| Rate | a round every 3 ticks (about 6.7 per second) |
-| Damage | 5.5 per round, 1 round per shot |
-| Spread | 0.05, times 0.7 crouching, 1.4 moving, 2.0 sprinting, 1.8 airborne |
-| Reach | 28 blocks engagement range; rounds fly 4 blocks a tick for 5 seconds |
-| Reload | 50 ticks (2.5 s) |
-| Kick | 0.55 degrees up, 0.25 to a side, 35% recovered per tick |
-| Wear | 1200 shots of durability; repairs like anything with durability |
+| | Pistol | Shotgun | Rifle | Scoped rifle | Machine gun |
+|---|---|---|---|---|---|
+| Class | sidearm | shotgun | rifle | rifle | automatic |
+| Fire | one per pull, 6 ticks | one per pull, 18 ticks (the pump) | one per pull, 12 ticks | one per pull, 25 ticks (the bolt) | held, every 3 ticks |
+| Magazine | 12 small rounds | 6 shells | 10 medium rounds | 5 medium rounds | 50 medium rounds |
+| Damage | 4 | 6 pellets of 3.5 | 9 | 14 | 5.5 |
+| Falls off | to half past 28 blocks, from 10 | to a fifth past 18 blocks, from 5 | no | no | no |
+| Spread | 0.03 | 0.11 | 0.012 | 0.006 | 0.05 |
+| Reach | 20 | 12 | 40 | 64 | 28 |
+| Reload | 24 ticks | 48 ticks | 30 ticks | 30 ticks | 50 ticks |
+| Kick | 1.6 up | 4.5 up | 2.2 up | 3.0 up | 0.55 up |
+| Aiming spread | 0.5 | 0.7 | 0.35 | 0.15 | 0.35 |
+| Held | one hand | two | two | two | two |
+| Wear | 800 shots | 500 | 700 | 600 | 1200 |
 
-Crafted from an iron block, three iron ingots, redstone and two sticks; a
-stack of eight rounds from an iron nugget over gunpowder over a copper ingot.
-Both are in the Combat tab.
+Reach is the profile's engagement range, what a mob armed with it closes to;
+rounds fly farther. Kick is degrees of camera per shot, before the in-hand
+exaggeration. Every number is data: the profile in
+`data/rangedweapons/data_maps/item/weapons.json`, the feel in
+`data/rangedweaponsmod/data_maps/item/handling.json` (`recoil_pitch`,
+`recoil_yaw`, `recovery`, and the `spread` stance factors, `aiming` among
+them). A datapack that ships either path with the same item key overrides it.
+A gun with no `handling` entry gets a default for its profile's class.
 
-Every number above is data. The profile is
-`data/rangedweapons/data_maps/item/weapons.json`; the feel is
-`data/rangedweaponsmod/data_maps/item/handling.json`
-(`recoil_pitch`, `recoil_yaw`, `recovery`, and the `spread` stance factors).
-A datapack that ships either path with the same item key overrides it. A gun
-with no `handling` entry gets a default for its profile's class.
+Ammunition: small rounds (an iron nugget over gunpowder over an iron nugget
+makes ten), medium rounds (an iron nugget over gunpowder over a copper ingot
+makes eight) and shells (paper over gunpowder over an iron nugget makes
+four). Each is tagged into the protocol's family of that name, and each gun
+takes its family, so another mod's rounds of the same family load too. The
+guns are crafted from iron, redstone, sticks and planks; the scoped rifle is
+a rifle with a glass pane and a copper ingot. All are in the Combat tab.
 
 ## Adding a gun
 
@@ -132,6 +151,8 @@ read everything from the profile and the handling.
 | `recoil.modelRisePerDegree` | 0.06 | blocks it rises per degree; about 0.7 of the push holds it level on screen, more lifts it |
 | `recoil.modelPitchPerDegree` | 3.0 | degrees it tilts about its grip per degree of kick; positive is muzzle up |
 | `recoil.modelYawPerDegree` | 1.0 | degrees it swings sideways per degree of sideways kick |
+| `aim.zoom` | 1.25 | how much the view narrows aiming a gun without a scope |
+| `aim.scopeZoom` | 4.0 | how much it narrows through a scope |
 | `hud.enabled` | true | the ammo counter and reload bar |
 
 ## Building
@@ -165,7 +186,10 @@ other two are for eyes and hands.
   goes where the crosshair points and not parallel to it; the
   gun's use is the press, consumed without a swing, a repeat is not a new
   pull, and the off hand is not operated; creative fires an empty gun for
-  free; and the real `PlayerTickEvent` path drives a placed player. **The server's exit
+  free; the real `PlayerTickEvent` path drives a placed player; every gun
+  resolves with its own numbers; a semi-automatic fires once however long
+  the trigger is held and again on the next pull; the shotgun throws six
+  pellets for one shell; and aiming is remembered. **The server's exit
   code is not the assertion** -- it is zero when no test ran -- so the task
   reads the framework's "All N required tests passed" line from
   `run/logs/latest.log` and fails without it. `-PskipGameTests` drops it from
@@ -178,9 +202,10 @@ other two are for eyes and hands.
   three blocks ahead (this is the frame that shows what a player sees --
   the hand, the impact, the cracks, the sparks; a synthetic kick, or even
   the trigger message sent directly, does not), third person from behind and in
-  front, the inventory, and each calibration item the gametest mod registers
-  (an axes model under candidate display transforms, carried two-handed like
-  the gun). It quits when done. Leave it alone while it runs: any input
+  front, every other gun in first and third person, the scoped rifle aimed,
+  the inventory, and each calibration item the gametest mod registers (an
+  axes model under candidate display transforms, carried two-handed like the
+  long guns, or one-handed with `-PboothPose=one` for a pistol's frame). It quits when done. Leave it alone while it runs: any input
   becomes part of the photos. This is how the display transforms and the
   kick's signs were found; none of them are what one would derive.
 - A feel test in `./gradlew runClient`: `/give @s rangedweaponsmod:machine_gun`

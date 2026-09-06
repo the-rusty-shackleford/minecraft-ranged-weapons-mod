@@ -90,6 +90,9 @@ neoForge {
             client()
             sourceSet = sourceSets.gametest
             systemProperty 'rangedweaponsmod.photobooth', 'true'
+            // -PboothPose=one photographs the calibration items in the
+            // one-handed pose, for a pistol's frame; two-handed otherwise.
+            systemProperty 'rangedweaponsmod.booth.pose', project.findProperty('boothPose') ?: 'two'
             programArguments.addAll('--quickPlaySingleplayer', 'booth')
             taskBefore prepareBoothWorld
         }
@@ -134,8 +137,8 @@ dependencies {
     // across every mod that carries it.
     jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
         version {
-            strictly "[1.4,2.0)"
-            prefer "1.4.2"
+            strictly "[1.5,2.0)"
+            prefer "1.5.0"
         }
     }
 
