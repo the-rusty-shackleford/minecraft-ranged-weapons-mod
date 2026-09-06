@@ -17,9 +17,15 @@
  */
 package com.nfx.rangedweaponsmod.gametest;
 
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
+import com.nfx.rangedweapons.api.WeaponClass;
+import com.nfx.rangedweaponsmod.Handling;
+import com.nfx.rangedweaponsmod.ModItems;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -40,6 +46,34 @@ public final class GunneryGameTests {
     public void modAndProtocolAreLoaded(GameTestHelper helper) {
         helper.assertTrue(ModList.get().isLoaded(RangedWeaponsMod.MOD_ID), "this mod is loaded");
         helper.assertTrue(ModList.get().isLoaded("rangedweapons"), "the nested protocol is loaded");
+        helper.succeed();
+    }
+
+    /** The shipped profile makes the machine gun a protocol weapon with the numbers the data says. */
+    @GameTest(template = "arena")
+    public void theMachineGunIsAProtocolWeaponFromItsProfile(GameTestHelper helper) {
+        ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());
+        RangedWeapon weapon = RangedWeapons.resolve(gun);
+        helper.assertTrue(weapon != null, "the machine gun resolves to a weapon");
+        helper.assertValueEqual(weapon.capacity(gun), 50, "capacity from the profile");
+        helper.assertValueEqual(weapon.stats(gun).fireRateTicks(), 3, "fire rate from the profile");
+        helper.assertValueEqual(weapon.stats(gun).fullReloadTicks(), 50, "full reload from the profile");
+        helper.assertTrue(weapon.profile().weaponClass() == WeaponClass.AUTOMATIC, "class from the profile");
+        helper.assertTrue(weapon.profile().ammoItem().map(id -> id.toString()).orElse("").equals("rangedweaponsmod:round"),
+                "ammunition from the profile");
+        helper.assertValueEqual(weapon.rounds(gun), 0, "a fresh gun is empty");
+        helper.succeed();
+    }
+
+    /** The shipped handling entry is read; a gun without one falls back to its class. */
+    @GameTest(template = "arena")
+    public void handlingComesFromTheDataMapWithClassDefaults(GameTestHelper helper) {
+        Handling declared = Handling.of(new ItemStack(ModItems.MACHINE_GUN.get()));
+        helper.assertValueEqual(declared.recoilPitch(), 0.55f, "recoil pitch from the data map");
+        helper.assertValueEqual(declared.recovery(), 0.35f, "recovery from the data map");
+        Handling fallback = Handling.of(new ItemStack(ModItems.ROUND.get()));
+        helper.assertTrue(fallback.equals(Handling.defaultFor(WeaponClass.UNCLASSIFIED)),
+                "an item with neither handling nor profile gets the unclassified default");
         helper.succeed();
     }
 }

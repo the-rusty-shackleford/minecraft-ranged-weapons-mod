@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "N",
+    "G",
+    "C"
+  ],
+  "key": {
+    "N": { "item": "minecraft:iron_nugget" },
+    "G": { "item": "minecraft:gunpowder" },
+    "C": { "item": "minecraft:copper_ingot" }
+  },
+  "result": { "id": "rangedweaponsmod:round", "count": 8 }
+}

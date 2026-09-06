@@ -1,0 +1,10 @@
+{
+  "values": {
+    "rangedweaponsmod:machine_gun": {
+      "recoil_pitch": 0.55,
+      "recoil_yaw": 0.25,
+      "recovery": 0.35,
+      "spread": { "crouching": 0.7, "moving": 1.4, "sprinting": 2.0, "airborne": 1.8 }
+    }
+  }
+}

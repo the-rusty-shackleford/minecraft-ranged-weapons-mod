@@ -1,0 +1,13 @@
+{
+  "item.rangedweaponsmod.machine_gun": "Machine Gun",
+  "item.rangedweaponsmod.round": "Round",
+  "item.rangedweaponsmod.gun.rounds": "%s / %s rounds",
+  "item.rangedweaponsmod.gun.no_profile": "No weapon profile: unusable",
+  "key.categories.rangedweaponsmod": "Ranged Weapons Mod",
+  "key.rangedweaponsmod.reload": "Reload",
+  "subtitles.rangedweaponsmod.machine_gun_shot": "Machine gun fires",
+  "subtitles.rangedweaponsmod.far_shot": "Distant gunfire",
+  "subtitles.rangedweaponsmod.empty_click": "Gun clicks",
+  "subtitles.rangedweaponsmod.reload_start": "Magazine out",
+  "subtitles.rangedweaponsmod.reload_end": "Magazine in"
+}
