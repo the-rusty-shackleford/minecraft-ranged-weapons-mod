@@ -50,9 +50,14 @@ var copyGameTestStructures = tasks.register("copyGameTestStructures", Copy) {
 // The world the gametest server leaves behind, as a singleplayer save for
 // the photo booth to quick-play into. Copies nothing until a gametest run
 // has happened.
+// The booth has its own game directory, run/booth: its saves and
+// screenshots stay apart from the test runs', and its mods/ folder holds
+// whatever of the pack should be in the picture (Not Enough Animations and
+// its library, which re-pose the player) -- jars dropped there load, where
+// jars on the classpath are not discovered as mods by a dev launch.
 var prepareBoothWorld = tasks.register("prepareBoothWorld", Copy) {
     from "run/world"
-    into "run/saves/booth"
+    into "run/booth/saves/booth"
     exclude "session.lock"
 }
 
@@ -89,6 +94,7 @@ neoForge {
         photoBooth {
             client()
             sourceSet = sourceSets.gametest
+            gameDirectory = file('run/booth')
             systemProperty 'rangedweaponsmod.photobooth', 'true'
             // -PboothPose=one photographs the calibration items in the
             // one-handed pose, for a pistol's frame; two-handed otherwise.

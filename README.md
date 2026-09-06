@@ -208,7 +208,11 @@ other two are for eyes and hands.
   front, every other gun in first and third person, the scoped rifle aimed,
   the inventory, and each calibration item the gametest mod registers (an
   axes model under candidate display transforms, carried two-handed like the
-  long guns, or one-handed with `-PboothPose=one` for a pistol's frame). It quits when done. Leave it alone while it runs: any input
+  long guns, or one-handed with `-PboothPose=one` for a pistol's frame). The
+  booth runs in its own game directory, `run/booth`; jars dropped into its
+  `mods/` load with it, which is how the pack's Not Enough Animations is
+  put in the picture, since a photo of a pose without the mods that re-pose
+  the player answers the wrong question. It quits when done. Leave it alone while it runs: any input
   becomes part of the photos. This is how the display transforms and the
   kick's signs were found; none of them are what one would derive.
 - A feel test in `./gradlew runClient`: `/give @s rangedweaponsmod:machine_gun`

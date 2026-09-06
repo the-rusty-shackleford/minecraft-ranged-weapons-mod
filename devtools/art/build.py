@@ -267,8 +267,9 @@ def sides(side_cell, other_cell):
 # Calibrated with the photo booth's axes model, not reasoned from the
 # format: in first person a Y rotation of 90 points +X downrange; carried
 # two-handed (the crossbow hold) a Y rotation of 90 points +X forward; held
-# one-handed (the plain item pose) the arm's frame is turned, and it is a Z
-# rotation of 90. Translation and scale are per gun.
+# one-handed (the plain item pose) it is [0, 90, 78]: forward, top up, and
+# the barrel levelled against the hanging arm's tilt. Translation and scale
+# are per gun.
 def display(first_translation, first_scale, third_rotation, third_translation, third_scale, gui_scale):
     return {
         "firstperson_righthand": {"rotation": [0, 92, 0], "translation": first_translation, "scale": [first_scale] * 3},
@@ -294,7 +295,7 @@ TWO_HANDED_DISPLAY = display([1.0, -1.0, -3.0], 0.58, [0, 90, 0], [0, 1.0, 1.0],
 # top-fed receiver does, so they are carried a little higher.
 LONG_GUN_DISPLAY = display([1.0, -0.5, -3.0], 0.58, [0, 90, 0], [0, 1.0, 1.0], 0.6, 0.46)
 # Smaller and nearer in first person; the one-handed pose's frame in third.
-PISTOL_DISPLAY = display([0.5, 2.5, -1.2], 0.5, [0, 0, 90], [0, 0, 0], 0.5, 0.7)
+PISTOL_DISPLAY = display([0.5, 2.5, -1.2], 0.5, [0, 90, 78], [0, 0, 0], 0.5, 0.7)
 
 
 def pistol_model():
@@ -475,7 +476,10 @@ def axes_model():
 # the question; translation and scale are held at one plausible value. Read
 # so far: first person, [0, 90, 0] points +X downrange; two-handed (the
 # crossbow hold), [0, 90, 0] points +X forward; one-handed (the plain item
-# pose, -PboothPose=one), [0, 0, 90] points +X forward, a little up.
+# pose, -PboothPose=one), [0, 90, 78]: the Y of 90 puts +X forward with +Y
+# up -- [0, 0, 90] also put +X forward but rolled the model onto its side,
+# read from the green tip -- and the Z, applied first and so a turn about
+# the model's own lateral axis, levels a barrel the hanging arm tilts up.
 BOOTH_VARIANTS = {
     "a": {"firstperson_righthand": {"rotation": [0, 0, 0], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
           "thirdperson_righthand": {"rotation": [0, 0, 0], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
