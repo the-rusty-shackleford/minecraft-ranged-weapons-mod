@@ -18,9 +18,11 @@
 package com.nfx.rangedweaponsmod;
 
 import com.mojang.logging.LogUtils;
+import com.nfx.rangedweaponsmod.net.Payloads;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
 /**
@@ -42,5 +44,8 @@ public final class RangedWeaponsMod {
         ModItems.register(modBus);
         ModSounds.register(modBus);
         ModData.register(modBus);
+        modBus.addListener(Payloads::register);
+        // A game-bus event, not a mod-bus one.
+        NeoForge.EVENT_BUS.addListener(PlayerGunnery::onPlayerTick);
     }
 }
