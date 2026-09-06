@@ -38,6 +38,6 @@ protocol - Armed Pillagers, for one - can use them too.
 [[dependencies.${mod_id}]]
     modId="rangedweapons"
     type="required"
-    versionRange="[1.1,2.0)"
+    versionRange="[1.2,2.0)"
     ordering="AFTER"
     side="BOTH"

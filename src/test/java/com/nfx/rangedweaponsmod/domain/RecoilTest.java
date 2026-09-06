@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * fraction; the offset never changes sign; repeated steps reach exactly
  * zero (the rest epsilon); recovery 1 settles in one step. Sample: partial
  * 0 is the previous, 1 the current, 0.5 the midpoint; partial outside
- * [0, 1] is refused. Rapid fire: kicks every third tick reach a bounded
+ * [0, 1] is refused. withRecovery: offsets kept, rate changed, bounds. Rapid fire: kicks every third tick reach a bounded
  * steady state. RI: recovery 0 / above 1 / NaN; an angle beyond the cap.
  */
 final class RecoilTest {
@@ -167,6 +167,15 @@ final class RecoilTest {
         assertEquals(0.759f, peak, 0.01f);
         // and never anywhere near the cap
         assertTrue(peak < 2.0f);
+    }
+
+    @Test
+    void withRecoveryKeepsTheOffsetsAndChangesOnlyTheRate() {
+        Recoil r = Recoil.atRest(0.25f).kicked(2.0f, -1.0f).withRecovery(0.5f);
+        assertEquals(2.0f, r.pitch(), EPS);
+        assertEquals(0.5f, r.recovery(), 0.0f);
+        assertEquals(1.0f, r.stepped().pitch(), EPS);
+        assertThrows(IllegalArgumentException.class, () -> r.withRecovery(0.0f));
     }
 
     @Test

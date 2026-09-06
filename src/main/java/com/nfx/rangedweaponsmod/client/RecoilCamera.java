@@ -17,12 +17,86 @@
  */
 package com.nfx.rangedweaponsmod.client;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
+import com.nfx.rangedweaponsmod.GunItem;
+import com.nfx.rangedweaponsmod.RangedWeaponsMod;
+import com.nfx.rangedweaponsmod.domain.Recoil;
 import com.nfx.rangedweaponsmod.net.ShotFiredPayload;
+import net.minecraft.world.InteractionHand;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.neoforge.client.event.ViewportEvent;
 
-/** Placeholder until the client step: the kick is received and, for now, dropped. */
+/**
+ * The kick, on screen: a camera offset that recovers, and the same offset
+ * jolting the gun in hand. The player's own rotation is never touched --
+ * the offset is added to the camera's angles as they are computed for the
+ * frame, so it cannot fight the mouse and leaves no drift behind.
+ *
+ * <p>State is one immutable {@link Recoil}, replaced on each kick and each
+ * tick; frames read it with the tick's partial. That is the whole reason
+ * rapid fire looks smooth here: nothing is restarted, kicks add and settle.
+ */
+@EventBusSubscriber(modid = RangedWeaponsMod.MOD_ID, value = Dist.CLIENT)
 public final class RecoilCamera {
     private RecoilCamera() {}
 
+    /** Degrees of muzzle lift on the hand model per degree of camera kick. */
+    private static final float MODEL_PITCH_PER_DEGREE = 0.6f;
+    /** Degrees of sideways swing on the hand model per degree of camera kick. */
+    private static final float MODEL_YAW_PER_DEGREE = 0.4f;
+    /** Blocks the hand model pushes back toward the shoulder per degree of camera kick. */
+    private static final float MODEL_PUSHBACK_PER_DEGREE = 0.012f;
+
+    private static Recoil recoil = Recoil.atRest(0.35f);
+
+    /** effects: adds the shot's kick, scaled by the player's recoil setting, at the gun's recovery */
     public static void onShotFired(ShotFiredPayload payload) {
+        float scale = ClientConfig.RECOIL_SCALE.get().floatValue();
+        recoil = recoil.withRecovery(payload.recovery())
+                .kicked(payload.pitchKick() * scale, payload.yawKick() * scale);
+    }
+
+    /** effects: one tick of recovery; nothing if already at rest */
+    static void tick() {
+        if (!recoil.atRest()) {
+            recoil = recoil.stepped();
+        }
+    }
+
+    /** effects: drops any offset, for a new world */
+    static void reset() {
+        recoil = Recoil.atRest(recoil.recovery());
+    }
+
+    @SubscribeEvent
+    public static void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+        if (recoil.atRest()) {
+            return;
+        }
+        Recoil.Sample sample = recoil.sample((float) event.getPartialTick());
+        event.setPitch(event.getPitch() - sample.pitch());
+        event.setYaw(event.getYaw() + sample.yaw());
+    }
+
+    @SubscribeEvent
+    public static void onRenderHand(RenderHandEvent event) {
+        if (event.getHand() != InteractionHand.MAIN_HAND || recoil.atRest() || !GunItem.isGun(event.getItemStack())) {
+            return;
+        }
+        float scale = ClientConfig.MODEL_KICK_SCALE.get().floatValue();
+        if (scale == 0.0f) {
+            return;
+        }
+        Recoil.Sample sample = recoil.sample(event.getPartialTick());
+        // Not cancelled: these transforms are on the stack vanilla goes on
+        // to render the arm and item with.
+        PoseStack pose = event.getPoseStack();
+        pose.translate(0.0f, 0.0f, sample.pitch() * MODEL_PUSHBACK_PER_DEGREE * scale);
+        pose.mulPose(Axis.XP.rotationDegrees(sample.pitch() * MODEL_PITCH_PER_DEGREE * scale));
+        pose.mulPose(Axis.YP.rotationDegrees(sample.yaw() * MODEL_YAW_PER_DEGREE * scale));
     }
 }

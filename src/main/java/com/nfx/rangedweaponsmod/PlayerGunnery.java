@@ -166,7 +166,7 @@ public final class PlayerGunnery {
 
         if (player instanceof ServerPlayer serverPlayer) {
             float yawKick = handling.recoilYaw() * (player.getRandom().nextBoolean() ? 1.0f : -1.0f);
-            PacketDistributor.sendToPlayer(serverPlayer, new ShotFiredPayload(handling.recoilPitch(), yawKick));
+            PacketDistributor.sendToPlayer(serverPlayer, new ShotFiredPayload(handling.recoilPitch(), yawKick, handling.recovery()));
         }
         return gunnery.firedUntil(FireClock.next(now, Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS)));
     }

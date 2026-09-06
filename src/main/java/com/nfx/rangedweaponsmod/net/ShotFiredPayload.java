@@ -31,8 +31,9 @@ import net.minecraft.resources.ResourceLocation;
  *
  * @param pitchKick degrees the view kicks up
  * @param yawKick   degrees the view kicks sideways, already signed
+ * @param recovery  the fraction of the offset the view recovers per tick
  */
-public record ShotFiredPayload(float pitchKick, float yawKick) implements CustomPacketPayload {
+public record ShotFiredPayload(float pitchKick, float yawKick, float recovery) implements CustomPacketPayload {
 
     public static final Type<ShotFiredPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "shot_fired"));
@@ -40,6 +41,7 @@ public record ShotFiredPayload(float pitchKick, float yawKick) implements Custom
     public static final StreamCodec<RegistryFriendlyByteBuf, ShotFiredPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.FLOAT, ShotFiredPayload::pitchKick,
             ByteBufCodecs.FLOAT, ShotFiredPayload::yawKick,
+            ByteBufCodecs.FLOAT, ShotFiredPayload::recovery,
             ShotFiredPayload::new);
 
     @Override

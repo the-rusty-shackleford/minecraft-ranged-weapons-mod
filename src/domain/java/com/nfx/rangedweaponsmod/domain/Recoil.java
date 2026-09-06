@@ -120,6 +120,18 @@ public record Recoil(float pitch, float yaw, float prevPitch, float prevYaw, flo
         return new Sample(prevPitch + (pitch - prevPitch) * partial, prevYaw + (yaw - prevYaw) * partial);
     }
 
+    /**
+     * effects: returns this recoil recovering {@code recovery} of itself per
+     * tick from now on, offsets unchanged<br>
+     * throws: {@link IllegalArgumentException} if {@code recovery} is outside {@code (0, 1]}
+     *
+     * @param recovery the fraction recovered per tick
+     * @return the recoil with that recovery
+     */
+    public Recoil withRecovery(float recovery) {
+        return new Recoil(pitch, yaw, prevPitch, prevYaw, recovery);
+    }
+
     /** effects: returns whether both the current and previous offsets are zero */
     public boolean atRest() {
         return pitch == 0.0f && yaw == 0.0f && prevPitch == 0.0f && prevYaw == 0.0f;
