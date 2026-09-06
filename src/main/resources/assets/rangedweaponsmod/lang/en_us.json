@@ -9,5 +9,6 @@
   "subtitles.rangedweaponsmod.far_shot": "Distant gunfire",
   "subtitles.rangedweaponsmod.empty_click": "Gun clicks",
   "subtitles.rangedweaponsmod.reload_start": "Magazine out",
-  "subtitles.rangedweaponsmod.reload_end": "Magazine in"
+  "subtitles.rangedweaponsmod.reload_end": "Magazine in",
+  "item.rangedweaponsmod.gun.takes": "Takes %s"
 }

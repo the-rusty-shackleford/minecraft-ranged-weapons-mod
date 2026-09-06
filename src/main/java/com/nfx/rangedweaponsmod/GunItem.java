@@ -17,6 +17,7 @@
  */
 package com.nfx.rangedweaponsmod;
 
+import com.nfx.rangedweapons.api.AmmoFamilies;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import net.minecraft.ChatFormatting;
@@ -104,5 +105,8 @@ public final class GunItem extends Item {
         }
         tooltip.add(Component.translatable("item.rangedweaponsmod.gun.rounds", weapon.rounds(stack), weapon.capacity(stack))
                 .withStyle(ChatFormatting.GRAY));
+        weapon.profile().ammoFamily().ifPresent(family -> tooltip.add(
+                Component.translatable("item.rangedweaponsmod.gun.takes", AmmoFamilies.displayName(family))
+                        .withStyle(ChatFormatting.DARK_GRAY)));
     }
 }

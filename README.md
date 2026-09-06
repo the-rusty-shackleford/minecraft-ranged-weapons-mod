@@ -28,7 +28,9 @@ frame rate. Firing breaks a sprint, the way drawing a bow does. A gun in the
 off hand does nothing.
 
 **Reload.** `R` reloads; so does pulling the trigger on an empty magazine when
-you carry the gun's ammunition (with none, the gun clicks once per pull). A
+you carry ammunition the gun takes -- any round of its family, from any mod,
+in inventory order; the tooltip names the family (with none, the gun clicks
+once per pull). A
 reload takes the profile's full reload time, the gun is unusable meanwhile, and
 on completion it loads as many rounds as the magazine has room for and your
 inventory can supply. Creative has unlimited ammunition, as it has unlimited
@@ -79,7 +81,7 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 
 | | |
 |---|---|
-| Magazine | 50 rounds of `rangedweaponsmod:round` |
+| Magazine | 50 rounds; takes any `#rangedweapons:ammo/medium` round, its own `rangedweaponsmod:round` among them |
 | Rate | a round every 3 ticks (about 6.7 per second) |
 | Damage | 5.5 per round, 1 round per shot |
 | Spread | 0.05, times 0.7 crouching, 1.4 moving, 2.0 sprinting, 1.8 airborne |
@@ -102,8 +104,9 @@ with no `handling` entry gets a default for its profile's class.
 ## Adding a gun
 
 1. Register an item with `GunItem` in `ModItems` (durability is the shot count).
-2. Give it a profile in `weapons.json` and, if the class default is wrong for
-   it, a `handling.json` entry.
+2. Give it a profile in `weapons.json` -- its `ammo_family` and its native
+   `ammo` round, which you tag into the family -- and, if the class default
+   is wrong for it, a `handling.json` entry.
 3. A model, a texture, a shot sound and a far report: `devtools/art/build.py`
    is the generator for the ones shipped, run with `uv run devtools/art/build.py`.
 4. Photograph it: `./gradlew runPhotoBooth` (below) and look at the pictures.
@@ -152,7 +155,8 @@ other two are for eyes and hands.
   outside: the data resolves to a weapon with the right capacity; a held
   trigger fires at the profile's rate and a release stops it; an empty pull
   starts a reload only with ammunition in the inventory; a reload takes its
-  full time, consumes exactly what it loads, and blocks fire meanwhile; the
+  full time, consumes exactly what it loads, and blocks fire meanwhile; a
+  reload takes any round of the gun's family and none of another; the
   gun's use is the press, consumed without a swing, a repeat is not a new
   pull, and the off hand is not operated; creative fires an empty gun for
   free; and the real `PlayerTickEvent` path drives a placed player. **The server's exit

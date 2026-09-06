@@ -31,7 +31,6 @@ import com.nfx.rangedweaponsmod.domain.Trigger;
 import com.nfx.rangedweaponsmod.domain.Trigger.Action;
 import com.nfx.rangedweaponsmod.domain.Trigger.Inputs;
 import com.nfx.rangedweaponsmod.net.ShotFiredPayload;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -211,46 +210,42 @@ public final class PlayerGunnery {
     }
 
     /**
-     * effects: returns how many of the profile's ammunition item the player
-     * carries, zero if the profile names none
+     * effects: returns how many rounds the player carries that the profile
+     * accepts -- its family, or its native round without one -- zero if it
+     * accepts nothing
      *
      * @param player  the player
      * @param profile the weapon's profile
      * @return the count
      */
     public static int countAmmo(Player player, WeaponProfile profile) {
-        Item ammo = ammoItem(profile);
-        if (ammo == null) {
-            return 0;
-        }
         int count = 0;
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (stack.is(ammo)) {
+            if (profile.acceptsAmmo(stack)) {
                 count += stack.getCount();
             }
         }
         return count;
     }
 
-    /** requires: the player carries at least {@code count}; effects: removes that many, first slots first */
+    /**
+     * requires: the player carries at least {@code count} accepted rounds<br>
+     * effects: removes that many, first slots first, whatever rounds of the
+     * family they are -- a loaded magazine is a count, not a list
+     */
     private static void takeAmmo(Player player, WeaponProfile profile, int count) {
-        Item ammo = ammoItem(profile);
         Inventory inventory = player.getInventory();
         int remaining = count;
         for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (stack.is(ammo)) {
+            if (profile.acceptsAmmo(stack)) {
                 int taken = Math.min(remaining, stack.getCount());
                 stack.shrink(taken);
                 remaining -= taken;
             }
         }
-    }
-
-    private static Item ammoItem(WeaponProfile profile) {
-        return profile.ammoItem().map(BuiltInRegistries.ITEM::get).orElse(null);
     }
 
     /** effects: returns where the muzzle is: forward of the eye, out to the main-hand side, a little down */

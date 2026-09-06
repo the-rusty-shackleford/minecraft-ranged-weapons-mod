@@ -17,8 +17,10 @@
  */
 package com.nfx.rangedweaponsmod.gametest;
 
+import com.nfx.rangedweapons.api.AmmoFamilies;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
+import com.nfx.rangedweapons.api.WeaponProfile;
 import com.nfx.rangedweapons.api.WeaponClass;
 import com.nfx.rangedweapons.fallback.Fallback;
 import com.nfx.rangedweaponsmod.Handling;
@@ -34,6 +36,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
@@ -211,6 +214,41 @@ public final class GunneryGameTests {
             helper.assertEntityPresent(Fallback.BULLET.get());
             helper.succeed();
         });
+    }
+
+    // --- ammunition families -------------------------------------------------
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public void aReloadTakesAnyRoundOfTheFamilyAndNotAnother(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        // Another mod's medium round (the gametest pack tags iron nuggets medium),
+        // and a small round (gold nuggets) that must be left alone.
+        g.player().getInventory().add(new ItemStack(Items.IRON_NUGGET, 10));
+        g.player().getInventory().add(new ItemStack(Items.GOLD_NUGGET, 10));
+        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon().profile()), 10, "only the medium rounds count");
+        PlayerGunnery.onTrigger(g.player(), true);          // empty gun, trigger pulled: a reload starts
+        driveTicks(helper, g, 1, RELOAD_TICKS + 1);
+        helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 10, "loaded from the foreign medium rounds");
+            helper.assertValueEqual(g.player().getInventory().countItem(Items.IRON_NUGGET), 0, "all ten spent");
+            helper.assertValueEqual(g.player().getInventory().countItem(Items.GOLD_NUGGET), 10, "the small rounds untouched");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena")
+    public void theRoundIsMediumAndTheGunTakesTheFamily(GameTestHelper helper) {
+        RangedWeapon weapon = RangedWeapons.resolve(new ItemStack(ModItems.MACHINE_GUN.get()));
+        if (weapon == null) {
+            helper.fail("the machine gun resolves to no weapon");
+            return;
+        }
+        WeaponProfile profile = weapon.profile();
+        helper.assertTrue(profile.ammoFamily().isPresent() && profile.ammoFamily().get().equals(AmmoFamilies.MEDIUM), "the machine gun takes the medium family");
+        helper.assertTrue(new ItemStack(ModItems.ROUND.get()).is(AmmoFamilies.MEDIUM), "the round is a medium round");
+        helper.assertTrue(new ItemStack(ModItems.ROUND.get()).is(AmmoFamilies.ALL), "and ammunition");
+        helper.assertTrue(profile.acceptsAmmo(new ItemStack(ModItems.ROUND.get())), "so the gun takes its own round");
+        helper.succeed();
     }
 
     // --- the press, through the item ---------------------------------------

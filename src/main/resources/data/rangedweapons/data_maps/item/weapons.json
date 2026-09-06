@@ -12,6 +12,7 @@
       "projectile_speed": 4.0,
       "projectile_lifetime_ticks": 100,
       "ammo": "rangedweaponsmod:round",
+      "ammo_family": "#rangedweapons:ammo/medium",
       "shot_sound": "rangedweaponsmod:machine_gun_shot",
       "far_shot_sound": "rangedweaponsmod:far_shot"
     }

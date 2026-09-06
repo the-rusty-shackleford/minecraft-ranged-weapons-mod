@@ -52,16 +52,27 @@ photograph (`D-0004`).
 
 ## How it is verified
 
-`./gradlew check`: 58 plain-JUnit tests against `domain`, and sixteen gametests
+`./gradlew check`: 58 plain-JUnit tests against `domain`, and eighteen gametests
 on a headless server. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
 
+## Next
+
+Decided by Rusty on 2026-09-06, in this order:
+
+1. Done (protocol 1.4, this mod's round is medium): ammo families.
+2. The rest of the lineup, each with everything the machine gun got (the
+   trigger, the counter, recoil, the two-handed hold where it fits, art from
+   the generator, the booth, the tests): a pistol (small), a shotgun
+   (shell), a rifle (medium), and a scoped rifle (medium) -- a scope with
+   aim-down-sights zoom, not a spyglass; Rusty was emphatic.
+
 ## Depends on
 
-- `minecraft-ranged-weapons` 1.3.1 or later within 1.x (nested Jar-in-Jar;
-  built to Maven Local first). Needs 1.3 for the block impact and the Hold
-  My Items hook; 1.2 for the synced data map, the muzzle origin in
+- `minecraft-ranged-weapons` 1.4.1 or later within 1.x (nested Jar-in-Jar;
+  built to Maven Local first). Needs 1.4 for ammunition families; 1.3 for
+  the block impact and the Hold My Items hook; 1.2 for the synced data map, the muzzle origin in
   `ShotReport.play` and the non-saving fallback bullet.
 
 ## License
