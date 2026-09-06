@@ -23,7 +23,10 @@ import com.nfx.rangedweaponsmod.GunItem;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.domain.Recoil;
 import com.nfx.rangedweaponsmod.net.ShotFiredPayload;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -46,10 +49,16 @@ public final class RecoilCamera {
 
     // The camera's kick is under a degree a shot; the gun in hand exaggerates
     // it, or the eye reads nothing. The three terms are client config, read
-    // live: a rise that lifts the whole gun on screen, a pitch about the
-    // camera that makes the muzzle climb faster than the grip, a sideways
-    // swing. Their signs were settled in the photo booth, not derived: the
-    // hand's frame is not the frame one would guess.
+    // live: a rise that lifts the whole gun on screen, a tilt about the grip
+    // that puts the muzzle up, a sideways swing about the same pivot. The
+    // pivot matters: tilting about the camera's origin instead swung the
+    // body through an arc that undid the rise. Signs and pivot were settled
+    // in the photo booth's isolated-term frames, not derived.
+
+    /** Where vanilla holds the main-hand item, from {@code ItemInHandRenderer.applyItemArmTransform}. */
+    private static final float GRIP_X = 0.56f;
+    private static final float GRIP_Y = -0.52f;
+    private static final float GRIP_Z = -0.72f;
 
     private static Recoil recoil = Recoil.atRest(0.35f);
 
@@ -96,7 +105,19 @@ public final class RecoilCamera {
         // to render the arm and item with.
         PoseStack pose = event.getPoseStack();
         pose.translate(0.0f, sample.pitch() * ClientConfig.MODEL_RISE.get().floatValue() * scale, 0.0f);
+        // The tilt pivots on the grip, not the camera: a rotation about the
+        // camera's origin swings the whole gun through an arc, and a
+        // muzzle-up tilt then drags the body down by nearly what the rise
+        // lifts it. Vanilla puts the main-hand item at this offset.
+        float side = isRightHanded(event) ? GRIP_X : -GRIP_X;
+        pose.translate(side, GRIP_Y, GRIP_Z);
         pose.mulPose(Axis.XP.rotationDegrees(sample.pitch() * ClientConfig.MODEL_PITCH.get().floatValue() * scale));
         pose.mulPose(Axis.YP.rotationDegrees(sample.yaw() * ClientConfig.MODEL_YAW.get().floatValue() * scale));
+        pose.translate(-side, -GRIP_Y, -GRIP_Z);
+    }
+
+    private static boolean isRightHanded(RenderHandEvent event) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player == null || player.getMainArm() == HumanoidArm.RIGHT;
     }
 }

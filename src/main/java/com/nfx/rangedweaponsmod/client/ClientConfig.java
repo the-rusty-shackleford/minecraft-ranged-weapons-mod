@@ -55,8 +55,8 @@ public final class ClientConfig {
                 .defineInRange("modelRisePerDegree", 0.1D, -0.3D, 0.3D);
 
         MODEL_PITCH = builder
-                .comment("Degrees the gun in your hand tilts per degree of camera kick. Negative is muzzle up.")
-                .defineInRange("modelPitchPerDegree", -4.0D, -30.0D, 30.0D);
+                .comment("Degrees the gun in your hand tilts about its grip per degree of camera kick. Positive is muzzle up.")
+                .defineInRange("modelPitchPerDegree", 6.0D, -30.0D, 30.0D);
 
         MODEL_YAW = builder
                 .comment("Degrees the gun in your hand swings sideways per degree of sideways camera kick.")

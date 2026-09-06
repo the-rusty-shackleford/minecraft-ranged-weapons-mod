@@ -42,8 +42,8 @@ per tick. Kicks add and settle: firing full auto lifts the aim to a plateau
 and lets it back down, with no snap between shots. The player's actual look
 angles are never written -- the offset is added to the camera as each frame is
 computed -- so nothing fights the mouse and nothing drifts. The gun in hand
-rises and tilts muzzle-up with the same offset, exaggerated so the eye reads
-it; how much is three client config knobs. Both are scaled by the client
+rises and tilts muzzle-up about its grip with the same offset, exaggerated
+so the eye reads it; how much is three client config knobs. Both are scaled by the client
 config, down to zero.
 
 **Two hands.** In third person the gun is carried in both hands, the way a
@@ -112,7 +112,7 @@ read everything from the profile and the handling.
 | `recoil.recoilScale` | 1.0 | multiplies the camera kick of every shot; 0 turns it off |
 | `recoil.modelKickScale` | 1.0 | multiplies how much the gun in hand jumps, separately |
 | `recoil.modelRisePerDegree` | 0.1 | blocks the gun in hand rises per degree of camera kick |
-| `recoil.modelPitchPerDegree` | -4.0 | degrees the gun in hand tilts per degree of kick; negative is muzzle up |
+| `recoil.modelPitchPerDegree` | 6.0 | degrees the gun in hand tilts about its grip per degree of kick; positive is muzzle up |
 | `recoil.modelYawPerDegree` | 1.0 | degrees it swings sideways per degree of sideways kick |
 | `hud.enabled` | true | the ammo counter and reload bar |
 

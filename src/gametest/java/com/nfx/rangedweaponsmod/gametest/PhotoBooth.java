@@ -129,7 +129,7 @@ public final class PhotoBooth {
         kickFrame(s, t, mc, "booth-kick-pitch", 0.0, 8.0, 0.0);
         kickFrame(s, t, mc, "booth-kick-yaw", 0.0, 0.0, 8.0);
         s.add(new Step(t[0] += 5, () -> {
-            ClientConfig.MODEL_RISE.set(0.1); ClientConfig.MODEL_PITCH.set(-4.0); ClientConfig.MODEL_YAW.set(1.0);
+            ClientConfig.MODEL_RISE.set(0.1); ClientConfig.MODEL_PITCH.set(6.0); ClientConfig.MODEL_YAW.set(1.0);
             RecoilCamera.reset();
         }));
         s.add(new Step(t[0] += 1, () -> RecoilCamera.onShotFired(new ShotFiredPayload(0.55f, 0.25f, 0.35f))));
