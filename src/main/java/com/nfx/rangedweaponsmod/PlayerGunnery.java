@@ -37,6 +37,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -63,8 +64,15 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class PlayerGunnery {
     private PlayerGunnery() {}
 
-    /** Where a shot starts: this far in front of the eye, so the bullet is born outside the shooter. */
-    private static final double MUZZLE_OFFSET = 0.5;
+    /**
+     * Where a shot starts, relative to the eye: this far along the look, this
+     * far to the main-hand side, and this far below -- about where the gun's
+     * muzzle sits in first person, so the tracer leaves the gun rather than
+     * the shooter's face.
+     */
+    private static final double MUZZLE_FORWARD = 1.1;
+    private static final double MUZZLE_SIDE = 0.32;
+    private static final double MUZZLE_DOWN = 0.22;
     /** Squared blocks moved since the last tick above which the player counts as moving. */
     private static final double MOVING_THRESHOLD_SQR = 0.05 * 0.05;
 
@@ -151,7 +159,7 @@ public final class PlayerGunnery {
     private static Gunnery fire(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                 WeaponStats stats, long now, Gunnery gunnery) {
         Vec3 look = player.getViewVector(1.0f);
-        Vec3 origin = player.getEyePosition().add(look.scale(MUZZLE_OFFSET));
+        Vec3 origin = muzzle(player, look);
         Handling handling = Handling.of(stack);
         float spreadMultiplier = StanceSpread.multiplier(stance(player), handling.spread());
         Shot shot = Shot.of(stats.scaled(1.0f, spreadMultiplier), origin, look);
@@ -232,6 +240,18 @@ public final class PlayerGunnery {
 
     private static Item ammoItem(WeaponProfile profile) {
         return profile.ammoItem().map(BuiltInRegistries.ITEM::get).orElse(null);
+    }
+
+    /** effects: returns where the muzzle is: forward of the eye, out to the main-hand side, a little down */
+    public static Vec3 muzzle(Player player, Vec3 look) {
+        double side = player.getMainArm() == HumanoidArm.RIGHT ? MUZZLE_SIDE : -MUZZLE_SIDE;
+        Vec3 right = new Vec3(-look.z, 0.0, look.x);
+        double length = right.length();
+        right = length < 1e-6 ? Vec3.ZERO : right.scale(1.0 / length);
+        return player.getEyePosition()
+                .add(look.scale(MUZZLE_FORWARD))
+                .add(right.scale(side))
+                .subtract(0.0, MUZZLE_DOWN, 0.0);
     }
 
     private static Stance stance(Player player) {

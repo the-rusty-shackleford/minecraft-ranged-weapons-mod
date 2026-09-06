@@ -45,11 +45,11 @@ public final class RecoilCamera {
     private RecoilCamera() {}
 
     /** Degrees of muzzle lift on the hand model per degree of camera kick. */
-    private static final float MODEL_PITCH_PER_DEGREE = 0.6f;
+    private static final float MODEL_PITCH_PER_DEGREE = 1.1f;
     /** Degrees of sideways swing on the hand model per degree of camera kick. */
     private static final float MODEL_YAW_PER_DEGREE = 0.4f;
     /** Blocks the hand model pushes back toward the shoulder per degree of camera kick. */
-    private static final float MODEL_PUSHBACK_PER_DEGREE = 0.012f;
+    private static final float MODEL_PUSHBACK_PER_DEGREE = 0.02f;
 
     private static Recoil recoil = Recoil.atRest(0.35f);
 

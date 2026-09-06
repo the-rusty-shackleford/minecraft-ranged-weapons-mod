@@ -1,0 +1,32 @@
+{
+  "machine_gun_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.machine_gun_shot",
+    "sounds": [
+      "rangedweaponsmod:machine_gun_shot"
+    ]
+  },
+  "far_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.far_shot",
+    "sounds": [
+      "rangedweaponsmod:far_shot"
+    ]
+  },
+  "empty_click": {
+    "subtitle": "subtitles.rangedweaponsmod.empty_click",
+    "sounds": [
+      "rangedweaponsmod:empty_click"
+    ]
+  },
+  "reload_start": {
+    "subtitle": "subtitles.rangedweaponsmod.reload_start",
+    "sounds": [
+      "rangedweaponsmod:reload_start"
+    ]
+  },
+  "reload_end": {
+    "subtitle": "subtitles.rangedweaponsmod.reload_end",
+    "sounds": [
+      "rangedweaponsmod:reload_end"
+    ]
+  }
+}

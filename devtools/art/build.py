@@ -1,0 +1,438 @@
+"""The art, as code: textures, the voxel model and the sounds of the machine gun.
+
+Run from the repository root:
+
+    uv run --no-project python devtools/art/build.py
+
+Everything it writes lands under src/main/resources/assets/rangedweaponsmod/
+and is committed; this script is the source of truth for those files, and the
+photo booth run (`./gradlew photoBooth`) is how the result is looked at.
+Original work throughout -- nothing here is derived from another mod's assets.
+Sounds need ffmpeg with libvorbis on the PATH.
+"""
+from __future__ import annotations
+
+import json
+import math
+import struct
+import subprocess
+import sys
+import zlib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+ASSETS = ROOT / "src/main/resources/assets/rangedweaponsmod"
+MODID = "rangedweaponsmod"
+
+
+# ---------------------------------------------------------------- PNG writing
+
+def write_png(path: Path, width: int, height: int, pixels) -> None:
+    """pixels: rows of (r, g, b, a) tuples, top row first."""
+    raw = b"".join(b"\x00" + b"".join(bytes(p) for p in row) for row in pixels)
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (struct.pack(">I", len(data)) + kind + data
+                + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF))
+
+    png = (b"\x89PNG\r\n\x1a\n"
+           + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+           + chunk(b"IDAT", zlib.compress(raw, 9))
+           + chunk(b"IEND", b""))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(png)
+
+
+class Noise:
+    """A deterministic grain so flat colours read as material, not plastic."""
+
+    def __init__(self, seed: int) -> None:
+        self.state = seed & 0xFFFFFFFF
+
+    def next(self) -> float:
+        self.state = (1664525 * self.state + 1013904223) & 0xFFFFFFFF
+        return self.state / 0xFFFFFFFF
+
+
+def shade(rgb, delta):
+    return tuple(max(0, min(255, c + delta)) for c in rgb)
+
+
+# ------------------------------------------------------------ the gun's atlas
+#
+# A 32x32 atlas of 8x8 material patches; the model's faces point at a patch
+# by its grid cell. In UV terms (0..16 over the texture) a cell is 4 units.
+
+PALETTE = {
+    "metal_mid":   (74, 80, 90),
+    "metal_dark":  (43, 47, 54),
+    "metal_light": (118, 126, 140),
+    "barrel":      (28, 30, 34),
+    "wood":        (120, 82, 44),
+    "wood_dark":   (78, 54, 32),
+    "brass":       (176, 141, 60),
+}
+
+CELLS = {  # name -> (column, row)
+    "metal_mid": (0, 0), "metal_dark": (1, 0), "metal_light": (2, 0), "barrel": (3, 0),
+    "wood": (0, 1), "wood_dark": (1, 1), "brass": (2, 1), "vent": (3, 1),
+    "receiver": (0, 2), "grip": (1, 2), "magazine": (2, 2), "muzzle": (3, 2),
+}
+
+
+def gun_atlas():
+    noise = Noise(0x4C4A31)
+    px = [[(0, 0, 0, 0) for _ in range(32)] for _ in range(32)]
+
+    def fill(cell, base, grain=6):
+        cx, cy = CELLS[cell]
+        for y in range(8):
+            for x in range(8):
+                d = int((noise.next() - 0.5) * 2 * grain)
+                px[cy * 8 + y][cx * 8 + x] = (*shade(base, d), 255)
+
+    for name in ("metal_mid", "metal_dark", "metal_light", "barrel"):
+        fill(name, PALETTE[name])
+    fill("wood", PALETTE["wood"], 10)
+    fill("wood_dark", PALETTE["wood_dark"], 8)
+    fill("brass", PALETTE["brass"], 8)
+
+    # Vent: dark metal with two rows of cooling holes, lit from above.
+    fill("vent", PALETTE["metal_dark"])
+    cx, cy = CELLS["vent"]
+    for y in (2, 5):
+        for x in (1, 4, 7):
+            px[cy * 8 + y][cx * 8 + x] = (*PALETTE["barrel"], 255)
+            px[cy * 8 + y - 1][cx * 8 + x] = (*shade(PALETTE["metal_light"], -20), 255)
+
+    # Receiver side: mid metal with a seam and a line of rivets.
+    fill("receiver", PALETTE["metal_mid"])
+    cx, cy = CELLS["receiver"]
+    for x in range(8):
+        px[cy * 8 + 2][cx * 8 + x] = (*shade(PALETTE["metal_mid"], -22), 255)
+        px[cy * 8 + 5][cx * 8 + x] = (*shade(PALETTE["metal_mid"], 18), 255)
+    for x in (1, 4, 7):
+        px[cy * 8 + 6][cx * 8 + x] = (*PALETTE["metal_light"], 255)
+
+    # Grip: dark wood with a diagonal checkering.
+    fill("grip", PALETTE["wood_dark"], 6)
+    cx, cy = CELLS["grip"]
+    for y in range(8):
+        for x in range(8):
+            if (x + y) % 3 == 0:
+                px[cy * 8 + y][cx * 8 + x] = (*shade(PALETTE["wood_dark"], -18), 255)
+
+    # Magazine: dark metal with a lighter band where the rounds sit.
+    fill("magazine", PALETTE["metal_dark"])
+    cx, cy = CELLS["magazine"]
+    for x in range(8):
+        px[cy * 8 + 3][cx * 8 + x] = (*shade(PALETTE["metal_mid"], 4), 255)
+        px[cy * 8 + 4][cx * 8 + x] = (*shade(PALETTE["metal_mid"], -6), 255)
+
+    # Muzzle: black with a bright ring.
+    fill("muzzle", PALETTE["barrel"])
+    cx, cy = CELLS["muzzle"]
+    for x in (0, 7):
+        for y in range(8):
+            px[cy * 8 + y][cx * 8 + x] = (*PALETTE["metal_light"], 255)
+    return px
+
+
+def uv(cell):
+    cx, cy = CELLS[cell]
+    return [cx * 4, cy * 4, cx * 4 + 4, cy * 4 + 4]
+
+
+# ------------------------------------------------------------- the round icon
+
+def round_icon():
+    """A cartridge, 16x16, standing upright: brass case, copper bullet, a primer."""
+    brass, brass_l, brass_d = (176, 141, 60), (214, 180, 96), (128, 98, 38)
+    copper, copper_l, copper_d = (168, 96, 62), (204, 136, 96), (120, 64, 40)
+    px = [[(0, 0, 0, 0) for _ in range(16)] for _ in range(16)]
+
+    def put(x, y, c):
+        if 0 <= x < 16 and 0 <= y < 16:
+            px[y][x] = (*c, 255)
+
+    # The case: columns 6..9 from row 6 to 14, straight, lit from the left.
+    for y in range(6, 15):
+        for x in range(6, 10):
+            c = brass_l if x == 6 else brass_d if x == 9 else brass
+            put(x, y, c)
+    # The rim and primer.
+    for x in range(5, 11):
+        put(x, 14, brass_d)
+    put(7, 15, brass_d)
+    put(8, 15, (60, 60, 60))
+    # The bullet: rows 1..5, narrowing to a point.
+    for y, (x0, x1) in zip(range(1, 6), [(8, 8), (7, 9), (7, 9), (7, 10), (7, 10)]):
+        for x in range(x0, x1 + 1):
+            c = copper_l if x == x0 else copper_d if x == x1 else copper
+            put(x, y, c)
+    put(8, 0, copper_d)
+    # A neck line where bullet meets case.
+    for x in range(7, 11):
+        put(x, 6, brass_d)
+    return px
+
+
+# ------------------------------------------------------------ the voxel model
+
+def box(name, frm, to, faces, rotation=None):
+    element = {"name": name, "from": frm, "to": to,
+               "faces": {side: {"uv": uv(cell), "texture": "#gun"} for side, cell in faces.items()}}
+    if rotation:
+        element["rotation"] = rotation
+    return element
+
+
+def machine_gun_model():
+    """A belt-fed-looking light machine gun laid along +X: wooden stock, boxy
+    receiver with a top-mounted magazine, a long ventilated barrel jacket, a
+    bipod. Coordinates are model units (16 to a block), the gun runs from
+    x=-7 (butt) to x=26.5 (muzzle) at z=8."""
+    all_ = lambda cell: {s: cell for s in ("north", "south", "east", "west", "up", "down")}
+
+    def sides(side_cell, other_cell):
+        return {"north": side_cell, "south": side_cell, "east": other_cell, "west": other_cell,
+                "up": other_cell, "down": other_cell}
+
+    elements = [
+        box("stock_butt", [-7, 4.5, 6.8], [-2, 10, 9.2], sides("wood", "wood_dark")),
+        box("stock_neck", [-2, 6, 7], [3, 9.5, 9], all_("wood")),
+        box("receiver", [3, 5.5, 6.5], [14, 10.5, 9.5], sides("receiver", "metal_mid")),
+        box("rail", [4, 10.5, 7.2], [12, 11.2, 8.8], all_("metal_dark")),
+        box("rear_sight", [5, 11.2, 7.6], [6, 12.6, 8.4], all_("metal_dark")),
+        box("magazine", [7, 11.2, 7], [10.5, 16.5, 9], sides("magazine", "metal_dark")),
+        box("magazine_lip", [6.8, 10.3, 6.9], [10.7, 11.3, 9.1], all_("metal_dark")),
+        box("trigger_guard_front", [6, 3.4, 7.5], [6.6, 5.5, 8.5], all_("metal_dark")),
+        box("trigger_guard_bottom", [6, 3.4, 7.5], [9.5, 4, 8.5], all_("metal_dark")),
+        box("trigger", [7.4, 4, 7.7], [8, 5.5, 8.3], all_("brass")),
+        box("grip", [3, 1, 7], [5.2, 5.5, 9], all_("grip"),
+            rotation={"origin": [4.1, 5.5, 8], "axis": "z", "angle": -22.5}),
+        box("barrel", [14, 7.2, 7.2], [25, 8.8, 8.8], all_("barrel")),
+        box("jacket", [14, 6.5, 6.5], [21, 9.5, 9.5], all_("vent")),
+        box("gas_block", [21, 6.8, 6.8], [22.5, 9.6, 9.2], all_("metal_dark")),
+        box("front_sight", [21.5, 9.6, 7.7], [22.2, 11.2, 8.3], all_("metal_dark")),
+        box("muzzle", [25, 6.9, 6.9], [26.5, 9.1, 9.1], all_("muzzle")),
+        box("bipod_left", [18, 0.5, 5.2], [18.8, 7, 6], all_("metal_dark"),
+            rotation={"origin": [18.4, 7, 5.6], "axis": "x", "angle": 22.5}),
+        box("bipod_right", [18, 0.5, 10], [18.8, 7, 10.8], all_("metal_dark"),
+            rotation={"origin": [18.4, 7, 10.4], "axis": "x", "angle": -22.5}),
+    ]
+    return {
+        "credit": "Ranged Weapons Mod, generated by devtools/art/build.py",
+        "texture_size": [32, 32],
+        "textures": {"gun": f"{MODID}:item/machine_gun", "particle": f"{MODID}:item/machine_gun"},
+        "elements": elements,
+        # Calibrated with the photo booth's axes model, not reasoned from the
+        # format: in first person a Y rotation of 90 points +X downrange; in
+        # third person the arm's frame is turned, and it is a Z rotation of
+        # 90 that points +X forward with the gun upright.
+        "display": {
+            "firstperson_righthand": {"rotation": [0, 92, 0], "translation": [1.0, -1.0, -3.0], "scale": [0.58, 0.58, 0.58]},
+            "thirdperson_righthand": {"rotation": [0, 0, 90], "translation": [0, 0, 0], "scale": [0.6, 0.6, 0.6]},
+            "gui": {"rotation": [0, 0, 0], "translation": [-0.8, 0, 0], "scale": [0.46, 0.46, 0.46]},
+            "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.35, 0.35, 0.35]},
+            "fixed": {"rotation": [0, 0, 0], "translation": [-0.8, 0, 0], "scale": [0.45, 0.45, 0.45]},
+        },
+    }
+
+
+AXES_COLOURS = {"red": (0, 0), "green": (1, 0), "blue": (2, 0), "yellow": (3, 0), "magenta": (0, 1), "gray": (1, 1)}
+
+
+def axes_texture():
+    rgb = {"red": (230, 40, 40), "green": (40, 200, 60), "blue": (50, 80, 230), "yellow": (240, 220, 40),
+           "magenta": (220, 50, 220), "gray": (120, 120, 120)}
+    px = [[(0, 0, 0, 0) for _ in range(16)] for _ in range(16)]
+    for name, (cx, cy) in AXES_COLOURS.items():
+        for y in range(4):
+            for x in range(4):
+                px[cy * 4 + y][cx * 4 + x] = (*rgb[name], 255)
+    return px
+
+
+def axes_model():
+    def cell_uv(name):
+        cx, cy = AXES_COLOURS[name]
+        return [cx * 4, cy * 4, cx * 4 + 4, cy * 4 + 4]
+
+    def cube(name, frm, to, colour):
+        return {"name": name, "from": frm, "to": to,
+                "faces": {s: {"uv": cell_uv(colour), "texture": "#axes"} for s in ("north", "south", "east", "west", "up", "down")}}
+
+    return {
+        "textures": {"axes": "rangedweaponsmod_gametest:item/axes", "particle": "rangedweaponsmod_gametest:item/axes"},
+        "elements": [
+            cube("shaft", [0, 7, 7], [24, 9, 9], "gray"),
+            cube("tip_plus_x", [24, 5, 5], [30, 11, 11], "red"),
+            cube("tail_minus_x", [-6, 5, 5], [0, 11, 11], "blue"),
+            cube("plus_y", [10, 9, 7], [14, 15, 9], "green"),
+            cube("plus_z", [10, 7, 9], [14, 9, 15], "yellow"),
+            cube("minus_z", [10, 7, 1], [14, 9, 7], "magenta"),
+        ],
+    }
+
+
+# The candidates the booth photographs: name -> display block. Rotations are
+# the question; translation and scale are held at one plausible value.
+BOOTH_VARIANTS = {
+    "a": {"firstperson_righthand": {"rotation": [0, 0, 0], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
+          "thirdperson_righthand": {"rotation": [0, 0, 0], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
+    "b": {"firstperson_righthand": {"rotation": [0, 90, 0], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
+          "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
+    "c": {"firstperson_righthand": {"rotation": [0, -90, 0], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
+          "thirdperson_righthand": {"rotation": [0, -90, 0], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
+    "d": {"firstperson_righthand": {"rotation": [0, 180, 0], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
+          "thirdperson_righthand": {"rotation": [0, 180, 0], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
+    "e": {"firstperson_righthand": {"rotation": [90, 0, 0], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
+          "thirdperson_righthand": {"rotation": [90, 0, 0], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
+    "f": {"firstperson_righthand": {"rotation": [0, 0, 90], "translation": [1.5, 1.5, 1.5], "scale": [0.55, 0.55, 0.55]},
+          "thirdperson_righthand": {"rotation": [0, 0, 90], "translation": [0, 2.5, 1.5], "scale": [0.6, 0.6, 0.6]}},
+}
+
+
+# ------------------------------------------------------------------- sounds
+
+RATE = 44100
+
+
+def synth(seconds, fn):
+    n = int(RATE * seconds)
+    return [max(-1.0, min(1.0, fn(i / RATE, i / n))) for i in range(n)]
+
+
+def write_ogg(path: Path, samples) -> None:
+    """Writes 16-bit mono PCM through ffmpeg into Ogg Vorbis."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pcm = b"".join(struct.pack("<h", int(s * 32767)) for s in samples)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(RATE), "-ac", "1",
+                    "-i", "pipe:0", "-c:a", "libvorbis", "-q:a", "5", str(path)],
+                   input=pcm, check=True)
+
+
+def machine_gun_shot():
+    noise = Noise(0xB4E7)
+    state = {"lp": 0.0}
+
+    def fn(t, u):
+        # A sharp crack: white noise through a lowpass that opens then closes,
+        # over a fast exponential decay, plus a low thump underneath.
+        raw = noise.next() * 2 - 1
+        cutoff = 0.9 if t < 0.004 else 0.35 * math.exp(-t * 60) + 0.05
+        state["lp"] += (raw - state["lp"]) * cutoff
+        crack = state["lp"] * math.exp(-t * 55)
+        thump = math.sin(2 * math.pi * 110 * t) * math.exp(-t * 40) * 0.6
+        return 0.95 * crack + thump
+
+    return synth(0.16, fn)
+
+
+def far_shot():
+    noise = Noise(0x7A5)
+    state = {"lp": 0.0}
+
+    def fn(t, u):
+        raw = noise.next() * 2 - 1
+        state["lp"] += (raw - state["lp"]) * 0.035
+        rumble = state["lp"] * 3.0 * math.exp(-t * 6)
+        thud = math.sin(2 * math.pi * 70 * t) * math.exp(-t * 9) * 0.5
+        attack = min(1.0, t / 0.01)
+        return attack * 0.8 * (rumble + thud)
+
+    return synth(0.7, fn)
+
+
+def empty_click():
+    noise = Noise(0x11)
+
+    def fn(t, u):
+        tick = math.sin(2 * math.pi * 2400 * t) * math.exp(-t * 400)
+        body = (noise.next() * 2 - 1) * 0.25 * math.exp(-t * 300)
+        return 0.7 * (tick + body)
+
+    return synth(0.06, fn)
+
+
+def reload_start():
+    noise = Noise(0x33)
+    state = {"lp": 0.0}
+
+    def fn(t, u):
+        raw = noise.next() * 2 - 1
+        state["lp"] += (raw - state["lp"]) * 0.2
+        # Magazine release clack, then the slide of it coming out.
+        clack = math.sin(2 * math.pi * 900 * t) * math.exp(-t * 120) * 0.8
+        slide = state["lp"] * 0.35 * (1 if 0.08 < t < 0.28 else 0) * math.sin(math.pi * (t - 0.08) / 0.2)
+        return 0.8 * (clack + slide)
+
+    return synth(0.32, fn)
+
+
+def reload_end():
+    noise = Noise(0x55)
+    state = {"lp": 0.0}
+
+    def fn(t, u):
+        raw = noise.next() * 2 - 1
+        state["lp"] += (raw - state["lp"]) * 0.25
+        # The magazine seating home: a slide, then a firm double clack.
+        slide = state["lp"] * 0.3 * (1 if t < 0.12 else 0) * math.sin(math.pi * t / 0.12)
+        c1 = math.sin(2 * math.pi * 700 * t) * math.exp(-(t - 0.13) * 150) * (1 if t >= 0.13 else 0)
+        c2 = math.sin(2 * math.pi * 1100 * t) * math.exp(-(t - 0.2) * 200) * (1 if t >= 0.2 else 0)
+        return 0.8 * (slide + 0.9 * c1 + 0.6 * c2)
+
+    return synth(0.3, fn)
+
+
+SOUNDS = {
+    "machine_gun_shot": machine_gun_shot,
+    "far_shot": far_shot,
+    "empty_click": empty_click,
+    "reload_start": reload_start,
+    "reload_end": reload_end,
+}
+
+
+def sounds_json():
+    return {name: {"subtitle": f"subtitles.{MODID}.{name}", "sounds": [f"{MODID}:{name}"]} for name in SOUNDS}
+
+
+# ---------------------------------------------------------------------- main
+
+def main(argv) -> int:
+    want = set(argv[1:]) or {"textures", "model", "sounds", "booth"}
+    if "textures" in want:
+        write_png(ASSETS / "textures/item/machine_gun.png", 32, 32, gun_atlas())
+        write_png(ASSETS / "textures/item/round.png", 16, 16, round_icon())
+        print("textures: machine_gun.png (32x32 atlas), round.png (16x16)")
+    if "model" in want:
+        model = machine_gun_model()
+        (ASSETS / "models/item").mkdir(parents=True, exist_ok=True)
+        (ASSETS / "models/item/machine_gun.json").write_text(json.dumps(model, indent=2) + "\n")
+        print(f"model: machine_gun.json ({len(model['elements'])} elements)")
+    if "booth" in want:
+        # Calibration models for the photo booth, as items of the gametest mod:
+        # an unmistakable axes model (red tip on +X, blue tail on -X, green
+        # on +Y, yellow on +Z, magenta on -Z) under one candidate display
+        # transform each, so a screenshot says which way each axis went.
+        booth_assets = ROOT / "src/gametest/resources/assets/rangedweaponsmod_gametest"
+        write_png(booth_assets / "textures/item/axes.png", 16, 16, axes_texture())
+        (booth_assets / "models/item").mkdir(parents=True, exist_ok=True)
+        for name, display in BOOTH_VARIANTS.items():
+            variant = axes_model()
+            variant["display"] = display
+            (booth_assets / f"models/item/booth_{name}.json").write_text(json.dumps(variant, indent=2) + "\n")
+        print(f"booth: axes model under {', '.join(BOOTH_VARIANTS)}")
+    if "sounds" in want:
+        for name, fn in SOUNDS.items():
+            write_ogg(ASSETS / f"sounds/{name}.ogg", fn())
+        (ASSETS / "sounds.json").write_text(json.dumps(sounds_json(), indent=2) + "\n")
+        print(f"sounds: {', '.join(SOUNDS)} + sounds.json")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

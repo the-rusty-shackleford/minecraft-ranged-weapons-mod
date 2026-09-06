@@ -47,6 +47,15 @@ var copyGameTestStructures = tasks.register("copyGameTestStructures", Copy) {
     into "run/gameteststructures"
 }
 
+// The world the gametest server leaves behind, as a singleplayer save for
+// the photo booth to quick-play into. Copies nothing until a gametest run
+// has happened.
+var prepareBoothWorld = tasks.register("prepareBoothWorld", Copy) {
+    from "run/world"
+    into "run/saves/booth"
+    exclude "session.lock"
+}
+
 neoForge {
     version = project.neo_version
 
@@ -73,6 +82,17 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
             taskBefore copyGameTestStructures
         }
+        // Eyes for the art: a client that loads the gametest server's world
+        // (copied to a save by prepareBoothWorld), puts the gun in hand,
+        // screenshots it from several angles and quits -- see PhotoBooth in
+        // the gametest source set. Needs a display; never part of check.
+        photoBooth {
+            client()
+            sourceSet = sourceSets.gametest
+            systemProperty 'rangedweaponsmod.photobooth', 'true'
+            programArguments.addAll('--quickPlaySingleplayer', 'booth')
+            taskBefore prepareBoothWorld
+        }
         configureEach {
             logLevel = org.slf4j.event.Level.DEBUG
         }
@@ -96,8 +116,8 @@ neoForge {
     addModdingDependenciesTo(sourceSets.gametest)
 }
 
-// The gametest mod is for the gametest run only.
-neoForge.runs.matching { it.name != 'gameTestServer' }.configureEach {
+// The gametest mod is for the gametest run and the photo booth only.
+neoForge.runs.matching { it.name != 'gameTestServer' && it.name != 'photoBooth' }.configureEach {
     loadedMods = neoForge.mods.matching { it.name != "${mod_id}_gametest" }
 }
 
@@ -115,7 +135,7 @@ dependencies {
     jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
         version {
             strictly "[1.2,2.0)"
-            prefer "1.2.0"
+            prefer "1.2.2"
         }
     }
 

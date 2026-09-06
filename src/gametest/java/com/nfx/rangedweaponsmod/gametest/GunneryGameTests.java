@@ -79,7 +79,11 @@ public final class GunneryGameTests {
         layFloor(helper);
         Player player = helper.makeMockPlayer(GameType.SURVIVAL);
         Vec3 at = helper.absoluteVec(new Vec3(1.5, 1.0, 4.5));
+        // moveTo sets the body yaw; a living entity looks along its *head*
+        // yaw, so that is set too, or the mock keeps facing south.
         player.moveTo(at.x, at.y, at.z, -90.0f, 0.0f);
+        player.setYHeadRot(-90.0f);
+        player.setYBodyRot(-90.0f);
         ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());
         RangedWeapon weapon = RangedWeapons.resolve(gun);
         if (weapon == null) {
