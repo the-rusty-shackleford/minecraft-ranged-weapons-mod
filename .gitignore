@@ -1,0 +1,20 @@
+# --- Gradle / build output ---------------------------------------------
+build/
+.gradle/
+out/
+
+# --- Dev run directory --------------------------------------------------
+# `runClient` / `runServer` write a whole Minecraft installation here, and
+# `devtools/run-test.sh` wipes and recreates run/world on every pass.
+run/
+
+# --- Vendored dependency ------------------------------------------------
+# Another Gun Mod is All Rights Reserved and must never be committed. It is
+# `compileOnly` -- nothing from it is bundled into the built mod -- and each
+
+# --- Editors / OS -------------------------------------------------------
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.swp

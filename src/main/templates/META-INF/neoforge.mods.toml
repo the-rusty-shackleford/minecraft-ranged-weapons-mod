@@ -1,0 +1,43 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="Rusty Shackleford"
+description='''
+Guns for players, on the Ranged Weapons protocol.
+
+Hold to fire, reload from your inventory, recoil that settles instead of
+fighting your mouse, an ammo counter beside the hotbar. Every gun is data: a
+profile in the rangedweapons:weapons data map says what it holds, how fast it
+fires and how hard it hits, so a datapack can retune it or add another.
+
+Because the guns are protocol weapons, any mob that arms itself through the
+protocol - Armed Pillagers, for one - can use them too.
+'''
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# The protocol this mod's guns are operated through. Nested in this jar, so it
+# is always present; AFTER so its registrations exist before ours run.
+[[dependencies.${mod_id}]]
+    modId="rangedweapons"
+    type="required"
+    versionRange="[1.1,2.0)"
+    ordering="AFTER"
+    side="BOTH"
