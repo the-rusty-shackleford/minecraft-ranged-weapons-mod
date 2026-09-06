@@ -188,7 +188,7 @@ public final class PlayerGunnery {
     private static Gunnery fire(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                 WeaponStats stats, long now, Gunnery gunnery, boolean unlimited) {
         Vec3 look = player.getViewVector(1.0f);
-        Vec3 origin = muzzle(player, look);
+        Vec3 origin = muzzle(player, look, gunnery.aiming());
         if (!level.getBlockState(BlockPos.containing(origin)).getCollisionShape(level, BlockPos.containing(origin)).isEmpty()) {
             origin = player.getEyePosition();   // the muzzle is in a wall: shoot from the eye, not from inside it
         }
@@ -294,8 +294,17 @@ public final class PlayerGunnery {
         return toTarget.dot(look) > 1e-3 ? toTarget : look;
     }
 
-    /** effects: returns where the muzzle is: forward of the eye, out to the main-hand side, a little down */
-    public static Vec3 muzzle(Player player, Vec3 look) {
+    /**
+     * effects: returns where the muzzle is: forward of the eye, and, from
+     * the hip, out to the main-hand side and a little down; aiming down the
+     * sights, the gun is at the eye and the muzzle is on the line of sight,
+     * or a scope's magnification would show the round leaving from the
+     * corner of the view
+     */
+    public static Vec3 muzzle(Player player, Vec3 look, boolean aiming) {
+        if (aiming) {
+            return player.getEyePosition().add(look.scale(MUZZLE_FORWARD));
+        }
         double side = player.getMainArm() == HumanoidArm.RIGHT ? MUZZLE_SIDE : -MUZZLE_SIDE;
         Vec3 right = new Vec3(-look.z, 0.0, look.x);
         double length = right.length();

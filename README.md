@@ -82,7 +82,9 @@ red at a fifth of a magazine, with a progress bar during a reload. Hidden with
 the rest of the HUD (`F1`).
 
 **Where a round goes.** It leaves the muzzle -- forward, to the main-hand
-side, a little below the eye -- aimed at the point the crosshair is on: the
+side, a little below the eye; on the line of sight when aiming, or a scope
+would show it leaving from the corner of the view -- aimed at the point the
+crosshair is on: the
 first block in the eye's line of sight, or far along the look if there is
 none. A round fired parallel to the look from a muzzle below the eye would
 land below the crosshair at every distance, and did until this was fixed.
@@ -96,7 +98,7 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 | | Pistol | Shotgun | Rifle | Scoped rifle | Machine gun |
 |---|---|---|---|---|---|
 | Class | sidearm | shotgun | rifle | rifle | automatic |
-| Fire | one per pull, 6 ticks | one per pull, 18 ticks (the pump) | one per pull, 12 ticks | one per pull, 25 ticks (the bolt) | held, every 3 ticks |
+| Fire | one per pull, 5 ticks | one per pull, 13 ticks (the pump) | one per pull, 6 ticks | one per pull, 10 ticks (the bolt) | held, every 3 ticks |
 | Magazine | 12 small rounds | 6 shells | 10 medium rounds | 5 medium rounds | 50 medium rounds |
 | Damage | 4 | 6 pellets of 3.5 | 9 | 14 | 5.5 |
 | Falls off | to half past 28 blocks, from 10 | to a fifth past 18 blocks, from 5 | no | no | no |
@@ -189,7 +191,8 @@ other two are for eyes and hands.
   free; the real `PlayerTickEvent` path drives a placed player; every gun
   resolves with its own numbers; a semi-automatic fires once however long
   the trigger is held and again on the next pull; the shotgun throws six
-  pellets for one shell; and aiming is remembered. **The server's exit
+  pellets for one shell; aiming is remembered; and an aimed round leaves
+  from the line of sight where a hip shot leaves from beside it. **The server's exit
   code is not the assertion** -- it is zero when no test ran -- so the task
   reads the framework's "All N required tests passed" line from
   `run/logs/latest.log` and fails without it. `-PskipGameTests` drops it from

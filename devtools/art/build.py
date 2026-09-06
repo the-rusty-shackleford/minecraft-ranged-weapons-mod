@@ -552,18 +552,46 @@ def slapback(samples, delays_ms, gains):
     return out
 
 
-def gunshot(seed, seconds, crack, body, sweep_hz, sub_hz, sub_decay, tail_hz, tail_decay, bolt):
+def mechanism(n, seed, events):
+    """Sounds of the gun's action after the shot, at the seconds given:
+    a "clack" is a short burst of bright noise with a low thunk under it (a
+    pump racked, a magazine seated); a "ring" is a metallic ping (a bolt
+    handle, a slide). Each event is (seconds, kind, gain)."""
+    out = [0.0] * n
+    noise = Noise(seed)
+    for at, kind, gain in events:
+        i0 = int(at * RATE)
+        if kind == "clack":
+            length = int(0.035 * RATE)
+            burst = highpass(lowpass2([noise.next() * 2 - 1 for _ in range(length)], 3500), 1200)
+            for i, b in enumerate(burst):
+                tt = i / RATE
+                if i0 + i < n:
+                    out[i0 + i] += gain * (b * math.exp(-tt * 90) + 0.6 * math.sin(2 * math.pi * 170 * tt) * math.exp(-tt * 60))
+        else:
+            length = int(0.09 * RATE)
+            for i in range(length):
+                tt = i / RATE
+                if i0 + i < n:
+                    out[i0 + i] += gain * (math.sin(2 * math.pi * 2600 * tt) + 0.5 * math.sin(2 * math.pi * 4100 * tt)) * math.exp(-tt * 350)
+    return out
+
+
+def gunshot(seed, seconds, crack, body, sweep_hz, sub_hz, sub_decay, tail_hz, tail_decay, bolt,
+            band=(150, 1500), body_decay=35, sub_gain=0.8, slap=((58, 0.4), (131, 0.25), (227, 0.12)),
+            mech=(), drive=2.4, top_hz=7000):
     """
     A gunshot in five parts, mixed then saturated:
 
     crack  the first few milliseconds of full-band noise, the supersonic snap
-    body   noise between 150 Hz and 1.5 kHz decaying fast, with a sine that
+    body   noise in the band, decaying at body_decay, with a sine that
            sweeps from sweep_hz down to sub_hz in the first tens of ms --
            the muzzle blast, and where the "boom" lives
     sub    a sine at sub_hz with a slow decay, the weight in the chest
-    tail   lowpassed noise decaying slowly with slapback, the report
-           rolling away
-    bolt   a metallic ring 30 ms in, the action cycling
+    tail   lowpassed noise decaying slowly with slapback (ms, gain) pairs,
+           the report rolling away
+    bolt   a metallic ring 30 ms in, the action cycling; and any further
+           mechanism events after it (see mechanism)
     """
     n = int(RATE * seconds)
     noise = Noise(seed)
@@ -572,8 +600,8 @@ def gunshot(seed, seconds, crack, body, sweep_hz, sub_hz, sub_decay, tail_hz, ta
 
     crack_part = [r * math.exp(-t * 900) * crack for r, t in zip(raw, ts)]
 
-    banded = highpass(lowpass2(raw, 1500), 150)
-    body_part = [b * math.exp(-t * 35) * body for b, t in zip(banded, ts)]
+    banded = highpass(lowpass2(raw, band[1]), band[0])
+    body_part = [b * math.exp(-t * body_decay) * body for b, t in zip(banded, ts)]
 
     phase, sweep_part = 0.0, []
     for t in ts:
@@ -581,20 +609,22 @@ def gunshot(seed, seconds, crack, body, sweep_hz, sub_hz, sub_decay, tail_hz, ta
         phase += 2 * math.pi * f / RATE
         sweep_part.append(math.sin(phase) * math.exp(-t * 28) * 0.9)
 
-    sub_part = [math.sin(2 * math.pi * sub_hz * t) * math.exp(-t * sub_decay) * (1 - math.exp(-t * 400)) * 0.8
+    sub_part = [math.sin(2 * math.pi * sub_hz * t) * math.exp(-t * sub_decay) * (1 - math.exp(-t * 400)) * sub_gain
                 for t in ts]
 
     tail_src = lowpass2(raw, tail_hz)
     tail_part = [s * math.exp(-t * tail_decay) * (1 - math.exp(-t * 150)) * 0.7 for s, t in zip(tail_src, ts)]
-    tail_part = slapback(tail_part, (58, 131, 227), (0.4, 0.25, 0.12))
+    tail_part = slapback(tail_part, [ms for ms, _ in slap], [g for _, g in slap])
 
     bolt_part = [(math.sin(2 * math.pi * 2600 * (t - 0.03)) + 0.5 * math.sin(2 * math.pi * 4100 * (t - 0.03)))
                  * math.exp(-(t - 0.03) * 350) * bolt if t >= 0.03 else 0.0 for t in ts]
 
-    mix = [c + b + s + u + tl + bo for c, b, s, u, tl, bo in
-           zip(crack_part, body_part, sweep_part, sub_part, tail_part, bolt_part)]
+    mech_part = mechanism(n, seed ^ 0x55AA, mech)
+
+    mix = [c + b + s + u + tl + bo + m for c, b, s, u, tl, bo, m in
+           zip(crack_part, body_part, sweep_part, sub_part, tail_part, bolt_part, mech_part)]
     # The saturation grows harmonics without limit; roll off the fizz.
-    return normalize(lowpass2(saturate(mix, 2.4), 7000))
+    return normalize(lowpass2(saturate(mix, drive), top_hz))
 
 
 def machine_gun_shot():
@@ -604,27 +634,39 @@ def machine_gun_shot():
 
 
 def pistol_shot():
-    # Snappier and higher than the machine gun; a short slide clack.
-    return gunshot(seed=0x51A7, seconds=0.32, crack=1.0, body=1.2, sweep_hz=260, sub_hz=70,
-                   sub_decay=30, tail_hz=1500, tail_decay=16, bolt=0.45)
+    # Snappy and bright, a short bark, the slide clacking home just after.
+    return gunshot(seed=0x51A7, seconds=0.36, crack=1.2, body=1.3, sweep_hz=300, sub_hz=80,
+                   sub_decay=30, tail_hz=1400, tail_decay=14, bolt=0.0,
+                   band=(200, 2200), body_decay=50, sub_gain=0.5,
+                   slap=((45, 0.3), (110, 0.15)), mech=((0.05, "ring", 0.45),))
 
 
 def shotgun_shot():
-    # A deep boom with weight and a long roll; almost no mechanism in it.
-    return gunshot(seed=0x5406, seconds=0.62, crack=0.8, body=2.2, sweep_hz=140, sub_hz=44,
-                   sub_decay=12, tail_hz=700, tail_decay=7, bolt=0.12)
+    # The boom: a hard front, a deep wide body that rolls, weight underneath,
+    # a long low tail with room in it -- and then the pump, racked: two clacks.
+    return gunshot(seed=0x5406, seconds=0.9, crack=1.1, body=3.2, sweep_hz=110, sub_hz=40,
+                   sub_decay=12, tail_hz=450, tail_decay=4.5, bolt=0.0,
+                   band=(90, 900), body_decay=22, sub_gain=0.7,
+                   slap=((70, 0.5), (160, 0.3), (300, 0.18)),
+                   mech=((0.42, "clack", 0.9), (0.58, "clack", 1.0)), drive=2.8, top_hz=6000)
 
 
 def rifle_shot():
-    # A hard crack and a long tail: the sound of a round going a long way.
-    return gunshot(seed=0x21F1, seconds=0.5, crack=1.3, body=1.5, sweep_hz=210, sub_hz=50,
-                   sub_decay=20, tail_hz=1200, tail_decay=9, bolt=0.5)
+    # A whip-crack: the snap dominates, the body is short and sharp, and the
+    # report echoes away across the valley in four diminishing returns.
+    return gunshot(seed=0x21F1, seconds=0.9, crack=1.7, body=1.4, sweep_hz=240, sub_hz=55,
+                   sub_decay=18, tail_hz=900, tail_decay=5, bolt=0.35,
+                   band=(250, 2500), body_decay=45, sub_gain=0.6,
+                   slap=((90, 0.45), (210, 0.3), (380, 0.2), (600, 0.1)), drive=2.6)
 
 
 def scoped_rifle_shot():
-    # Heavier still, and the bolt rings as it is worked.
-    return gunshot(seed=0x5C0E, seconds=0.6, crack=1.4, body=1.7, sweep_hz=180, sub_hz=46,
-                   sub_decay=16, tail_hz=1000, tail_decay=8, bolt=0.7)
+    # Heavier still, the same echo, and the bolt worked after: open, close.
+    return gunshot(seed=0x5C0E, seconds=1.0, crack=1.8, body=1.6, sweep_hz=200, sub_hz=48,
+                   sub_decay=15, tail_hz=800, tail_decay=4.5, bolt=0.3,
+                   band=(220, 2400), body_decay=40, sub_gain=0.8,
+                   slap=((90, 0.45), (210, 0.3), (380, 0.2), (600, 0.1)),
+                   mech=((0.5, "ring", 0.7), (0.52, "clack", 0.6), (0.68, "clack", 0.7), (0.7, "ring", 0.5)), drive=2.6)
 
 
 def far_shot():

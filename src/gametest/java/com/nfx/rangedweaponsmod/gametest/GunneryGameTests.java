@@ -229,10 +229,10 @@ public final class GunneryGameTests {
     public void everyGunResolvesWithItsOwnNumbers(GameTestHelper helper) {
         record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family) {}
         for (Expected e : List.of(
-                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 12, 6, 1, true, "small"),
-                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 18, 6, true, "shell"),
-                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 10, 12, 1, false, "medium"),
-                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 5, 25, 1, false, "medium"),
+                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 12, 5, 1, true, "small"),
+                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 13, 6, true, "shell"),
+                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 10, 6, 1, false, "medium"),
+                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 5, 10, 1, false, "medium"),
                 new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 50, 3, 1, false, "medium"))) {
             ItemStack stack = new ItemStack(e.item());
             RangedWeapon weapon = RangedWeapons.resolve(stack);
@@ -275,6 +275,36 @@ public final class GunneryGameTests {
             int pellets = helper.getLevel().getEntities(Fallback.BULLET.get(), helper.getBounds(), e -> true).size();
             helper.assertValueEqual(pellets, 6, "pellets in the air one tick after the shot");
             helper.assertValueEqual(g.weapon().rounds(g.gun()), 5, "one shell for all six");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 40)
+    public void anAimedRoundLeavesFromTheLineOfSight(GameTestHelper helper) {
+        // Facing +X: from the hip the muzzle is out to +Z (the right hand) and
+        // down; aimed, it is on the eye's line. The round is read where it
+        // spawns, in the tick it is fired, since it then flies toward the
+        // crosshair and the offset closes.
+        Gunner g = gunner(helper, CAPACITY, 0);
+        double eyeZ = g.player().getEyePosition().z;
+        PlayerGunnery.onTrigger(g.player(), true);
+        helper.runAtTickTime(1, () -> {
+            PlayerGunnery.tick(g.player(), helper.getLevel());
+            var bullets = helper.getLevel().getEntities(Fallback.BULLET.get(), helper.getBounds(), e -> true);
+            helper.assertValueEqual(bullets.size(), 1, "one round from the hip");
+            double off = Math.abs(bullets.get(0).getZ() - eyeZ);
+            helper.assertTrue(off > 0.25, "from the hip the round starts beside the eye line, was " + off + " off");
+            bullets.forEach(net.minecraft.world.entity.Entity::discard);
+            PlayerGunnery.onTrigger(g.player(), false);
+            PlayerGunnery.onAim(g.player(), true);
+            PlayerGunnery.onTrigger(g.player(), true);
+        });
+        helper.runAtTickTime(4, () -> {                     // the clock allows the next round at 4
+            PlayerGunnery.tick(g.player(), helper.getLevel());
+            var bullets = helper.getLevel().getEntities(Fallback.BULLET.get(), helper.getBounds(), e -> true);
+            helper.assertValueEqual(bullets.size(), 1, "one round aimed");
+            double off = Math.abs(bullets.get(0).getZ() - eyeZ);
+            helper.assertTrue(off < 0.01, "aimed, the round starts on the eye line, was " + off + " off");
             helper.succeed();
         });
     }

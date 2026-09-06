@@ -54,7 +54,7 @@ pull or for as long as the trigger is held (`D-0007`).
 
 ## How it is verified
 
-`./gradlew check`: 63 plain-JUnit tests against `domain`, and twenty-three gametests
+`./gradlew check`: 63 plain-JUnit tests against `domain`, and twenty-four gametests
 on a headless server. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
