@@ -20,4 +20,5 @@ thought and someone later would want to know *why*.
 | D-0002 | Hold-to-fire is a press/release message and a server clock, never `Item.use` (superseded by D-0005) |
 | D-0003 | Recoil is a camera offset that recovers, never the player's rotation |
 | D-0004 | The art is generated, and its display transforms were calibrated by photograph |
-| D-0005 | The press is vanilla's use, so interactions win; the release and the clock stay ours |
+| D-0005 | The press is vanilla's use, so interactions win; the release and the clock stay ours (superseded by D-0006) |
+| D-0006 | The click is offered to the target with vanilla's calls, then cancelled: vanilla's item use drops the hand |

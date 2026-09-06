@@ -26,6 +26,12 @@ import com.nfx.rangedweaponsmod.net.TriggerPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -37,14 +43,22 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * Turns the use key into trigger state.
  *
- * <p>The press is vanilla's: the use key runs its ordinary path, so a door
- * or a villager under the crosshair gets the click, and only when nothing
- * in reach wants it does the gun's own {@code use} tell the server the
- * trigger is held. Vanilla has no packet for the key coming up, and it
- * repeats a held use at most every four ticks and never once an item is
- * "in use", so the release is this mod's: when the key comes up, or the
- * gun leaves the hand, or a screen opens, the server is told the trigger is
- * released, once. The server's clock decides every shot in between.
+ * <p>When the use key goes down with a gun in the main hand, the click is
+ * first offered to whatever is under the crosshair, through vanilla's own
+ * methods with vanilla's own reach: an entity is interacted with, a block
+ * is used. If either takes the click, that was the click. If nothing does,
+ * the event is cancelled -- which returns from vanilla's whole use path,
+ * so no item use, no swing, no off-hand attempt -- and the server is told
+ * the trigger is held, once. The one thing vanilla's own item-use path
+ * must never do here is run: a used item drops the hand out of view and
+ * raises it again, the re-equip animation, and at a machine gun's cadence
+ * that is a hand that never stops dropping.
+ *
+ * <p>Vanilla has no packet for the key coming up, and repeats a held use
+ * at most every four ticks, so the release is this mod's: when the key
+ * comes up, or the gun leaves the hand, or a screen opens, the server is
+ * told the trigger is released, once. The server's clock decides every
+ * shot in between.
  *
  * <p>Cost, stated: one boolean per client tick while a gun is held.
  */
@@ -52,9 +66,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class TriggerInput {
     private TriggerInput() {}
 
-    // Whether the server may believe the trigger is held: a use key press
-    // with a gun in hand went to vanilla and has not been followed by our
-    // release. RI: a release is sent exactly once per true-to-false edge.
+    // What the server was last told. RI: true only while the server has been
+    // sent a press that has not been followed by a release.
     private static boolean held = false;
 
     @SubscribeEvent
@@ -62,12 +75,65 @@ public final class TriggerInput {
         if (!event.isUseItem() || event.getHand() != InteractionHand.MAIN_HAND) {
             return;
         }
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || !GunItem.isGun(player.getMainHandItem())) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null || mc.gameMode == null || mc.level == null || !GunItem.isGun(player.getMainHandItem())) {
             return;
         }
-        // Not cancelled: vanilla decides between an interaction and the gun's use.
-        held = true;
+        if (offerClickToTarget(mc, player)) {
+            // Something in reach took it. Vanilla would go on to the item;
+            // it must not (see the class comment), so the event ends here.
+            event.setCanceled(true);
+            event.setSwingHand(false);
+            return;
+        }
+        event.setCanceled(true);
+        event.setSwingHand(false);
+        if (!held) {
+            held = true;
+            PacketDistributor.sendToServer(new TriggerPayload(true));
+        }
+    }
+
+    /**
+     * effects: gives the click to the entity or block under the crosshair
+     * the way vanilla's use path does, with the same calls and so the same
+     * reach and packets; returns whether either consumed it
+     */
+    private static boolean offerClickToTarget(Minecraft mc, LocalPlayer player) {
+        HitResult hit = mc.hitResult;
+        if (hit == null) {
+            return false;
+        }
+        if (hit.getType() == HitResult.Type.ENTITY) {
+            EntityHitResult entityHit = (EntityHitResult) hit;
+            Entity entity = entityHit.getEntity();
+            if (!mc.level.getWorldBorder().isWithinBounds(entity.blockPosition())) {
+                return true;   // vanilla returns without doing anything here
+            }
+            InteractionResult result = mc.gameMode.interactAt(player, entity, entityHit, InteractionHand.MAIN_HAND);
+            if (!result.consumesAction()) {
+                result = mc.gameMode.interact(player, entity, InteractionHand.MAIN_HAND);
+            }
+            if (result.consumesAction()) {
+                if (result.shouldSwing()) {
+                    player.swing(InteractionHand.MAIN_HAND);
+                }
+                return true;
+            }
+            return false;
+        }
+        if (hit.getType() == HitResult.Type.BLOCK) {
+            InteractionResult result = mc.gameMode.useItemOn(player, InteractionHand.MAIN_HAND, (BlockHitResult) hit);
+            if (result.consumesAction()) {
+                if (result.shouldSwing()) {
+                    player.swing(InteractionHand.MAIN_HAND);
+                }
+                return true;
+            }
+            return result == InteractionResult.FAIL;   // vanilla stops on a failed block use too
+        }
+        return false;
     }
 
     // Done on the first client tick, when every mod's config is loaded for

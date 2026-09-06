@@ -20,16 +20,15 @@ package com.nfx.rangedweaponsmod.gametest;
 import com.nfx.rangedweaponsmod.ModItems;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
-import com.nfx.rangedweaponsmod.net.TriggerPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.client.ClientConfig;
 import com.nfx.rangedweaponsmod.client.RecoilCamera;
 import com.nfx.rangedweaponsmod.net.ShotFiredPayload;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -131,12 +130,13 @@ public final class PhotoBooth {
         // read (5 degrees, recovery off), so a frame answers one question:
         // which way does this term move the gun? Then the shipped mix at the
         // plateau a machine gun reaches.
-        kickFrame(s, t, mc, "booth-kick-camera-only", 0.0, 0.0, 0.0);
-        kickFrame(s, t, mc, "booth-kick-rise", 0.1, 0.0, 0.0);
-        kickFrame(s, t, mc, "booth-kick-pitch", 0.0, 8.0, 0.0);
-        kickFrame(s, t, mc, "booth-kick-yaw", 0.0, 0.0, 8.0);
+        kickFrame(s, t, mc, "booth-kick-camera-only", 0.0, 0.0, 0.0, 0.0);
+        kickFrame(s, t, mc, "booth-kick-back", 0.1, 0.0, 0.0, 0.0);
+        kickFrame(s, t, mc, "booth-kick-rise", 0.0, 0.1, 0.0, 0.0);
+        kickFrame(s, t, mc, "booth-kick-pitch", 0.0, 0.0, 8.0, 0.0);
+        kickFrame(s, t, mc, "booth-kick-yaw", 0.0, 0.0, 0.0, 8.0);
         s.add(new Step(t[0] += 5, () -> {
-            ClientConfig.MODEL_RISE.set(0.1); ClientConfig.MODEL_PITCH.set(6.0); ClientConfig.MODEL_YAW.set(1.0);
+            shippedKick();
             RecoilCamera.reset();
         }));
         s.add(new Step(t[0] += 1, () -> RecoilCamera.onShotFired(new ShotFiredPayload(0.55f, 0.25f, 0.35f))));
@@ -148,6 +148,7 @@ public final class PhotoBooth {
         // trigger held by the same message the client sends, rounds spent
         // on the integrated server and synced back. What the player sees.
         s.add(new Step(t[0] += 20, () -> onServer(mc, sp -> {
+            shippedKick();
             sp.setGameMode(GameType.SURVIVAL);
             ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());
             RangedWeapon weapon = RangedWeapons.resolve(gun);
@@ -157,12 +158,17 @@ public final class PhotoBooth {
             sp.setItemInHand(InteractionHand.MAIN_HAND, gun);
         })));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-burst-0")));
-        s.add(new Step(t[0] += 1, () -> PacketDistributor.sendToServer(new TriggerPayload(true))));
+        // The use key itself, pressed and held the way a mouse does it, so
+        // every step of the client's click path runs -- not our message.
+        s.add(new Step(t[0] += 1, () -> {
+            KeyMapping.set(mc.options.keyUse.getKey(), true);
+            KeyMapping.click(mc.options.keyUse.getKey());
+        }));
         s.add(new Step(t[0] += 2, () -> shoot(mc, "booth-burst-1")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-2")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-3")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-4")));
-        s.add(new Step(t[0] += 1, () -> PacketDistributor.sendToServer(new TriggerPayload(false))));
+        s.add(new Step(t[0] += 1, () -> KeyMapping.set(mc.options.keyUse.getKey(), false)));
         s.add(new Step(t[0] += 10, () -> onServer(mc, sp -> sp.setGameMode(GameType.CREATIVE))));
         s.add(new Step(t[0] += 20, thirdBack));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-gun-third-back")));
@@ -191,10 +197,19 @@ public final class PhotoBooth {
         return s;
     }
 
+    /** The config's own defaults: what ships. */
+    private static void shippedKick() {
+        ClientConfig.MODEL_BACK.set(ClientConfig.MODEL_BACK.getDefault());
+        ClientConfig.MODEL_RISE.set(ClientConfig.MODEL_RISE.getDefault());
+        ClientConfig.MODEL_PITCH.set(ClientConfig.MODEL_PITCH.getDefault());
+        ClientConfig.MODEL_YAW.set(ClientConfig.MODEL_YAW.getDefault());
+    }
+
     /** One frame under a 5-degree kick all but held (1% recovery) with only the given in-hand terms. */
-    private static void kickFrame(List<Step> s, int[] t, Minecraft mc, String name, double rise, double pitch, double yaw) {
+    private static void kickFrame(List<Step> s, int[] t, Minecraft mc, String name, double back, double rise, double pitch, double yaw) {
         s.add(new Step(t[0] += 5, () -> {
-            ClientConfig.MODEL_RISE.set(rise); ClientConfig.MODEL_PITCH.set(pitch); ClientConfig.MODEL_YAW.set(yaw);
+            ClientConfig.MODEL_BACK.set(back); ClientConfig.MODEL_RISE.set(rise);
+            ClientConfig.MODEL_PITCH.set(pitch); ClientConfig.MODEL_YAW.set(yaw);
             RecoilCamera.reset();
             RecoilCamera.onShotFired(new ShotFiredPayload(5.0f, 5.0f, 0.01f));
         }));

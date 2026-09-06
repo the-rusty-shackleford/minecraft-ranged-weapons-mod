@@ -55,12 +55,14 @@ public final class GunItem extends Item {
     }
 
     /**
-     * The trigger pull. Vanilla reaches this only after the block or entity
-     * under the crosshair, if any is in reach, has declined the click, so a
-     * door opens and a villager trades with a gun in hand; anything else is
-     * a shot. Consumed without a swing and without starting a "use", so
-     * there is no arm wave and no movement slowdown. The release comes from
-     * the client separately: vanilla has no packet for a key coming up.
+     * The trigger pull, should vanilla's use path ever reach it. This mod's
+     * own client does not send it that way -- it offers the click to what
+     * is under the crosshair and then sends its own press, because a
+     * vanilla item use drops the hand out of view (see the client's
+     * {@code TriggerInput}) -- but another client, or a mod driving the
+     * vanilla path, gets a working trigger. Consumed without a swing and
+     * without starting a "use", so there is no arm wave and no movement
+     * slowdown. The release always comes from the client separately.
      *
      * <p>effects: on the server, tells the gunnery the trigger is held (a
      * repeat while already held changes nothing); returns consume for the

@@ -44,8 +44,8 @@ Three source sets, one direction of dependency:
   its calibration items.
 
 Decisions: the protocol's fallback tier operates our guns (`D-0001`); the
-press is vanilla's use path so interactions win, the release is ours, and the
-clock is the server's (`D-0005`, superseding `D-0002`); recoil is a camera
+click is offered to the target with vanilla's own calls and then cancelled,
+because vanilla's item use drops the hand (`D-0006`, superseding `D-0005`); recoil is a camera
 offset that recovers, never the player's rotation (`D-0003`); the art is
 generated and its display transforms and the kick's signs were calibrated by
 photograph (`D-0004`).

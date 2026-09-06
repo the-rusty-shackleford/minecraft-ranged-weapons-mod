@@ -15,15 +15,17 @@ Pillagers](../minecraft-armed-pillagers) does, subject to its own class policy
 
 ## What it does
 
-**Hold to fire.** With a gun in the main hand, the use key runs vanilla's
-ordinary right-click first, so a door, a chest or a villager under the
-crosshair and in reach gets the click. Only when nothing wants it does the
-gun's own use tell the server the trigger is down, and the server runs a
-per-player clock that fires a round every `fire_rate_ticks` until the client
-reports the key up. The item is never "in use" and never on cooldown, so
-there is no hotbar strobe, no 0.2x movement slowdown, and the cadence is the
-server's, not the client's frame rate. Firing breaks a sprint, the way
-drawing a bow does. A gun in the off hand does nothing.
+**Hold to fire.** With a gun in the main hand, the use key first offers the
+click to whatever is under the crosshair, with vanilla's own calls and reach,
+so a door, a chest or a villager gets it. If nothing takes it, the client
+cancels vanilla's click and tells the server the trigger is down, and the
+server runs a per-player clock that fires a round every `fire_rate_ticks`
+until the client reports the key up. Vanilla's own item use never runs: it
+would drop the hand out of view on every press (its re-equip animation), the
+item is never "in use" and never on cooldown, so there is no hotbar strobe,
+no 0.2x movement slowdown, and the cadence is the server's, not the client's
+frame rate. Firing breaks a sprint, the way drawing a bow does. A gun in the
+off hand does nothing.
 
 **Reload.** `R` reloads; so does pulling the trigger on an empty magazine when
 you carry the gun's ammunition (with none, the gun clicks once per pull). A
@@ -42,8 +44,9 @@ per tick. Kicks add and settle: firing full auto lifts the aim to a plateau
 and lets it back down, with no snap between shots. The player's actual look
 angles are never written -- the offset is added to the camera as each frame is
 computed -- so nothing fights the mouse and nothing drifts. The gun in hand
-rises and tilts muzzle-up about its grip with the same offset, exaggerated
-so the eye reads it; how much is three client config knobs. Both are scaled by the client
+is pushed back toward the shoulder with the same offset, lifted enough to
+hold its place on screen as it comes closer, and tilted muzzle-up about its
+grip; how much is four client config knobs. Both are scaled by the client
 config, down to zero.
 
 A spent round is the same gun: vanilla would otherwise play its re-equip
@@ -117,8 +120,9 @@ read everything from the profile and the handling.
 |---|---|---|
 | `recoil.recoilScale` | 1.0 | multiplies the camera kick of every shot; 0 turns it off |
 | `recoil.modelKickScale` | 1.0 | multiplies how much the gun in hand jumps, separately |
-| `recoil.modelRisePerDegree` | 0.1 | blocks the gun in hand rises per degree of camera kick |
-| `recoil.modelPitchPerDegree` | 6.0 | degrees the gun in hand tilts about its grip per degree of kick; positive is muzzle up |
+| `recoil.modelBackPerDegree` | 0.07 | blocks the gun in hand is pushed back toward the shoulder per degree of camera kick |
+| `recoil.modelRisePerDegree` | 0.06 | blocks it rises per degree; about 0.7 of the push holds it level on screen, more lifts it |
+| `recoil.modelPitchPerDegree` | 3.0 | degrees it tilts about its grip per degree of kick; positive is muzzle up |
 | `recoil.modelYawPerDegree` | 1.0 | degrees it swings sideways per degree of sideways kick |
 | `hud.enabled` | true | the ammo counter and reload bar |
 
@@ -160,8 +164,9 @@ other two are for eyes and hands.
   world, poses the gun and takes pictures into `run/screenshots/booth-*.png`:
   first person, each term of the in-hand kick alone under a big kick, the
   shipped kick at a machine gun's plateau, a real five-round burst in
-  survival through the real trigger path (this is the frame that shows what
-  a player sees; a synthetic kick alone does not), third person from behind and in
+  survival fired by pressing the use key itself (this is the frame that
+  shows what a player sees; a synthetic kick, or even the trigger message
+  sent directly, does not), third person from behind and in
   front, the inventory, and each calibration item the gametest mod registers
   (an axes model under candidate display transforms, carried two-handed like
   the gun). It quits when done. Leave it alone while it runs: any input

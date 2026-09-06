@@ -30,6 +30,7 @@ public final class ClientConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue RECOIL_SCALE;
     public static final ModConfigSpec.DoubleValue MODEL_KICK_SCALE;
+    public static final ModConfigSpec.DoubleValue MODEL_BACK;
     public static final ModConfigSpec.DoubleValue MODEL_RISE;
     public static final ModConfigSpec.DoubleValue MODEL_PITCH;
     public static final ModConfigSpec.DoubleValue MODEL_YAW;
@@ -50,13 +51,18 @@ public final class ClientConfig {
                 .comment("Scales how much the gun in your hand jumps with each shot, separately from the camera.")
                 .defineInRange("modelKickScale", 1.0D, 0.0D, 3.0D);
 
+        MODEL_BACK = builder
+                .comment("Blocks the gun in your hand is pushed back toward your shoulder per degree of camera kick.")
+                .defineInRange("modelBackPerDegree", 0.07D, -0.5D, 0.5D);
+
         MODEL_RISE = builder
-                .comment("Blocks the gun in your hand rises on screen per degree of camera kick.")
-                .defineInRange("modelRisePerDegree", 0.1D, -0.3D, 0.3D);
+                .comment("Blocks the gun in your hand rises per degree of camera kick. A gun pushed back grows and, low on screen,",
+                        "slides down in perspective; about 0.7 of the push in rise holds it level, more lifts it.")
+                .defineInRange("modelRisePerDegree", 0.06D, -0.3D, 0.3D);
 
         MODEL_PITCH = builder
                 .comment("Degrees the gun in your hand tilts about its grip per degree of camera kick. Positive is muzzle up.")
-                .defineInRange("modelPitchPerDegree", 6.0D, -30.0D, 30.0D);
+                .defineInRange("modelPitchPerDegree", 3.0D, -30.0D, 30.0D);
 
         MODEL_YAW = builder
                 .comment("Degrees the gun in your hand swings sideways per degree of sideways camera kick.")

@@ -48,12 +48,13 @@ public final class RecoilCamera {
     private RecoilCamera() {}
 
     // The camera's kick is under a degree a shot; the gun in hand exaggerates
-    // it, or the eye reads nothing. The three terms are client config, read
-    // live: a rise that lifts the whole gun on screen, a tilt about the grip
-    // that puts the muzzle up, a sideways swing about the same pivot. The
-    // pivot matters: tilting about the camera's origin instead swung the
-    // body through an arc that undid the rise. Signs and pivot were settled
-    // in the photo booth's isolated-term frames, not derived.
+    // it, or the eye reads nothing. The four terms are client config, read
+    // live: a push back toward the shoulder, which is most of what a gun
+    // does; a rise; a tilt about the grip that puts the muzzle up; a
+    // sideways swing about the same pivot. The pivot matters: tilting about
+    // the camera's origin instead swung the body through an arc. Signs and
+    // pivot were settled in the photo booth's isolated-term frames, not
+    // derived.
 
     /** Where vanilla holds the main-hand item, from {@code ItemInHandRenderer.applyItemArmTransform}. */
     private static final float GRIP_X = 0.56f;
@@ -104,7 +105,8 @@ public final class RecoilCamera {
         // Not cancelled: these transforms are on the stack vanilla goes on
         // to render the arm and item with.
         PoseStack pose = event.getPoseStack();
-        pose.translate(0.0f, sample.pitch() * ClientConfig.MODEL_RISE.get().floatValue() * scale, 0.0f);
+        pose.translate(0.0f, sample.pitch() * ClientConfig.MODEL_RISE.get().floatValue() * scale,
+                sample.pitch() * ClientConfig.MODEL_BACK.get().floatValue() * scale);
         // The tilt pivots on the grip, not the camera: a rotation about the
         // camera's origin swings the whole gun through an arc, and a
         // muzzle-up tilt then drags the body down by nearly what the rise
