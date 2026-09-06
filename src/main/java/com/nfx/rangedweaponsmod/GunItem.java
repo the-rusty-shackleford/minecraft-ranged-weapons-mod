@@ -21,6 +21,10 @@ import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -48,6 +52,30 @@ public final class GunItem extends Item {
     /** effects: returns whether {@code stack} is a gun this mod's trigger works on */
     public static boolean isGun(ItemStack stack) {
         return !stack.isEmpty() && stack.getItem() instanceof GunItem;
+    }
+
+    /**
+     * The trigger pull. Vanilla reaches this only after the block or entity
+     * under the crosshair, if any is in reach, has declined the click, so a
+     * door opens and a villager trades with a gun in hand; anything else is
+     * a shot. Consumed without a swing and without starting a "use", so
+     * there is no arm wave and no movement slowdown. The release comes from
+     * the client separately: vanilla has no packet for a key coming up.
+     *
+     * <p>effects: on the server, tells the gunnery the trigger is held (a
+     * repeat while already held changes nothing); returns consume for the
+     * main hand, pass for the off hand, which is not operated
+     */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (hand != InteractionHand.MAIN_HAND) {
+            return InteractionResultHolder.pass(stack);
+        }
+        if (!level.isClientSide) {
+            PlayerGunnery.onTrigger(player, true);
+        }
+        return InteractionResultHolder.consume(stack);
     }
 
     @Override

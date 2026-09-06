@@ -44,23 +44,25 @@ Three source sets, one direction of dependency:
   its calibration items.
 
 Decisions: the protocol's fallback tier operates our guns (`D-0001`); the
-input path is a press/release message and a server clock, never `Item.use`
-(`D-0002`); recoil is a camera offset that recovers, never the player's
-rotation (`D-0003`); the art is generated and its display transforms were
-calibrated by photograph (`D-0004`).
+press is vanilla's use path so interactions win, the release is ours, and the
+clock is the server's (`D-0005`, superseding `D-0002`); recoil is a camera
+offset that recovers, never the player's rotation (`D-0003`); the art is
+generated and its display transforms and the kick's signs were calibrated by
+photograph (`D-0004`).
 
 ## How it is verified
 
-`./gradlew check`: 58 plain-JUnit tests against `domain`, and thirteen gametests
+`./gradlew check`: 58 plain-JUnit tests against `domain`, and sixteen gametests
 on a headless server. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
 
 ## Depends on
 
-- `minecraft-ranged-weapons` 1.2.2 or later within 1.x (nested Jar-in-Jar;
-  built to Maven Local first). Needs 1.2 for the synced data map, the muzzle
-  origin in `ShotReport.play` and the non-saving fallback bullet.
+- `minecraft-ranged-weapons` 1.3.0 or later within 1.x (nested Jar-in-Jar;
+  built to Maven Local first). Needs 1.3 for the block impact and the Hold
+  My Items hook; 1.2 for the synced data map, the muzzle origin in
+  `ShotReport.play` and the non-saving fallback bullet.
 
 ## License
 

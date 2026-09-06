@@ -17,6 +17,7 @@ thought and someone later would want to know *why*.
 | Id | Topic |
 |----|-------|
 | D-0001 | The protocol's fallback tier operates our guns |
-| D-0002 | Hold-to-fire is a press/release message and a server clock, never `Item.use` |
+| D-0002 | Hold-to-fire is a press/release message and a server clock, never `Item.use` (superseded by D-0005) |
 | D-0003 | Recoil is a camera offset that recovers, never the player's rotation |
 | D-0004 | The art is generated, and its display transforms were calibrated by photograph |
+| D-0005 | The press is vanilla's use, so interactions win; the release and the clock stay ours |

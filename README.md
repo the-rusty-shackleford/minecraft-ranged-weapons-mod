@@ -15,13 +15,15 @@ Pillagers](../minecraft-armed-pillagers) does, subject to its own class policy
 
 ## What it does
 
-**Hold to fire.** With a gun in the main hand, the use key no longer runs
-vanilla's right-click: the client sends one message on press and one on
-release, and the server runs a per-player clock that fires a round every
-`fire_rate_ticks` while the trigger is down. Nothing goes through
-`Item.use`, so there is no hotbar cooldown strobe, no 0.2x movement slowdown
-for "using" an item, and the cadence is the server's, not the client's frame
-rate. Firing breaks a sprint, the way drawing a bow does.
+**Hold to fire.** With a gun in the main hand, the use key runs vanilla's
+ordinary right-click first, so a door, a chest or a villager under the
+crosshair and in reach gets the click. Only when nothing wants it does the
+gun's own use tell the server the trigger is down, and the server runs a
+per-player clock that fires a round every `fire_rate_ticks` until the client
+reports the key up. The item is never "in use" and never on cooldown, so
+there is no hotbar strobe, no 0.2x movement slowdown, and the cadence is the
+server's, not the client's frame rate. Firing breaks a sprint, the way
+drawing a bow does. A gun in the off hand does nothing.
 
 **Reload.** `R` reloads; so does pulling the trigger on an empty magazine when
 you carry the gun's ammunition (with none, the gun clicks once per pull). A
@@ -40,8 +42,20 @@ per tick. Kicks add and settle: firing full auto lifts the aim to a plateau
 and lets it back down, with no snap between shots. The player's actual look
 angles are never written -- the offset is added to the camera as each frame is
 computed -- so nothing fights the mouse and nothing drifts. The gun in hand
-jolts with the same offset. Both are scaled by the client config, down to
-zero.
+rises and tilts muzzle-up with the same offset, exaggerated so the eye reads
+it; how much is three client config knobs. Both are scaled by the client
+config, down to zero.
+
+**Two hands.** In third person the gun is carried in both hands, the way a
+crossbow is. In first person, if Hold My Items is installed, the guns write
+themselves into its exclusion list on the first client tick so they are held
+as their models say rather than in that mod's one-handed pose; see the
+protocol's README.
+
+**Blocks and bullets** are the protocol's: a round throws debris and sparks
+off what it hits, and a player's rounds shatter glass at once, wear stone
+down over several, and never mark obsidian. Whose rounds may break what is
+the protocol's config.
 
 **The counter.** Rounds over capacity beside the hotbar while a gun is held,
 red at a fifth of a magazine, with a progress bar during a reload. Hidden with
@@ -58,7 +72,7 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 |---|---|
 | Magazine | 50 rounds of `rangedweaponsmod:round` |
 | Rate | a round every 3 ticks (about 6.7 per second) |
-| Damage | 5 per round, 1 round per shot |
+| Damage | 5.5 per round, 1 round per shot |
 | Spread | 0.05, times 0.7 crouching, 1.4 moving, 2.0 sprinting, 1.8 airborne |
 | Reach | 28 blocks engagement range; rounds fly 4 blocks a tick for 5 seconds |
 | Reload | 50 ticks (2.5 s) |
@@ -97,6 +111,9 @@ read everything from the profile and the handling.
 |---|---|---|
 | `recoil.recoilScale` | 1.0 | multiplies the camera kick of every shot; 0 turns it off |
 | `recoil.modelKickScale` | 1.0 | multiplies how much the gun in hand jumps, separately |
+| `recoil.modelRisePerDegree` | 0.1 | blocks the gun in hand rises per degree of camera kick |
+| `recoil.modelPitchPerDegree` | -4.0 | degrees the gun in hand tilts per degree of kick; negative is muzzle up |
+| `recoil.modelYawPerDegree` | 1.0 | degrees it swings sideways per degree of sideways kick |
 | `hud.enabled` | true | the ammo counter and reload bar |
 
 ## Building
@@ -125,18 +142,23 @@ other two are for eyes and hands.
   outside: the data resolves to a weapon with the right capacity; a held
   trigger fires at the profile's rate and a release stops it; an empty pull
   starts a reload only with ammunition in the inventory; a reload takes its
-  full time, consumes exactly what it loads, and blocks fire meanwhile; and
-  the real `PlayerTickEvent` path drives a placed player. **The server's exit
+  full time, consumes exactly what it loads, and blocks fire meanwhile; the
+  gun's use is the press, consumed without a swing, a repeat is not a new
+  pull, and the off hand is not operated; creative fires an empty gun for
+  free; and the real `PlayerTickEvent` path drives a placed player. **The server's exit
   code is not the assertion** -- it is zero when no test ran -- so the task
   reads the framework's "All N required tests passed" line from
   `run/logs/latest.log` and fails without it. `-PskipGameTests` drops it from
   `check` for fast iteration on the pure tests.
 - `./gradlew runPhotoBooth` -- a dev client that quick-plays the gametest
   world, poses the gun and takes pictures into `run/screenshots/booth-*.png`:
-  first person, mid-recoil, third person from behind and in front, the
-  inventory, and each calibration item the gametest mod registers (the gun's
-  model under candidate display transforms). It quits when done. Leave it
-  alone while it runs: any input becomes part of the photos.
+  first person, each term of the in-hand kick alone under a big kick, the
+  shipped kick at a machine gun's plateau, third person from behind and in
+  front, the inventory, and each calibration item the gametest mod registers
+  (an axes model under candidate display transforms, carried two-handed like
+  the gun). It quits when done. Leave it alone while it runs: any input
+  becomes part of the photos. This is how the display transforms and the
+  kick's signs were found; none of them are what one would derive.
 - A feel test in `./gradlew runClient`: `/give @s rangedweaponsmod:machine_gun`
   and a stack of rounds. Cadence, recoil and reload are judged by hand; the
   numbers to tune are in the data files above.

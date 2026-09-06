@@ -17,7 +17,9 @@
  */
 package com.nfx.rangedweaponsmod.client;
 
+import com.nfx.rangedweapons.client.compat.HoldMyItems;
 import com.nfx.rangedweaponsmod.GunItem;
+import com.nfx.rangedweaponsmod.ModItems;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.net.ReloadPayload;
 import com.nfx.rangedweaponsmod.net.TriggerPayload;
@@ -35,14 +37,14 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * Turns the use key into trigger state.
  *
- * <p>Vanilla's right-click cannot drive a gun: it repeats a use at most
- * every four ticks, stops repeating once an item is in use, and slows a
- * player using an item to a fifth of their speed. So when the use key goes
- * down with a gun in the main hand, the click is cancelled -- no use packet,
- * no block or entity interaction, no arm swing -- and the server is told
- * the trigger is held, once. When the key comes up, or the gun leaves the
- * hand, or a screen opens, the server is told it is released, once. The
- * server's clock decides every shot in between.
+ * <p>The press is vanilla's: the use key runs its ordinary path, so a door
+ * or a villager under the crosshair gets the click, and only when nothing
+ * in reach wants it does the gun's own {@code use} tell the server the
+ * trigger is held. Vanilla has no packet for the key coming up, and it
+ * repeats a held use at most every four ticks and never once an item is
+ * "in use", so the release is this mod's: when the key comes up, or the
+ * gun leaves the hand, or a screen opens, the server is told the trigger is
+ * released, once. The server's clock decides every shot in between.
  *
  * <p>Cost, stated: one boolean per client tick while a gun is held.
  */
@@ -50,8 +52,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class TriggerInput {
     private TriggerInput() {}
 
-    // What the server was last told. RI: true only while the server has been
-    // sent a press that has not been followed by a release.
+    // Whether the server may believe the trigger is held: a use key press
+    // with a gun in hand went to vanilla and has not been followed by our
+    // release. RI: a release is sent exactly once per true-to-false edge.
     private static boolean held = false;
 
     @SubscribeEvent
@@ -63,16 +66,21 @@ public final class TriggerInput {
         if (player == null || !GunItem.isGun(player.getMainHandItem())) {
             return;
         }
-        event.setCanceled(true);
-        event.setSwingHand(false);
-        if (!held) {
-            held = true;
-            PacketDistributor.sendToServer(new TriggerPayload(true));
-        }
+        // Not cancelled: vanilla decides between an interaction and the gun's use.
+        held = true;
     }
+
+    // Done on the first client tick, when every mod's config is loaded for
+    // certain, rather than at a setup event whose order against config
+    // loading would have to be known.
+    private static boolean handsSettled = false;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        if (!handsSettled) {
+            handsSettled = true;
+            HoldMyItems.excludeItems(ModItems.guns());
+        }
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (held) {

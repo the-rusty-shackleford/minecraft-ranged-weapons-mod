@@ -31,6 +31,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
@@ -210,6 +211,48 @@ public final class GunneryGameTests {
             helper.assertEntityPresent(Fallback.BULLET.get());
             helper.succeed();
         });
+    }
+
+    // --- the press, through the item ---------------------------------------
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void theGunsUseIsThePressAndConsumesTheClick(GameTestHelper helper) {
+        Gunner g = gunner(helper, CAPACITY, 0);
+        var result = g.gun().getItem().use(helper.getLevel(), g.player(), InteractionHand.MAIN_HAND);
+        helper.assertTrue(result.getResult().consumesAction(), "the click is consumed, so the off hand is not tried");
+        helper.assertFalse(result.getResult().shouldSwing(), "no arm swing");
+        helper.assertTrue(g.player().getData(ModData.GUNNERY).held(), "the trigger is held after use()");
+        driveTicks(helper, g, 1, 7);                       // shots at 1, 4, 7
+        helper.runAtTickTime(8, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY - 3, "rounds after a use() press held 7 ticks");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void aRepeatedPressWhileHeldDoesNotReArmTheEmptyClick(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);                   // empty, no ammunition: only the click
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 2);
+        helper.runAtTickTime(3, () -> {
+            helper.assertTrue(g.player().getData(ModData.GUNNERY).clickedThisPress(), "clicked once on the pull");
+            PlayerGunnery.onTrigger(g.player(), true);     // vanilla's four-tick repeat of a held use
+            helper.assertTrue(g.player().getData(ModData.GUNNERY).clickedThisPress(), "a repeat is not a new pull");
+            PlayerGunnery.onTrigger(g.player(), false);
+            PlayerGunnery.onTrigger(g.player(), true);
+            helper.assertFalse(g.player().getData(ModData.GUNNERY).clickedThisPress(), "a release and a pull re-arm it");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena")
+    public void theOffHandIsNotOperated(GameTestHelper helper) {
+        Gunner g = gunner(helper, CAPACITY, 0);
+        g.player().setItemInHand(InteractionHand.OFF_HAND, g.gun().copy());
+        var result = g.gun().getItem().use(helper.getLevel(), g.player(), InteractionHand.OFF_HAND);
+        helper.assertFalse(result.getResult().consumesAction(), "an off-hand gun passes the click on");
+        helper.assertFalse(g.player().getData(ModData.GUNNERY).held(), "and pulls no trigger");
+        helper.succeed();
     }
 
     // --- reloading ----------------------------------------------------------

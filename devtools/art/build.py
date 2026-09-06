@@ -232,7 +232,7 @@ def machine_gun_model():
         # 90 that points +X forward with the gun upright.
         "display": {
             "firstperson_righthand": {"rotation": [0, 92, 0], "translation": [1.0, -1.0, -3.0], "scale": [0.58, 0.58, 0.58]},
-            "thirdperson_righthand": {"rotation": [0, 0, 90], "translation": [0, 0, 0], "scale": [0.6, 0.6, 0.6]},
+            "thirdperson_righthand": {"rotation": [0, 90, 0], "translation": [0, 1.0, 1.0], "scale": [0.6, 0.6, 0.6]},
             "gui": {"rotation": [0, 0, 0], "translation": [-0.8, 0, 0], "scale": [0.46, 0.46, 0.46]},
             "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.35, 0.35, 0.35]},
             "fixed": {"rotation": [0, 0, 0], "translation": [-0.8, 0, 0], "scale": [0.45, 0.45, 0.45]},

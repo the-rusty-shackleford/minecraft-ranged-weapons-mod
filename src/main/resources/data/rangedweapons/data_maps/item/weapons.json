@@ -5,7 +5,7 @@
       "capacity": 50,
       "reload_ticks_per_round": 1,
       "fire_rate_ticks": 3,
-      "damage": 5.0,
+      "damage": 5.5,
       "projectiles_per_shot": 1,
       "spread": 0.05,
       "engagement_range": 28.0,

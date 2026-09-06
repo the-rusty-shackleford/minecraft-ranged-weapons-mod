@@ -44,12 +44,12 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 public final class RecoilCamera {
     private RecoilCamera() {}
 
-    /** Degrees of muzzle lift on the hand model per degree of camera kick. */
-    private static final float MODEL_PITCH_PER_DEGREE = 1.1f;
-    /** Degrees of sideways swing on the hand model per degree of camera kick. */
-    private static final float MODEL_YAW_PER_DEGREE = 0.4f;
-    /** Blocks the hand model pushes back toward the shoulder per degree of camera kick. */
-    private static final float MODEL_PUSHBACK_PER_DEGREE = 0.02f;
+    // The camera's kick is under a degree a shot; the gun in hand exaggerates
+    // it, or the eye reads nothing. The three terms are client config, read
+    // live: a rise that lifts the whole gun on screen, a pitch about the
+    // camera that makes the muzzle climb faster than the grip, a sideways
+    // swing. Their signs were settled in the photo booth, not derived: the
+    // hand's frame is not the frame one would guess.
 
     private static Recoil recoil = Recoil.atRest(0.35f);
 
@@ -67,8 +67,8 @@ public final class RecoilCamera {
         }
     }
 
-    /** effects: drops any offset, for a new world */
-    static void reset() {
+    /** effects: drops any offset, for a new world (or a fresh photograph) */
+    public static void reset() {
         recoil = Recoil.atRest(recoil.recovery());
     }
 
@@ -95,8 +95,8 @@ public final class RecoilCamera {
         // Not cancelled: these transforms are on the stack vanilla goes on
         // to render the arm and item with.
         PoseStack pose = event.getPoseStack();
-        pose.translate(0.0f, 0.0f, sample.pitch() * MODEL_PUSHBACK_PER_DEGREE * scale);
-        pose.mulPose(Axis.XP.rotationDegrees(sample.pitch() * MODEL_PITCH_PER_DEGREE * scale));
-        pose.mulPose(Axis.YP.rotationDegrees(sample.yaw() * MODEL_YAW_PER_DEGREE * scale));
+        pose.translate(0.0f, sample.pitch() * ClientConfig.MODEL_RISE.get().floatValue() * scale, 0.0f);
+        pose.mulPose(Axis.XP.rotationDegrees(sample.pitch() * ClientConfig.MODEL_PITCH.get().floatValue() * scale));
+        pose.mulPose(Axis.YP.rotationDegrees(sample.yaw() * ClientConfig.MODEL_YAW.get().floatValue() * scale));
     }
 }

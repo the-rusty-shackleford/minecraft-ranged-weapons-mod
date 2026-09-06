@@ -18,6 +18,15 @@
 package com.nfx.rangedweaponsmod.client;
 
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
+import com.nfx.rangedweaponsmod.ModItems;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
+
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -27,13 +36,21 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
- * The client's mod-bus registrations: the reload key and the ammo counter.
- * Loaded on the client only. The loader routes each event to the mod bus
- * from its type.
+ * The client's mod-bus registrations: the reload key, the ammo counter, and
+ * how a gun is held. Loaded on the client only. The loader routes each
+ * event to the mod bus from its type.
  */
 @EventBusSubscriber(modid = RangedWeaponsMod.MOD_ID, value = Dist.CLIENT)
 public final class ClientSetup {
     private ClientSetup() {}
+
+    /** Both hands on the gun in third person, the way a crossbow is carried. */
+    private static final IClientItemExtensions TWO_HANDED = new IClientItemExtensions() {
+        @Override
+        public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
+            return HumanoidModel.ArmPose.CROSSBOW_HOLD;
+        }
+    };
 
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
@@ -45,5 +62,10 @@ public final class ClientSetup {
         // Above the hotbar, so it hides with the rest of the HUD on F1.
         event.registerAbove(VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "ammo"), GunHud::render);
+    }
+
+    @SubscribeEvent
+    public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
+        event.registerItem(TWO_HANDED, ModItems.guns().toArray(Item[]::new));
     }
 }

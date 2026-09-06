@@ -85,14 +85,18 @@ public final class PlayerGunnery {
     }
 
     /**
-     * effects: records the trigger's new state for {@code player}; a press
-     * re-arms the dry click
+     * effects: records the trigger's new state for {@code player} if it
+     * changed; a press re-arms the dry click. Edge-triggered: vanilla
+     * repeats a held use every four ticks, and a repeat is not a new pull.
      *
      * @param player the player whose trigger changed
      * @param held   whether it is now held
      */
     public static void onTrigger(Player player, boolean held) {
         Gunnery gunnery = player.getData(ModData.GUNNERY);
+        if (gunnery.held() == held) {
+            return;
+        }
         player.setData(ModData.GUNNERY, held ? gunnery.pressed() : gunnery.released());
     }
 

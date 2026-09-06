@@ -21,8 +21,11 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+
+import java.util.List;
 
 /** The items: the guns, and the round they all take. */
 public final class ModItems {
@@ -37,6 +40,11 @@ public final class ModItems {
     /** One round of ammunition: one round in a magazine. */
     public static final DeferredItem<Item> ROUND =
             ITEMS.registerItem("round", Item::new, new Item.Properties().stacksTo(64));
+
+    /** effects: returns every gun this mod registers, for whoever needs the list */
+    public static List<Item> guns() {
+        return ITEMS.getEntries().stream().<Item>map(DeferredHolder::get).filter(GunItem.class::isInstance).toList();
+    }
 
     static void register(IEventBus modBus) {
         ITEMS.register(modBus);
