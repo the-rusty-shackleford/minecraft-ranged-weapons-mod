@@ -295,7 +295,11 @@ TWO_HANDED_DISPLAY = display([1.0, -1.0, -3.0], 0.58, [0, 90, 0], [0, 1.0, 1.0],
 # top-fed receiver does, so they are carried a little higher.
 LONG_GUN_DISPLAY = display([1.0, -0.5, -3.0], 0.58, [0, 90, 0], [0, 1.0, 1.0], 0.6, 0.46)
 # Smaller and nearer in first person; the one-handed pose's frame in third.
-PISTOL_DISPLAY = display([0.5, 2.5, -1.2], 0.5, [0, 90, 78], [0, 0, 0], 0.5, 0.7)
+# The pistol's third-person translation lifts the model nine units so the
+# fist closes on the grip rather than the slide: the model's centre, which
+# is what sits in the hand, is the middle of the slide. Read from six
+# translations photographed on the pistol itself.
+PISTOL_DISPLAY = display([0.5, 2.5, -1.2], 0.5, [0, 90, 78], [0, 9, 0], 0.5, 0.7)
 
 
 def pistol_model():
