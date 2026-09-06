@@ -59,7 +59,7 @@ and on the shared server.
 
 ## Depends on
 
-- `minecraft-ranged-weapons` 1.3.0 or later within 1.x (nested Jar-in-Jar;
+- `minecraft-ranged-weapons` 1.3.1 or later within 1.x (nested Jar-in-Jar;
   built to Maven Local first). Needs 1.3 for the block impact and the Hold
   My Items hook; 1.2 for the synced data map, the muzzle origin in
   `ShotReport.play` and the non-saving fallback bullet.
