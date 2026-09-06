@@ -113,7 +113,8 @@ public final class PlayerGunnery {
      * protocol resolves, applies the {@link Trigger}'s action for this tick
      * to the gun, the player's inventory and the level, and records the
      * finger's new state; a pending reload request is consumed either way.
-     * Otherwise nothing.
+     * Otherwise nothing. A player with infinite materials (creative) fires
+     * without spending rounds or ammunition and never needs to reload.
      *
      * @param player the player
      * @param level  the level the player is in
@@ -132,8 +133,11 @@ public final class PlayerGunnery {
         WeaponStats stats = weapon.stats(stack);
         Reload reload = stack.get(ModData.RELOAD.get());
         int capacity = weapon.capacity(stack);
-        int rounds = weapon.rounds(stack);
-        boolean ammoAvailable = player.isCreative() || countAmmo(player, weapon.profile()) > 0;
+        // Creative has unlimited ammunition, as it has unlimited arrows: the
+        // gun is presented to the trigger as full and no shot spends a round.
+        boolean unlimited = player.hasInfiniteMaterials();
+        int rounds = unlimited ? capacity : weapon.rounds(stack);
+        boolean ammoAvailable = unlimited || countAmmo(player, weapon.profile()) > 0;
 
         Inputs inputs = new Inputs(gunnery.held(), gunnery.reloadRequested(), now, gunnery.nextShotAt(),
                 rounds, capacity, reload != null, reload != null && reload.done(now), ammoAvailable,
@@ -142,7 +146,7 @@ public final class PlayerGunnery {
 
         Gunnery after = gunnery.reloadRequested() ? gunnery.reloadHandled() : gunnery;
         switch (action) {
-            case FIRE -> after = fire(player, level, weapon, stack, stats, now, after);
+            case FIRE -> after = fire(player, level, weapon, stack, stats, now, after, unlimited);
             case START_RELOAD -> startReload(player, level, stack, stats, now);
             case FINISH_RELOAD -> finishReload(player, level, weapon, stack, rounds, capacity);
             case CLICK_EMPTY -> {
@@ -157,7 +161,7 @@ public final class PlayerGunnery {
     }
 
     private static Gunnery fire(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
-                                WeaponStats stats, long now, Gunnery gunnery) {
+                                WeaponStats stats, long now, Gunnery gunnery, boolean unlimited) {
         Vec3 look = player.getViewVector(1.0f);
         Vec3 origin = muzzle(player, look);
         Handling handling = Handling.of(stack);
@@ -165,8 +169,10 @@ public final class PlayerGunnery {
         Shot shot = Shot.of(stats.scaled(1.0f, spreadMultiplier), origin, look);
 
         weapon.fire(level, player, stack, shot);
-        weapon.consumeRound(stack);
-        stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+        if (!unlimited) {
+            weapon.consumeRound(stack);
+        }
+        stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);   // a no-op for creative, as vanilla has it
         ShotReport.play(level, player, weapon.profile(), origin, SoundSource.PLAYERS,
                 0.95f + player.getRandom().nextFloat() * 0.1f);
         // Firing breaks a sprint, the way drawing a bow does.
@@ -187,12 +193,13 @@ public final class PlayerGunnery {
     private static void finishReload(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                      int rounds, int capacity) {
         stack.remove(ModData.RELOAD.get());
-        int available = player.isCreative() ? capacity : countAmmo(player, weapon.profile());
+        boolean unlimited = player.hasInfiniteMaterials();
+        int available = unlimited ? capacity : countAmmo(player, weapon.profile());
         int loaded = ReloadPlan.roundsToLoad(rounds, capacity, available);
         if (loaded == 0) {
             return;
         }
-        if (!player.isCreative()) {
+        if (!unlimited) {
             takeAmmo(player, weapon.profile(), loaded);
         }
         weapon.load(stack, rounds + loaded);

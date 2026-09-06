@@ -27,7 +27,9 @@ rate. Firing breaks a sprint, the way drawing a bow does.
 you carry the gun's ammunition (with none, the gun clicks once per pull). A
 reload takes the profile's full reload time, the gun is unusable meanwhile, and
 on completion it loads as many rounds as the magazine has room for and your
-inventory can supply. Creative players load from nowhere. The reload is a
+inventory can supply. Creative has unlimited ammunition, as it has unlimited
+arrows: every gun fires without spending a round, never needs a reload, and
+the counter shows an infinity sign. The reload is a
 property of the gun (a data component), so a gun dropped mid-reload is still
 mid-reload when picked up; if the clock it was started on is gone (another
 world), the reload is abandoned rather than finished early.

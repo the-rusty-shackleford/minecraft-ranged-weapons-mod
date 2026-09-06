@@ -76,8 +76,16 @@ public final class GunneryGameTests {
     private record Gunner(Player player, ItemStack gun, RangedWeapon weapon) {}
 
     private static Gunner gunner(GameTestHelper helper, int rounds, int ammo) {
+        return gunner(helper, GameType.SURVIVAL, rounds, ammo);
+    }
+
+    private static Gunner gunner(GameTestHelper helper, GameType mode, int rounds, int ammo) {
         layFloor(helper);
-        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        Player player = helper.makeMockPlayer(mode);
+        // The mock answers isCreative() from its game type but its abilities
+        // stay survival's; vanilla's own routine sets them, and infinite
+        // materials is an ability.
+        mode.updatePlayerAbilities(player.getAbilities());
         Vec3 at = helper.absoluteVec(new Vec3(1.5, 1.0, 4.5));
         // moveTo sets the body yaw; a living entity looks along its *head*
         // yaw, so that is set too, or the mock keeps facing south.
@@ -159,6 +167,23 @@ public final class GunneryGameTests {
         helper.runAtTickTime(14, () -> {
             helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY - 5, "rounds after 13 ticks held");
             helper.assertValueEqual(g.gun().getDamageValue(), 5, "one durability per shot");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void creativeFiresAnEmptyGunWithoutAmmunitionOrReload(GameTestHelper helper) {
+        Gunner g = gunner(helper, GameType.CREATIVE, 0, 0);
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 7);                       // shots at 1, 4, 7; no reload, ever
+        helper.runAtTickTime(8, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 0, "rounds are never spent");
+            helper.assertFalse(g.gun().has(ModData.RELOAD.get()), "no reload was started");
+            // (Wear is vanilla's to skip, and it does so only for a connected player.)
+            // The clock is the witness that it fired: the last shot, at tick 7,
+            // set the next for tick 10, two ticks after this callback at 8.
+            helper.assertValueEqual(g.player().getData(ModData.GUNNERY).nextShotAt(),
+                    helper.getLevel().getGameTime() + 2, "next shot after firing at 1, 4, 7");
             helper.succeed();
         });
     }

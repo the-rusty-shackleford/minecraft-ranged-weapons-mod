@@ -313,36 +313,104 @@ def write_ogg(path: Path, samples) -> None:
                    input=pcm, check=True)
 
 
+def lowpass(samples, hz):
+    """One-pole lowpass; hz is the -3 dB point."""
+    a = 1.0 - math.exp(-2.0 * math.pi * hz / RATE)
+    out, y = [], 0.0
+    for x in samples:
+        y += (x - y) * a
+        out.append(y)
+    return out
+
+
+def lowpass2(samples, hz):
+    """Two poles: 12 dB an octave, enough to keep noise from reading as hiss."""
+    return lowpass(lowpass(samples, hz), hz)
+
+
+def highpass(samples, hz):
+    """One-pole highpass: the input minus its lowpass."""
+    return [x - y for x, y in zip(samples, lowpass(samples, hz))]
+
+
+def saturate(samples, drive):
+    """Soft clipping: tanh, so the peaks compress and grow harmonics instead of cracking."""
+    top = math.tanh(drive)
+    return [math.tanh(x * drive) / top for x in samples]
+
+
+def normalize(samples, peak=0.95):
+    top = max(abs(x) for x in samples) or 1.0
+    return [x * peak / top for x in samples]
+
+
+def slapback(samples, delays_ms, gains):
+    """Discrete early reflections: the outdoors answering the shot."""
+    out = list(samples)
+    for ms, g in zip(delays_ms, gains):
+        d = int(RATE * ms / 1000)
+        for i in range(d, len(out)):
+            out[i] += samples[i - d] * g
+    return out
+
+
+def gunshot(seed, seconds, crack, body, sweep_hz, sub_hz, sub_decay, tail_hz, tail_decay, bolt):
+    """
+    A gunshot in five parts, mixed then saturated:
+
+    crack  the first few milliseconds of full-band noise, the supersonic snap
+    body   noise between 150 Hz and 1.5 kHz decaying fast, with a sine that
+           sweeps from sweep_hz down to sub_hz in the first tens of ms --
+           the muzzle blast, and where the "boom" lives
+    sub    a sine at sub_hz with a slow decay, the weight in the chest
+    tail   lowpassed noise decaying slowly with slapback, the report
+           rolling away
+    bolt   a metallic ring 30 ms in, the action cycling
+    """
+    n = int(RATE * seconds)
+    noise = Noise(seed)
+    raw = [noise.next() * 2 - 1 for _ in range(n)]
+    ts = [i / RATE for i in range(n)]
+
+    crack_part = [r * math.exp(-t * 900) * crack for r, t in zip(raw, ts)]
+
+    banded = highpass(lowpass2(raw, 1500), 150)
+    body_part = [b * math.exp(-t * 35) * body for b, t in zip(banded, ts)]
+
+    phase, sweep_part = 0.0, []
+    for t in ts:
+        f = sub_hz + (sweep_hz - sub_hz) * math.exp(-t * 30)
+        phase += 2 * math.pi * f / RATE
+        sweep_part.append(math.sin(phase) * math.exp(-t * 28) * 0.9)
+
+    sub_part = [math.sin(2 * math.pi * sub_hz * t) * math.exp(-t * sub_decay) * (1 - math.exp(-t * 400)) * 0.8
+                for t in ts]
+
+    tail_src = lowpass2(raw, tail_hz)
+    tail_part = [s * math.exp(-t * tail_decay) * (1 - math.exp(-t * 150)) * 0.7 for s, t in zip(tail_src, ts)]
+    tail_part = slapback(tail_part, (58, 131, 227), (0.4, 0.25, 0.12))
+
+    bolt_part = [(math.sin(2 * math.pi * 2600 * (t - 0.03)) + 0.5 * math.sin(2 * math.pi * 4100 * (t - 0.03)))
+                 * math.exp(-(t - 0.03) * 350) * bolt if t >= 0.03 else 0.0 for t in ts]
+
+    mix = [c + b + s + u + tl + bo for c, b, s, u, tl, bo in
+           zip(crack_part, body_part, sweep_part, sub_part, tail_part, bolt_part)]
+    # The saturation grows harmonics without limit; roll off the fizz.
+    return normalize(lowpass2(saturate(mix, 2.4), 7000))
+
+
 def machine_gun_shot():
-    noise = Noise(0xB4E7)
-    state = {"lp": 0.0}
-
-    def fn(t, u):
-        # A sharp crack: white noise through a lowpass that opens then closes,
-        # over a fast exponential decay, plus a low thump underneath.
-        raw = noise.next() * 2 - 1
-        cutoff = 0.9 if t < 0.004 else 0.35 * math.exp(-t * 60) + 0.05
-        state["lp"] += (raw - state["lp"]) * cutoff
-        crack = state["lp"] * math.exp(-t * 55)
-        thump = math.sin(2 * math.pi * 110 * t) * math.exp(-t * 40) * 0.6
-        return 0.95 * crack + thump
-
-    return synth(0.16, fn)
+    # Short and hard: the tail is cut so seven a second stay distinct.
+    return gunshot(seed=0xB4E7, seconds=0.42, crack=1.0, body=1.6, sweep_hz=190, sub_hz=52,
+                   sub_decay=22, tail_hz=1100, tail_decay=11, bolt=0.3)
 
 
 def far_shot():
-    noise = Noise(0x7A5)
-    state = {"lp": 0.0}
-
-    def fn(t, u):
-        raw = noise.next() * 2 - 1
-        state["lp"] += (raw - state["lp"]) * 0.035
-        rumble = state["lp"] * 3.0 * math.exp(-t * 6)
-        thud = math.sin(2 * math.pi * 70 * t) * math.exp(-t * 9) * 0.5
-        attack = min(1.0, t / 0.01)
-        return attack * 0.8 * (rumble + thud)
-
-    return synth(0.7, fn)
+    # The same shot a hundred blocks off: no crack, the body dulled, and a
+    # long low tail that is mostly reflections.
+    shot = gunshot(seed=0x7A5, seconds=1.1, crack=0.0, body=0.5, sweep_hz=120, sub_hz=48,
+                   sub_decay=7, tail_hz=350, tail_decay=4, bolt=0.0)
+    return normalize(lowpass(shot, 600), 0.85)
 
 
 def empty_click():

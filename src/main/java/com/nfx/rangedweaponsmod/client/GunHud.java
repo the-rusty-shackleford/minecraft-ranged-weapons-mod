@@ -73,8 +73,9 @@ public final class GunHud {
         int x = screenWidth / 2 + 91 + 6;
         int y = screenHeight - 19;
 
-        String text = rounds + " / " + capacity;
-        int color = rounds * LOW_FRACTION <= capacity ? TEXT_LOW_COLOR : TEXT_COLOR;
+        boolean unlimited = mc.player.hasInfiniteMaterials();
+        String text = unlimited ? "\u221e / " + capacity : rounds + " / " + capacity;
+        int color = !unlimited && rounds * LOW_FRACTION <= capacity ? TEXT_LOW_COLOR : TEXT_COLOR;
         graphics.drawString(font, text, x, y, color, true);
 
         Reload reload = stack.get(ModData.RELOAD.get());

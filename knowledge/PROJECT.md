@@ -51,7 +51,7 @@ calibrated by photograph (`D-0004`).
 
 ## How it is verified
 
-`./gradlew check`: 58 plain-JUnit tests against `domain`, and twelve gametests
+`./gradlew check`: 58 plain-JUnit tests against `domain`, and thirteen gametests
 on a headless server. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
