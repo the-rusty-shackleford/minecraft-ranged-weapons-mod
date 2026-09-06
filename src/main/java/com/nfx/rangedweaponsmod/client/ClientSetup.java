@@ -1,6 +1,6 @@
 /*
  * Ranged Weapons Mod - guns for players, on the Ranged Weapons protocol.
- * Copyright (C) 2026 Rusty Shackleford and contributors
+ * Copyright (C) 2026 Rusty Shackleford and nfx
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Affero General Public License as published by
