@@ -52,7 +52,7 @@ photograph (`D-0004`).
 
 ## How it is verified
 
-`./gradlew check`: 58 plain-JUnit tests against `domain`, and eighteen gametests
+`./gradlew check`: 58 plain-JUnit tests against `domain`, and nineteen gametests
 on a headless server. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
@@ -70,7 +70,7 @@ Decided by Rusty on 2026-09-06, in this order:
 
 ## Depends on
 
-- `minecraft-ranged-weapons` 1.4.1 or later within 1.x (nested Jar-in-Jar;
+- `minecraft-ranged-weapons` 1.4.2 or later within 1.x (nested Jar-in-Jar;
   built to Maven Local first). Needs 1.4 for ammunition families; 1.3 for
   the block impact and the Hold My Items hook; 1.2 for the synced data map, the muzzle origin in
   `ShotReport.play` and the non-saving fallback bullet.

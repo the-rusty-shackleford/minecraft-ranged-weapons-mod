@@ -216,6 +216,26 @@ public final class GunneryGameTests {
         });
     }
 
+    // --- aim ---------------------------------------------------------------
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void aRoundGoesWhereTheCrosshairPointsNotParallelToIt(GameTestHelper helper) {
+        // Looking ten degrees down at a glass block three blocks ahead, the
+        // crosshair rests just inside the block's bottom edge. A round from
+        // the muzzle -- a fifth of a block lower -- fired parallel to the look
+        // would pass under it; aimed at the crosshair's point, it shatters it.
+        Gunner g = gunner(helper, CAPACITY, 0);
+        g.player().setXRot(10.0f);
+        helper.setBlock(new BlockPos(4, 2, 4), Blocks.GLASS);
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 1);
+        helper.runAtTickTime(2, () -> PlayerGunnery.onTrigger(g.player(), false));
+        helper.runAtTickTime(6, () -> {
+            helper.assertBlockPresent(Blocks.AIR, new BlockPos(4, 2, 4));
+            helper.succeed();
+        });
+    }
+
     // --- ammunition families -------------------------------------------------
 
     @GameTest(template = "arena", timeoutTicks = 100)

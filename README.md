@@ -72,8 +72,13 @@ the protocol's config.
 red at a fifth of a magazine, with a progress bar during a reload. Hidden with
 the rest of the HUD (`F1`).
 
-**The tracer and the noise** are the protocol's: the shot starts at the muzzle
-(forward, to the main-hand side, a little below the eye), nearby players hear
+**Where a round goes.** It leaves the muzzle -- forward, to the main-hand
+side, a little below the eye -- aimed at the point the crosshair is on: the
+first block in the eye's line of sight, or far along the look if there is
+none. A round fired parallel to the look from a muzzle below the eye would
+land below the crosshair at every distance, and did until this was fixed.
+
+**The tracer and the noise** are the protocol's: nearby players hear
 the gun's shot sound, players between sixteen and sixty-four blocks away hear
 its far report, and a puff of smoke marks the muzzle for onlookers.
 
@@ -156,7 +161,8 @@ other two are for eyes and hands.
   trigger fires at the profile's rate and a release stops it; an empty pull
   starts a reload only with ammunition in the inventory; a reload takes its
   full time, consumes exactly what it loads, and blocks fire meanwhile; a
-  reload takes any round of the gun's family and none of another; the
+  reload takes any round of the gun's family and none of another; a round
+  goes where the crosshair points and not parallel to it; the
   gun's use is the press, consumed without a swing, a repeat is not a new
   pull, and the off hand is not operated; creative fires an empty gun for
   free; and the real `PlayerTickEvent` path drives a placed player. **The server's exit
@@ -168,9 +174,10 @@ other two are for eyes and hands.
   world, poses the gun and takes pictures into `run/screenshots/booth-*.png`:
   first person, each term of the in-hand kick alone under a big kick, the
   shipped kick at a machine gun's plateau, a real five-round burst in
-  survival fired by pressing the use key itself (this is the frame that
-  shows what a player sees; a synthetic kick, or even the trigger message
-  sent directly, does not), third person from behind and in
+  survival fired by pressing the use key itself into a stone block placed
+  three blocks ahead (this is the frame that shows what a player sees --
+  the hand, the impact, the cracks, the sparks; a synthetic kick, or even
+  the trigger message sent directly, does not), third person from behind and in
   front, the inventory, and each calibration item the gametest mod registers
   (an axes model under candidate display transforms, carried two-handed like
   the gun). It quits when done. Leave it alone while it runs: any input

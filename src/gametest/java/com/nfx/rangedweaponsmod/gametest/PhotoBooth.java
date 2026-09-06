@@ -29,6 +29,8 @@ import com.nfx.rangedweaponsmod.client.RecoilCamera;
 import com.nfx.rangedweaponsmod.net.ShotFiredPayload;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -150,6 +152,11 @@ public final class PhotoBooth {
         s.add(new Step(t[0] += 20, () -> onServer(mc, sp -> {
             shippedKick();
             sp.setGameMode(GameType.SURVIVAL);
+            // A stone block three blocks ahead at eye height: the burst hits
+            // it, so the frames show debris, sparks and cracks, and the
+            // fifth round takes it down.
+            BlockPos ahead = BlockPos.containing(sp.getEyePosition().add(0.0, 0.0, 3.0));
+            sp.serverLevel().setBlock(ahead, Blocks.STONE.defaultBlockState(), 3);
             ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());
             RangedWeapon weapon = RangedWeapons.resolve(gun);
             if (weapon != null) {
@@ -169,7 +176,11 @@ public final class PhotoBooth {
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-3")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-4")));
         s.add(new Step(t[0] += 1, () -> KeyMapping.set(mc.options.keyUse.getKey(), false)));
-        s.add(new Step(t[0] += 10, () -> onServer(mc, sp -> sp.setGameMode(GameType.CREATIVE))));
+        s.add(new Step(t[0] += 10, () -> onServer(mc, sp -> {
+            sp.setGameMode(GameType.CREATIVE);
+            BlockPos ahead = BlockPos.containing(sp.getEyePosition().add(0.0, 0.0, 3.0));
+            sp.serverLevel().setBlock(ahead, Blocks.AIR.defaultBlockState(), 3);
+        })));
         s.add(new Step(t[0] += 20, thirdBack));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-gun-third-back")));
         s.add(new Step(t[0] += 1, thirdFront));

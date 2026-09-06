@@ -41,6 +41,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -167,9 +170,12 @@ public final class PlayerGunnery {
                                 WeaponStats stats, long now, Gunnery gunnery, boolean unlimited) {
         Vec3 look = player.getViewVector(1.0f);
         Vec3 origin = muzzle(player, look);
+        if (!level.getBlockState(BlockPos.containing(origin)).getCollisionShape(level, BlockPos.containing(origin)).isEmpty()) {
+            origin = player.getEyePosition();   // the muzzle is in a wall: shoot from the eye, not from inside it
+        }
         Handling handling = Handling.of(stack);
         float spreadMultiplier = StanceSpread.multiplier(stance(player), handling.spread());
-        Shot shot = Shot.of(stats.scaled(1.0f, spreadMultiplier), origin, look);
+        Shot shot = Shot.of(stats.scaled(1.0f, spreadMultiplier), origin, aim(level, player, look, origin));
 
         weapon.fire(level, player, stack, shot);
         if (!unlimited) {
@@ -246,6 +252,27 @@ public final class PlayerGunnery {
                 remaining -= taken;
             }
         }
+    }
+
+    /** How far along the look the crosshair is taken to point when nothing is in the way. */
+    private static final double AIM_RANGE = 96.0;
+
+    /**
+     * effects: returns the direction a round leaves {@code origin} in so
+     * that it arrives where the crosshair points: at the first block the
+     * eye's line of sight meets within {@link #AIM_RANGE}, or at that range
+     * along the look if it meets none. A round starts below and beside the
+     * eye, so a round fired parallel to the look would land that much off
+     * the crosshair at every distance. If the point is at or behind the
+     * muzzle -- the player's face is at a wall -- the look itself.
+     */
+    static Vec3 aim(ServerLevel level, Player player, Vec3 look, Vec3 origin) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 far = eye.add(look.scale(AIM_RANGE));
+        HitResult hit = level.clip(new ClipContext(eye, far, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        Vec3 target = hit.getType() == HitResult.Type.MISS ? far : hit.getLocation();
+        Vec3 toTarget = target.subtract(origin);
+        return toTarget.dot(look) > 1e-3 ? toTarget : look;
     }
 
     /** effects: returns where the muzzle is: forward of the eye, out to the main-hand side, a little down */
