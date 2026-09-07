@@ -18,6 +18,7 @@
 package com.nfx.rangedweaponsmod.gametest;
 
 import com.nfx.rangedweaponsmod.ModItems;
+import com.nfx.rangedweaponsmod.ModTabs;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,10 +35,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -223,7 +226,17 @@ public final class PhotoBooth {
             onServer(mc, sp -> sp.setGameMode(GameType.CREATIVE));
         }));
 
-        // Every other gun: first person, and third person from the front.
+        // The mod's own creative tab, as a player finds it.
+        s.add(new Step(t[0] += 10, () -> {
+            CreativeModeInventoryScreen screen = new CreativeModeInventoryScreen(player, player.connection.enabledFeatures(), false);
+            mc.setScreen(screen);
+            selectTab(screen, ModTabs.RANGED_WEAPONS.get());
+        }));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-creative-tab")));
+        s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
+
+        // Every other gun: first person, and third person from the front and
+        // from behind -- the view a player checks their own hold in.
         for (var gun : List.of(ModItems.PISTOL, ModItems.SHOTGUN, ModItems.RIFLE, ModItems.SCOPED_RIFLE)) {
             String label = "booth-" + gun.getId().getPath();
             s.add(new Step(t[0] += 5, () -> {
@@ -233,6 +246,24 @@ public final class PhotoBooth {
             s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-first")));
             s.add(new Step(t[0] += 1, thirdFront));
             s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third")));
+            s.add(new Step(t[0] += 1, thirdBack));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third-back")));
+            // From the right side: the head turns west and the front camera
+            // follows it, while the body (which trails the head by up to 50
+            // degrees) stays turned toward the south. The hand and what it
+            // holds are nearest the camera.
+            s.add(new Step(t[0] += 1, () -> {
+                thirdFront.run();
+                player.setYRot(-90.0f);
+                player.setYHeadRot(-90.0f);
+                player.setYBodyRot(-40.0f);
+            }));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third-side")));
+            s.add(new Step(t[0] += 1, () -> {
+                player.setYRot(0.0f);
+                player.setYHeadRot(0.0f);
+                player.setYBodyRot(0.0f);
+            }));
         }
         // The scoped rifle, aimed: the mask, the zoom, the gun out of the way.
         s.add(new Step(t[0] += 5, () -> {
@@ -279,6 +310,17 @@ public final class PhotoBooth {
             RecoilCamera.onShotFired(new ShotFiredPayload(5.0f, 5.0f, 0.01f));
         }));
         s.add(new Step(t[0] += 2, () -> shoot(mc, name)));
+    }
+
+    /** Selects {@code tab} on the creative screen; the game keeps the method private, and a booth is the place to reach past that. */
+    private static void selectTab(CreativeModeInventoryScreen screen, CreativeModeTab tab) {
+        try {
+            var method = CreativeModeInventoryScreen.class.getDeclaredMethod("selectTab", CreativeModeTab.class);
+            method.setAccessible(true);
+            method.invoke(screen, tab);
+        } catch (ReflectiveOperationException e) {
+            RangedWeaponsMod.LOGGER.warn("photo booth: could not select the creative tab", e);
+        }
     }
 
     /** Runs {@code action} on the integrated server's thread for this player. */

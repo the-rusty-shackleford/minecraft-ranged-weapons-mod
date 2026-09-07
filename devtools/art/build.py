@@ -464,7 +464,11 @@ LONG_GUN_DISPLAY = display([1.0, -0.5, -3.0], 0.58, [0, 90, 0], [0, 1.0, 1.0], 0
 # fist closes on the grip rather than the slide: the model's centre, which
 # is what sits in the hand, is the middle of the slide. Read from six
 # translations photographed on the pistol itself.
-PISTOL_DISPLAY = display([0.5, 2.5, -1.2], 0.5, [0, 90, 78], [0, 9, 0], 0.5, 0.7)
+# Third person: the grip in the fist. In the hand's frame +z runs up the arm
+# toward the shoulder and +y sideways away from the body, so the earlier
+# [0, 9, 0] lift held the pistol half a block out from the hand; 3 up the
+# arm brings the fist onto the grip (booth-pistol-third-side).
+PISTOL_DISPLAY = display([0.5, 2.5, -1.2], 0.5, [0, 90, 78], [0, 0, 3], 0.5, 0.7)
 
 
 def pistol_model():

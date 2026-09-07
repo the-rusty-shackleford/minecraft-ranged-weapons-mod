@@ -152,8 +152,9 @@ common tags, so any mod's iron, coal, planks or glass panes serve.
 By iron, counting steel as the iron it came from: pistol 6, shotgun 6 and
 some wood, rifle 10, scoped rifle 11 and two panes, machine gun 12. Every
 recipe unlocks in the recipe book the moment a player holds one of its
-ingredients, and every ingredient and part is in the Ingredients tab, the
-guns and ammunition in Combat.
+ingredients. In creative, the **Ranged Weapons** tab holds everything of
+this mod's in the order of the tree -- guns, ammunition, parts; the parts
+are in Ingredients and the guns and ammunition in Combat as well.
 
 The recipes are not written by hand. `Blueprints` in the `domain` source
 set is the one description of the tree; `./gradlew runData` writes the

@@ -29,5 +29,6 @@
   "item.rangedweaponsmod.heavy_barrel": "Heavy Barrel",
   "item.rangedweaponsmod.stock": "Gun Stock",
   "item.rangedweaponsmod.pump": "Shotgun Pump",
-  "item.rangedweaponsmod.scope": "Rifle Scope"
+  "item.rangedweaponsmod.scope": "Rifle Scope",
+  "itemGroup.rangedweaponsmod": "Ranged Weapons"
 }

@@ -40,7 +40,7 @@ Three source sets, one direction of dependency:
 - `main` -- adapters: `PlayerGunnery` reads a player into the trigger each
   server tick and applies its action to the gun, the inventory and the level;
   three payloads; the client's input, recoil camera, HUD and config; the
-  items, sounds, reload component, gunnery attachment and handling data map;
+  items, the creative tab, sounds, reload component, gunnery attachment and handling data map;
   `ModRecipes` writes the blueprints out as recipe files and unlocks under
   the loader's data generation.
 - `gametest` -- a mod of its own (`rangedweaponsmod_gametest`), the pattern
@@ -59,7 +59,7 @@ generation (`D-0008`).
 
 ## How it is verified
 
-`./gradlew check`: 85 plain-JUnit tests against `domain`, and twenty-nine gametests
+`./gradlew check`: 85 plain-JUnit tests against `domain`, and thirty gametests
 on a headless server. `devtools/recipes/collisions.py` checks the recipes
 against the pack's jars. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client

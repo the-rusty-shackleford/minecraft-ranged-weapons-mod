@@ -17,6 +17,7 @@
  */
 package com.nfx.rangedweaponsmod.gametest;
 
+import com.nfx.rangedweaponsmod.ModTabs;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.domain.Blueprint;
 import com.nfx.rangedweaponsmod.domain.Blueprints;
@@ -34,6 +35,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -56,8 +60,10 @@ import java.util.Set;
  * from: every blueprint's grid finds exactly its recipe and assembles its
  * result; nothing else of ours is on the server; every unlock exists,
  * rewards its recipe, and accepts the ingredient it names; every ingredient
- * exists and every tag has something in it; and a player who picks up
- * iron finds the barrel in the recipe book.
+ * exists and every tag has something in it; a player who picks up iron
+ * finds the barrel in the recipe book; and the creative tab, built the way
+ * the creative screen builds it, shows every gun, round and part of ours
+ * in the order of the tree and nothing else.
  *
  * <p>A grid is filled from a tag by the <em>last</em> item in it, so a tag
  * is proven honoured rather than matched by its usual item (charcoal for
@@ -166,6 +172,30 @@ public final class CraftingGameTests {
         } finally {
             server.getPlayerList().remove(player);
         }
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public void theCreativeTabShowsEverythingOfOursInTreeOrder(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        CreativeModeTab tab = ModTabs.RANGED_WEAPONS.get();
+        tab.buildContents(new CreativeModeTab.ItemDisplayParameters(FeatureFlags.DEFAULT_FLAGS, true, level.registryAccess()));
+        List<String> shown = tab.getDisplayItems().stream().map(s -> BuiltInRegistries.ITEM.getKey(s.getItem()).toString()).toList();
+        List<String> expected = new ArrayList<>();
+        expected.addAll(Blueprints.guns());
+        expected.addAll(List.of(Blueprints.SMALL_ROUND, Blueprints.ROUND, Blueprints.SHELL));
+        expected.addAll(Blueprints.parts());
+        helper.assertValueEqual(shown, expected, "the tab's contents");
+        Set<String> ours = new HashSet<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+            if (key.getNamespace().equals(RangedWeaponsMod.MOD_ID)) {
+                ours.add(key.toString());
+            }
+        }
+        helper.assertValueEqual(new HashSet<>(shown), ours, "every item of ours is in the tab");
+        helper.assertTrue(CreativeModeTabs.allTabs().contains(tab), "the tab is registered with the game");
+        helper.assertValueEqual(BuiltInRegistries.ITEM.getKey(tab.getIconItem().getItem()).toString(), Blueprints.MACHINE_GUN, "the tab's icon");
         helper.succeed();
     }
 

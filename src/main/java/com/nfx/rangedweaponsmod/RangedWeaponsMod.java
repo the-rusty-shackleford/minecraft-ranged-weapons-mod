@@ -44,6 +44,7 @@ public final class RangedWeaponsMod {
 
     public RangedWeaponsMod(IEventBus modBus, ModContainer container) {
         ModItems.register(modBus);
+        ModTabs.register(modBus);
         ModSounds.register(modBus);
         ModData.register(modBus);
         ModRecipes.register(modBus);
