@@ -34,6 +34,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -231,6 +232,13 @@ public final class PhotoBooth {
             CreativeModeInventoryScreen screen = new CreativeModeInventoryScreen(player, player.connection.enabledFeatures(), false);
             mc.setScreen(screen);
             selectTab(screen, ModTabs.RANGED_WEAPONS.get());
+            // What the screen has to work with: the loader's sorted tabs, and
+            // whether ours came out with items (a tab without any is hidden).
+            var sorted = net.neoforged.neoforge.common.CreativeModeTabRegistry.getSortedCreativeModeTabs();
+            RangedWeaponsMod.LOGGER.info("photo booth: {} sorted tabs: {}", sorted.size(),
+                    sorted.stream().map(tab -> BuiltInRegistries.CREATIVE_MODE_TAB.getKey(tab) + (tab.hasAnyItems() ? "" : "(empty)")).toList());
+            RangedWeaponsMod.LOGGER.info("photo booth: ours has {} items, shown={}", ModTabs.RANGED_WEAPONS.get().getDisplayItems().size(),
+                    sorted.contains(ModTabs.RANGED_WEAPONS.get()) && ModTabs.RANGED_WEAPONS.get().hasAnyItems());
         }));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-creative-tab")));
         s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
