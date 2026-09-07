@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_rifle": {
+      "conditions": {
+        "items": [
+          {
+            "items": "rangedweaponsmod:rifle"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_scope": {
+      "conditions": {
+        "items": [
+          {
+            "items": "rangedweaponsmod:scope"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "rangedweaponsmod:scoped_rifle"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_scope",
+      "has_rifle"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "rangedweaponsmod:scoped_rifle"
+    ]
+  }
+}

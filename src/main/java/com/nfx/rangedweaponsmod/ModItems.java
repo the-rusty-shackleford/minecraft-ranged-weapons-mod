@@ -27,7 +27,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.List;
 
-/** The items: the guns, and the round they all take. */
+/** The items: the guns, their ammunition, and the parts a gun is assembled from. */
 public final class ModItems {
     private ModItems() {}
 
@@ -69,6 +69,35 @@ public final class ModItems {
     public static final DeferredItem<Item> SHELL =
             ITEMS.registerItem("shell", Item::new, new Item.Properties().stacksTo(64));
 
+    // The parts. A gun is assembled from these (see the domain's Blueprints);
+    // they are plain items, never GunItems, so nothing that treats a gun as
+    // a gun -- the carry pose, the Hold My Items exclusion -- sees them.
+
+    /** Iron with a little coal: what receivers are made of. */
+    public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerItem("steel_ingot", Item::new, new Item.Properties());
+    /** The body over the trigger group. */
+    public static final DeferredItem<Item> LOWER_RECEIVER = ITEMS.registerItem("lower_receiver", Item::new, new Item.Properties());
+    /** The block that houses the action. */
+    public static final DeferredItem<Item> UPPER_RECEIVER = ITEMS.registerItem("upper_receiver", Item::new, new Item.Properties());
+    /** A tube of iron. */
+    public static final DeferredItem<Item> BARREL = ITEMS.registerItem("barrel", Item::new, new Item.Properties());
+    /** A barrel wrapped in steel, for fire that does not stop. */
+    public static final DeferredItem<Item> HEAVY_BARREL = ITEMS.registerItem("heavy_barrel", Item::new, new Item.Properties());
+    /** A wooden butt with a raked wrist. */
+    public static final DeferredItem<Item> STOCK = ITEMS.registerItem("stock", Item::new, new Item.Properties());
+    /** The shotgun's forend. */
+    public static final DeferredItem<Item> PUMP = ITEMS.registerItem("pump", Item::new, new Item.Properties());
+    /** A lens, a tube, a lens. */
+    public static final DeferredItem<Item> SCOPE = ITEMS.registerItem("scope", Item::new, new Item.Properties());
+
+    private static final List<DeferredItem<Item>> PARTS = List.of(
+            STEEL_INGOT, LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
+
+    /** effects: returns every part a gun is assembled from, in the order the tab shows them */
+    public static List<Item> parts() {
+        return PARTS.stream().<Item>map(DeferredHolder::get).toList();
+    }
+
     /** effects: returns every gun this mod registers, for whoever needs the list */
     public static List<Item> guns() {
         return ITEMS.getEntries().stream().<Item>map(DeferredHolder::get).filter(GunItem.class::isInstance).toList();
@@ -89,6 +118,9 @@ public final class ModItems {
             event.accept(SMALL_ROUND.get());
             event.accept(ROUND.get());
             event.accept(SHELL.get());
+        }
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            parts().forEach(event::accept);
         }
     }
 }

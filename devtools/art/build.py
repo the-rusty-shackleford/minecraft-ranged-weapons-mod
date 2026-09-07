@@ -1,4 +1,4 @@
-"""The art, as code: textures, the voxel model and the sounds of the machine gun.
+"""The art, as code: textures, the voxel models and the sounds of the guns, and the icons of their parts.
 
 Run from the repository root:
 
@@ -244,6 +244,171 @@ def scope_mask(size=256, radius=0.46, edge=6):
                 a = int(255 * (d - (r - edge)) / edge)
                 px[y][x] = (0, 0, 0, a)
     return px
+
+
+# ----------------------------------------------------------- the part icons
+
+def _canvas():
+    """A transparent 16x16 and a bounded plotter for it."""
+    px = [[(0, 0, 0, 0) for _ in range(16)] for _ in range(16)]
+
+    def put(x, y, c):
+        if 0 <= x < 16 and 0 <= y < 16:
+            px[y][x] = (*c, 255)
+
+    return px, put
+
+
+def _tube(put, x0, y0, x1, y1, thick, body, light, dark):
+    """A straight tube from (x0, y0) to (x1, y1), `thick` pixels across:
+    every pixel within half the thickness of the centre line, lit on the
+    side facing up-left and shaded on the side facing down-right."""
+    dx, dy = x1 - x0, y1 - y0
+    length = math.hypot(dx, dy)
+    ux, uy = dx / length, dy / length
+    nx, ny = -uy, ux                          # a normal, pointing up-left for a rising line
+    half = thick / 2.0
+    for y in range(16):
+        for x in range(16):
+            px_, py_ = x + 0.5 - x0, y + 0.5 - y0
+            along = px_ * ux + py_ * uy
+            across = px_ * nx + py_ * ny
+            if -0.5 <= along <= length + 0.5 and abs(across) <= half:
+                c = light if across < -half + 1.0 else dark if across > half - 1.0 else body
+                put(x, y, c)
+
+
+def steel_ingot_icon():
+    """An ingot in steel: cooler and darker than iron, lit along the top face."""
+    light, mid, dark = (150, 158, 170), (104, 112, 124), (58, 64, 74)
+    px, put = _canvas()
+    for y in range(5, 12):
+        for x in range(2, 14):
+            slant = (11 - y) // 2
+            xx = x + slant
+            put(xx, y, light if y == 5 else dark if y == 11 or xx >= 13 + slant - 1 else mid)
+    for x in range(3, 15):
+        put(x, 5, light)
+    return px
+
+
+def lower_receiver_icon():
+    """A lower receiver side-on: the frame, a grip sloping down at the back,
+    a trigger guard below and a brass trigger inside it."""
+    m, ml, md = PALETTE["metal_mid"], PALETTE["metal_light"], PALETTE["metal_dark"]
+    brass = PALETTE["brass"]
+    px, put = _canvas()
+    for y in range(4, 8):
+        for x in range(1, 15):
+            put(x, y, ml if y == 4 else md if y == 7 else m)
+    for y in range(8, 14):                      # the grip, raked back
+        for x in range(2 + (y - 8) // 2, 6 + (y - 8) // 2):
+            put(x, y, md if x == 2 + (y - 8) // 2 else m)
+    for x in range(8, 13):                      # trigger guard
+        put(x, 11, md)
+    for y in range(8, 11):
+        put(8, y, md)
+        put(12, y, md)
+    put(10, 8, brass)
+    put(10, 9, brass)
+    put(11, 10, brass)
+    return px
+
+
+def upper_receiver_icon():
+    """An upper receiver: a box of steel with an ejection port and two rivets."""
+    m, ml, md = PALETTE["metal_mid"], PALETTE["metal_light"], PALETTE["metal_dark"]
+    px, put = _canvas()
+    for y in range(4, 12):
+        for x in range(1, 15):
+            put(x, y, ml if y == 4 or x == 1 else md if y == 11 or x == 14 else m)
+    for y in range(6, 9):                       # ejection port
+        for x in range(8, 13):
+            put(x, y, md if y == 6 else PALETTE["barrel"])
+    put(3, 6, md), put(3, 9, md), put(6, 6, md), put(6, 9, md)
+    return px
+
+
+def barrel_icon():
+    """A barrel: a tube from lower left to upper right, a bright ring at the muzzle."""
+    px, put = _canvas()
+    _tube(put, 2, 13, 13, 2, 3.4, PALETTE["barrel"], PALETTE["metal_mid"], (14, 15, 17))
+    _tube(put, 12, 3, 13, 2, 3.4, PALETTE["metal_light"], PALETTE["metal_light"], PALETTE["metal_mid"])
+    return px
+
+
+def heavy_barrel_icon():
+    """A heavy barrel: the same tube, thicker, with a row of cooling holes along its length."""
+    px, put = _canvas()
+    _tube(put, 1, 14, 14, 1, 5.4, PALETTE["barrel"], PALETTE["metal_mid"], (14, 15, 17))
+    for i in range(3, 12, 2):                   # holes down the centre line
+        put(1 + i, 14 - i, PALETTE["metal_dark"])
+    _tube(put, 13, 2, 14, 1, 5.4, PALETTE["metal_light"], PALETTE["metal_light"], PALETTE["metal_mid"])
+    return px
+
+
+def stock_icon():
+    """A stock side-on: a broad wooden butt at the left, tapering to a wrist at the right."""
+    w, wd = PALETTE["wood"], PALETTE["wood_dark"]
+    wl = shade(w, 28)
+    px, put = _canvas()
+    for y in range(3, 14):
+        left = 1
+        right = 7 + max(0, 9 - abs(y - 8) * 2) // 2
+        if 6 <= y <= 9:
+            right = 15
+        for x in range(left, right):
+            put(x, y, wl if y == 3 or x == 1 else wd if y == 13 or x == right - 1 else w)
+    for y in (4, 8, 11):                        # grain
+        for x in range(3, 6):
+            put(x, y, wd)
+    return px
+
+
+def pump_icon():
+    """A shotgun pump: a wooden cylinder with grip grooves, side-on."""
+    w, wd = PALETTE["wood"], PALETTE["wood_dark"]
+    wl = shade(w, 28)
+    px, put = _canvas()
+    for y in range(5, 11):
+        for x in range(1, 15):
+            put(x, y, wl if y == 5 else wd if y == 10 else w)
+    for x in range(3, 14, 2):                   # grooves
+        for y in range(6, 10):
+            put(x, y, wd)
+    return px
+
+
+def scope_icon():
+    """A scope: a tube with a pale lens at each end and two mounts beneath."""
+    m, ml, md = PALETTE["metal_mid"], PALETTE["metal_light"], PALETTE["metal_dark"]
+    lens, lens_d = (168, 214, 232), (96, 150, 176)
+    px, put = _canvas()
+    for y in range(5, 10):
+        for x in range(1, 15):
+            put(x, y, ml if y == 5 else md if y == 9 else m)
+    for y in range(4, 11):                      # the bells at each end
+        for x in (1, 2, 13, 14):
+            put(x, y, md if y in (4, 10) else m)
+    for y in range(5, 10):
+        put(0, y, lens_d if y in (5, 9) else lens)
+        put(15, y, lens_d if y in (5, 9) else lens)
+    for x in (4, 5, 10, 11):                    # mounts
+        put(x, 10, md)
+        put(x, 11, md)
+    return px
+
+
+PART_ICONS = {
+    "steel_ingot": steel_ingot_icon,
+    "lower_receiver": lower_receiver_icon,
+    "upper_receiver": upper_receiver_icon,
+    "barrel": barrel_icon,
+    "heavy_barrel": heavy_barrel_icon,
+    "stock": stock_icon,
+    "pump": pump_icon,
+    "scope": scope_icon,
+}
 
 
 # ------------------------------------------------------------ the voxel model
@@ -754,17 +919,19 @@ def main(argv) -> int:
         write_png(ASSETS / "textures/item/small_round.png", 16, 16, small_round_icon())
         write_png(ASSETS / "textures/item/shell.png", 16, 16, shell_icon())
         write_png(ASSETS / "textures/gui/scope.png", 256, 256, scope_mask())
+        for name, fn in PART_ICONS.items():
+            write_png(ASSETS / f"textures/item/{name}.png", 16, 16, fn())
         stale = ASSETS / "textures/item/machine_gun.png"
         if stale.exists():
             stale.unlink()
-        print("textures: gun_atlas.png (32x32), round.png, small_round.png, shell.png (16x16), gui/scope.png (256x256)")
+        print(f"textures: gun_atlas.png (32x32), round.png, small_round.png, shell.png, {', '.join(n + '.png' for n in PART_ICONS)} (16x16), gui/scope.png (256x256)")
     if "model" in want:
         (ASSETS / "models/item").mkdir(parents=True, exist_ok=True)
         for name, build in GUN_MODELS.items():
             model = build()
             (ASSETS / f"models/item/{name}.json").write_text(json.dumps(model, indent=2) + "\n")
             print(f"model: {name}.json ({len(model['elements'])} elements)")
-        for name in ("small_round", "shell"):
+        for name in ("round", "small_round", "shell", *PART_ICONS):
             (ASSETS / f"models/item/{name}.json").write_text(json.dumps(
                 {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}}, indent=2) + "\n")
     if "booth" in want:

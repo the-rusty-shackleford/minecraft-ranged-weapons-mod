@@ -206,6 +206,23 @@ public final class PhotoBooth {
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-gun-inventory")));
         s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
 
+        // The parts a gun is assembled from, across the top inventory row,
+        // photographed in the survival inventory screen (creative's shows its
+        // tabs instead) beside the guns in the hotbar.
+        s.add(new Step(t[0] += 1, () -> onServer(mc, sp -> {
+            sp.setGameMode(GameType.SURVIVAL);
+            int slot = 9;
+            for (var part : ModItems.parts()) {
+                sp.getInventory().setItem(slot++, new ItemStack(part));
+            }
+        })));
+        s.add(new Step(t[0] += 5, () -> mc.setScreen(new InventoryScreen(player))));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-parts-inventory")));
+        s.add(new Step(t[0] += 1, () -> {
+            mc.setScreen(null);
+            onServer(mc, sp -> sp.setGameMode(GameType.CREATIVE));
+        }));
+
         // Every other gun: first person, and third person from the front.
         for (var gun : List.of(ModItems.PISTOL, ModItems.SHOTGUN, ModItems.RIFLE, ModItems.SCOPED_RIFLE)) {
             String label = "booth-" + gun.getId().getPath();

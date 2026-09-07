@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": {
+      "tag": "c:gunpowders"
+    },
+    "N": {
+      "tag": "c:nuggets/iron"
+    }
+  },
+  "pattern": [
+    "N",
+    "G",
+    "N"
+  ],
+  "result": {
+    "count": 10,
+    "id": "rangedweaponsmod:small_round"
+  }
+}

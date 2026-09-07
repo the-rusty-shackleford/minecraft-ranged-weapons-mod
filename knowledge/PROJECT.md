@@ -34,12 +34,15 @@ Three source sets, one direction of dependency:
 
 - `domain` -- the decisions, over plain numbers: the fire clock, the trigger's
   rule table (`Trigger.tick(Inputs) -> Action`), the reload plan, the recoil
-  model (an immutable record with exponential recovery), stance spread.
+  model (an immutable record with exponential recovery), stance spread, and
+  the recipe tree (`Blueprints`, the one description of every recipe).
   Compiled against the JDK only.
 - `main` -- adapters: `PlayerGunnery` reads a player into the trigger each
   server tick and applies its action to the gun, the inventory and the level;
   three payloads; the client's input, recoil camera, HUD and config; the
-  items, sounds, reload component, gunnery attachment and handling data map.
+  items, sounds, reload component, gunnery attachment and handling data map;
+  `ModRecipes` writes the blueprints out as recipe files and unlocks under
+  the loader's data generation.
 - `gametest` -- a mod of its own (`rangedweaponsmod_gametest`), the pattern
   from Armed Pillagers' D-0003, which here also carries the photo booth and
   its calibration items.
@@ -50,12 +53,15 @@ because vanilla's item use drops the hand (`D-0006`, superseding `D-0005`); reco
 offset that recovers, never the player's rotation (`D-0003`); the art is
 generated and its display transforms and the kick's signs were calibrated by
 photograph (`D-0004`); a gun's class decides whether it fires once per
-pull or for as long as the trigger is held (`D-0007`).
+pull or for as long as the trigger is held (`D-0007`); guns are assembled
+from parts described once, in the pure layer, and written out by data
+generation (`D-0008`).
 
 ## How it is verified
 
-`./gradlew check`: 63 plain-JUnit tests against `domain`, and twenty-four gametests
-on a headless server. `./gradlew runPhotoBooth` photographs the art for
+`./gradlew check`: 85 plain-JUnit tests against `domain`, and twenty-nine gametests
+on a headless server. `devtools/recipes/collisions.py` checks the recipes
+against the pack's jars. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
 and on the shared server.
 
@@ -68,6 +74,9 @@ Decided by Rusty on 2026-09-06, in this order:
    (small), shotgun (shell), rifle and scoped rifle (medium), each with
    everything the machine gun got, the scoped rifle with a scope, not a
    spyglass. What remains is Rusty's feel test of each.
+3. Done (1.2.0): crafting as assembly -- receivers of steel, a barrel, a
+   stock, a scope, then the gun in a shape that follows its silhouette;
+   the pistol cheapest, the machine gun the most involved.
 
 ## Depends on
 

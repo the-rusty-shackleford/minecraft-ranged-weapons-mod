@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "rangedweaponsmod:barrel"
+    },
+    {
+      "tag": "c:ingots/steel"
+    },
+    {
+      "tag": "c:ingots/steel"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:heavy_barrel"
+  }
+}

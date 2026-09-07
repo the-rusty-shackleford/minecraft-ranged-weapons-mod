@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "rangedweaponsmod:item/round"
+    "layer0": "rangedweaponsmod:item/barrel"
   }
 }

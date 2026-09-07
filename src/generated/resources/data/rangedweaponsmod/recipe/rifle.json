@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "B": {
+      "item": "rangedweaponsmod:barrel"
+    },
+    "K": {
+      "item": "rangedweaponsmod:stock"
+    },
+    "L": {
+      "item": "rangedweaponsmod:lower_receiver"
+    },
+    "U": {
+      "item": "rangedweaponsmod:upper_receiver"
+    }
+  },
+  "pattern": [
+    " U ",
+    "KLB"
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:rifle"
+  }
+}

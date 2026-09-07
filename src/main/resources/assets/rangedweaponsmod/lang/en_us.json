@@ -21,5 +21,13 @@
   "subtitles.rangedweaponsmod.pistol_shot": "Pistol fires",
   "subtitles.rangedweaponsmod.shotgun_shot": "Shotgun fires",
   "subtitles.rangedweaponsmod.rifle_shot": "Rifle fires",
-  "subtitles.rangedweaponsmod.scoped_rifle_shot": "Rifle fires"
+  "subtitles.rangedweaponsmod.scoped_rifle_shot": "Rifle fires",
+  "item.rangedweaponsmod.steel_ingot": "Steel Ingot",
+  "item.rangedweaponsmod.lower_receiver": "Lower Receiver",
+  "item.rangedweaponsmod.upper_receiver": "Upper Receiver",
+  "item.rangedweaponsmod.barrel": "Gun Barrel",
+  "item.rangedweaponsmod.heavy_barrel": "Heavy Barrel",
+  "item.rangedweaponsmod.stock": "Gun Stock",
+  "item.rangedweaponsmod.pump": "Shotgun Pump",
+  "item.rangedweaponsmod.scope": "Rifle Scope"
 }

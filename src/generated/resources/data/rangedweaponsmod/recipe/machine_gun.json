@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "H": {
+      "item": "rangedweaponsmod:heavy_barrel"
+    },
+    "K": {
+      "item": "rangedweaponsmod:stock"
+    },
+    "L": {
+      "item": "rangedweaponsmod:lower_receiver"
+    },
+    "U": {
+      "item": "rangedweaponsmod:upper_receiver"
+    }
+  },
+  "pattern": [
+    " U ",
+    "KLH"
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:machine_gun"
+  }
+}

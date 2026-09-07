@@ -61,6 +61,12 @@ var prepareBoothWorld = tasks.register("prepareBoothWorld", Copy) {
     exclude "session.lock"
 }
 
+// Datagen only rewrites what it generates; a renamed recipe would leave its
+// old file behind. Every run starts from nothing.
+var cleanGeneratedResources = tasks.register("cleanGeneratedResources", Delete) {
+    delete "src/generated/resources"
+}
+
 neoForge {
     version = project.neo_version
 
@@ -101,6 +107,22 @@ neoForge {
             systemProperty 'rangedweaponsmod.booth.pose', project.findProperty('boothPose') ?: 'two'
             programArguments.addAll('--quickPlaySingleplayer', 'booth')
             taskBefore prepareBoothWorld
+        }
+        // Data generation: the recipes and their recipe-book unlocks are
+        // written from the domain's blueprints into src/generated/resources,
+        // a resource root of main that is committed like the generated art.
+        // `--mod` says whose GatherDataEvent runs, `--all` every generator
+        // kind, `--existing` lets generated files reference hand-written
+        // ones. The output path is resolved against the working directory,
+        // so it is absolute. Never part of check: the crafting gametests
+        // assert the committed output agrees with the blueprints.
+        data {
+            data()
+            gameDirectory = file('run/data')
+            taskBefore cleanGeneratedResources
+            programArguments.addAll('--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources').absolutePath,
+                    '--existing', file('src/main/resources').absolutePath)
         }
         configureEach {
             logLevel = org.slf4j.event.Level.DEBUG
@@ -217,6 +239,11 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
     into "build/generated/sources/modMetadata"
 }
 sourceSets.main.resources.srcDir generateModMetadata
+// The generated datapack ships; datagen's own hash cache does not.
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+    exclude '.cache/**'
+}
 neoForge.ideSyncTask generateModMetadata
 
 tasks.withType(JavaCompile).configureEach {

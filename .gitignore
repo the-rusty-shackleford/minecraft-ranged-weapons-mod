@@ -8,6 +8,10 @@ out/
 # `devtools/run-test.sh` wipes and recreates run/world on every pass.
 run/
 
+# --- Datagen's bookkeeping ----------------------------------------------
+# The generated recipes are committed; the hash cache beside them is not.
+src/generated/resources/.cache/
+
 # --- Vendored dependency ------------------------------------------------
 # Another Gun Mod is All Rights Reserved and must never be committed. It is
 # `compileOnly` -- nothing from it is bundled into the built mod -- and each

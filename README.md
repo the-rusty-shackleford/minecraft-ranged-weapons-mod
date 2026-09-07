@@ -123,9 +123,49 @@ Ammunition: small rounds (an iron nugget over gunpowder over an iron nugget
 makes ten), medium rounds (an iron nugget over gunpowder over a copper ingot
 makes eight) and shells (paper over gunpowder over an iron nugget makes
 four). Each is tagged into the protocol's family of that name, and each gun
-takes its family, so another mod's rounds of the same family load too. The
-guns are crafted from iron, redstone, sticks and planks; the scoped rifle is
-a rifle with a glass pane and a copper ingot. All are in the Combat tab.
+takes its family, so another mod's rounds of the same family load too.
+
+### Crafting
+
+A gun is assembled from parts made separately. Materials are taken by their
+common tags, so any mod's iron, coal, planks or glass panes serve.
+
+| Part | Recipe |
+|---|---|
+| **Steel Ingot** ×3 | three iron ingots and a coal, anywhere in the grid: iron with a little carbon |
+| **Lower Receiver** | three steel across the top, a redstone under the middle: the body over the trigger group |
+| **Upper Receiver** | four steel in a square |
+| **Gun Barrel** | three iron ingots in a row |
+| **Heavy Barrel** | a barrel and two steel, anywhere in the grid |
+| **Gun Stock** | two planks over a plank and a stick |
+| **Shotgun Pump** | a plank, a stick, a plank in a row |
+| **Rifle Scope** | a glass pane, an iron ingot, a glass pane in a row |
+
+| Gun | Assembly (as laid out in the grid) |
+|---|---|
+| **Pistol** | lower receiver, barrel -- in a row |
+| **Shotgun** | stock, lower receiver, barrel across; the pump under the barrel |
+| **Rifle** | the upper receiver over the lower; stock to its left, barrel to its right |
+| **Scoped Rifle** | a scope over a rifle |
+| **Machine Gun** | as the rifle, with a heavy barrel |
+
+By iron, counting steel as the iron it came from: pistol 6, shotgun 6 and
+some wood, rifle 10, scoped rifle 11 and two panes, machine gun 12. Every
+recipe unlocks in the recipe book the moment a player holds one of its
+ingredients, and every ingredient and part is in the Ingredients tab, the
+guns and ammunition in Combat.
+
+The recipes are not written by hand. `Blueprints` in the `domain` source
+set is the one description of the tree; `./gradlew runData` writes the
+recipe files and their unlocks from it into `src/generated/resources`
+(committed); the plain-JUnit tests hold the tree to its rules -- the pistol
+cheapest, every long gun with one stock and the pistol none, one lower
+receiver and one barrel in every gun, the scoped rifle exactly a rifle and
+a scope, no cycles; and a gametest asks the running server for every grid
+and expects exactly our recipe back. `devtools/recipes/collisions.py`
+checks the part and ammunition recipes against every recipe in a pack's
+jars for a grid two recipes would both answer to (the game would pick one
+at random), and is run against the pack this mod ships in.
 
 ## Adding a gun
 
@@ -136,7 +176,8 @@ a rifle with a glass pane and a copper ingot. All are in the Combat tab.
 3. A model, a texture, a shot sound and a far report: `devtools/art/build.py`
    is the generator for the ones shipped, run with `uv run devtools/art/build.py`.
 4. Photograph it: `./gradlew runPhotoBooth` (below) and look at the pictures.
-5. A recipe and lang entries.
+5. A recipe: a `Blueprint` in `Blueprints` (with a unit test pinning where it
+   sits in the tree), then `./gradlew runData`; and lang entries.
 
 No gunnery code changes. The trigger, the reload, the recoil and the counter
 read everything from the profile and the handling.
@@ -175,7 +216,7 @@ other two are for eyes and hands.
 
 - `./gradlew test` -- plain JUnit against the `domain` source set, the pure
   layer: the fire clock, the trigger's rule table, the reload plan, the recoil
-  model, stance spread. That source set is compiled against nothing but the
+  model, stance spread, and the recipe tree. That source set is compiled against nothing but the
   JDK, so a `net.minecraft` import there is a compile error. Partitions are
   written at the top of each test class.
 - `./gradlew runGameTestServer` -- gametests on a real headless server. The

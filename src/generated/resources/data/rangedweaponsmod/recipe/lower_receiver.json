@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "T": {
+      "tag": "c:ingots/steel"
+    }
+  },
+  "pattern": [
+    "TTT",
+    " R "
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:lower_receiver"
+  }
+}

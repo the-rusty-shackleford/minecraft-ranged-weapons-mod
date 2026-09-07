@@ -1,0 +1,43 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_heavy_barrel": {
+      "conditions": {
+        "items": [
+          {
+            "items": "rangedweaponsmod:heavy_barrel"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "rangedweaponsmod:machine_gun"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_upper_receiver": {
+      "conditions": {
+        "items": [
+          {
+            "items": "rangedweaponsmod:upper_receiver"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_heavy_barrel",
+      "has_upper_receiver"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "rangedweaponsmod:machine_gun"
+    ]
+  }
+}
