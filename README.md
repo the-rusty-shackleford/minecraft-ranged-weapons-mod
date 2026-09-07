@@ -168,6 +168,15 @@ checks the part and ammunition recipes against every recipe in a pack's
 jars for a grid two recipes would both answer to (the game would pick one
 at random), and is run against the pack this mod ships in.
 
+### The hold
+
+Others see a two-handed gun carried like a crossbow, and a one-handed gun
+held out level, aiming where the head looks, one arm -- a pose of this
+mod's own, added to the game's list of arm poses (`client/ArmPoses`,
+declared in `META-INF/enumextensions.json`). The pistol sits upright on
+top of the fist with its grip in the hand; the display transforms behind
+that were calibrated by photograph in the booth, never derived.
+
 ## Adding a gun
 
 1. Register an item with `GunItem` in `ModItems` (durability is the shot count).

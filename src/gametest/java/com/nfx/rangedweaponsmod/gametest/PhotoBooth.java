@@ -18,6 +18,7 @@
 package com.nfx.rangedweaponsmod.gametest;
 
 import com.nfx.rangedweaponsmod.ModItems;
+import com.nfx.rangedweaponsmod.client.ArmPoses;
 import com.nfx.rangedweaponsmod.ModTabs;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
@@ -42,6 +43,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -86,17 +88,16 @@ public final class PhotoBooth {
     /**
      * The calibration items are carried like the gun being calibrated, or
      * their photos answer the wrong question: two-handed unless
-     * {@code -Drangedweaponsmod.booth.pose=one}, for a pistol's frame.
+     * {@code -Drangedweaponsmod.booth.pose=one}, which is the pistol's
+     * one-armed aim.
      */
     @SubscribeEvent
     public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
-        if ("one".equals(System.getProperty("rangedweaponsmod.booth.pose"))) {
-            return;
-        }
+        boolean one = "one".equals(System.getProperty("rangedweaponsmod.booth.pose"));
         event.registerItem(new IClientItemExtensions() {
             @Override
             public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
-                return HumanoidModel.ArmPose.CROSSBOW_HOLD;
+                return one ? ArmPoses.PISTOL.getValue() : HumanoidModel.ArmPose.CROSSBOW_HOLD;
             }
         }, BoothMod.BOOTH_ITEMS.stream().map(DeferredItem::get).toArray(Item[]::new));
     }
@@ -273,6 +274,34 @@ public final class PhotoBooth {
                 player.setYBodyRot(0.0f);
             }));
         }
+        // A reference item from another mod, for comparison by eye only
+        // (-Dbooth.reference=<item id>, its jar in run/booth/mods): the same
+        // views as our guns get. Nothing of it is read but the pictures.
+        String reference = System.getProperty("rangedweaponsmod.booth.reference", "");
+        if (!reference.isEmpty() && BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(reference))) {
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(reference));
+            String label = "booth-reference-" + ResourceLocation.parse(reference).getPath();
+            s.add(new Step(t[0] += 5, () -> {
+                hold(player, item);
+                firstPerson.run();
+            }));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-first")));
+            s.add(new Step(t[0] += 1, thirdFront));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third")));
+            s.add(new Step(t[0] += 1, () -> {
+                thirdFront.run();
+                player.setYRot(-90.0f);
+                player.setYHeadRot(-90.0f);
+                player.setYBodyRot(-40.0f);
+            }));
+            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third-side")));
+            s.add(new Step(t[0] += 1, () -> {
+                player.setYRot(0.0f);
+                player.setYHeadRot(0.0f);
+                player.setYBodyRot(0.0f);
+            }));
+        }
+
         // The scoped rifle, aimed: the mask, the zoom, the gun out of the way.
         s.add(new Step(t[0] += 5, () -> {
             hold(player, ModItems.SCOPED_RIFLE.get());

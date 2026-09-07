@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "RANGEDWEAPONSMOD_PISTOL",
+      "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "com/nfx/rangedweaponsmod/client/ArmPoses",
+        "field": "PISTOL"
+      }
+    }
+  ]
+}

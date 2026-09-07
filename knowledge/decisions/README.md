@@ -24,3 +24,4 @@ thought and someone later would want to know *why*.
 | D-0006 | The click is offered to the target with vanilla's calls, then cancelled: vanilla's item use drops the hand |
 | D-0007 | The automatic class holds; every other class fires once per pull; aiming is a stance |
 | D-0008 | Guns are assembled from parts described once, in the pure layer, and written out by data generation |
+| D-0009 | A one-handed gun is held out level, by an arm pose added to the game's enum |

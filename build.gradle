@@ -105,6 +105,9 @@ neoForge {
             // -PboothPose=one photographs the calibration items in the
             // one-handed pose, for a pistol's frame; two-handed otherwise.
             systemProperty 'rangedweaponsmod.booth.pose', project.findProperty('boothPose') ?: 'two'
+            // -PboothReference=<item id> photographs another mod's item (its
+            // jar dropped in run/booth/mods) in the same views, to compare by eye.
+            systemProperty 'rangedweaponsmod.booth.reference', project.findProperty('boothReference') ?: ''
             programArguments.addAll('--quickPlaySingleplayer', 'booth')
             taskBefore prepareBoothWorld
         }

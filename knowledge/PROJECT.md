@@ -55,7 +55,8 @@ generated and its display transforms and the kick's signs were calibrated by
 photograph (`D-0004`); a gun's class decides whether it fires once per
 pull or for as long as the trigger is held (`D-0007`); guns are assembled
 from parts described once, in the pure layer, and written out by data
-generation (`D-0008`).
+generation (`D-0008`); a one-handed gun is held out level by a pose added
+to the game's own enum (`D-0009`).
 
 ## How it is verified
 

@@ -53,6 +53,14 @@ public final class ClientSetup {
         }
     };
 
+    /** A one-handed gun is held out, level, aiming where the head looks. */
+    private static final IClientItemExtensions ONE_HANDED = new IClientItemExtensions() {
+        @Override
+        public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
+            return ArmPoses.PISTOL.getValue();
+        }
+    };
+
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(Keys.RELOAD);
@@ -75,5 +83,9 @@ public final class ClientSetup {
                 .filter(item -> ((GunItem) item).grip() == GunItem.Grip.TWO_HANDED)
                 .toArray(Item[]::new);
         event.registerItem(TWO_HANDED, twoHanded);
+        Item[] oneHanded = ModItems.guns().stream()
+                .filter(item -> ((GunItem) item).grip() == GunItem.Grip.ONE_HANDED)
+                .toArray(Item[]::new);
+        event.registerItem(ONE_HANDED, oneHanded);
     }
 }
