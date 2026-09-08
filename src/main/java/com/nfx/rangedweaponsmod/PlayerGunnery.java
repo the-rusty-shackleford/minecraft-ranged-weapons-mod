@@ -27,10 +27,12 @@ import com.nfx.rangedweapons.api.WeaponStats;
 import com.nfx.rangedweaponsmod.domain.FireClock;
 import com.nfx.rangedweaponsmod.domain.ReloadPlan;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.List;
 import java.util.ArrayList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import com.nfx.rangedweaponsmod.domain.AmmoChoice;
+import com.nfx.rangedweaponsmod.domain.MagazineChoice;
 import com.nfx.rangedweaponsmod.domain.StanceSpread;
 import com.nfx.rangedweaponsmod.domain.StanceSpread.Stance;
 import com.nfx.rangedweaponsmod.domain.Trigger;
@@ -109,13 +111,17 @@ public final class PlayerGunnery {
     }
 
     /**
-     * effects: records that {@code player} asked for a reload; honoured on
-     * the next tick through the same rules as everything else
+     * effects: records that {@code player} asked for a reload -- or, with
+     * {@code swap}, a swap: out with what is loaded, in with the next
+     * magazine or kind of round; honoured on the next tick through the same
+     * rules as everything else
      *
      * @param player the player who pressed the reload key
+     * @param swap   whether Shift was held: a swap rather than a top-up
      */
-    public static void onReloadKey(Player player) {
-        player.setData(ModData.GUNNERY, player.getData(ModData.GUNNERY).reloadAsked());
+    public static void onReloadKey(Player player, boolean swap) {
+        Gunnery gunnery = player.getData(ModData.GUNNERY);
+        player.setData(ModData.GUNNERY, swap ? gunnery.swapAsked() : gunnery.reloadAsked());
     }
 
     /**
@@ -138,9 +144,12 @@ public final class PlayerGunnery {
      * <p>effects: if {@code player} holds a gun in its main hand that the
      * protocol resolves, applies the {@link Trigger}'s action for this tick
      * to the gun, the player's inventory and the level, and records the
-     * finger's new state; a pending reload request is consumed either way.
-     * Otherwise nothing. A player with infinite materials (creative) fires
-     * without spending rounds or ammunition and never needs to reload.
+     * finger's new state; a pending reload or swap request is consumed
+     * either way. Otherwise nothing. A player with infinite materials
+     * (creative) fires without spending rounds or ammunition and never needs
+     * to reload. A magazine-fed gun holding loose rounds -- loaded before
+     * magazines existed, or by creative -- has them adopted into a magazine
+     * first.
      *
      * @param player the player
      * @param level  the level the player is in
@@ -156,14 +165,32 @@ public final class PlayerGunnery {
         }
         Gunnery gunnery = player.getData(ModData.GUNNERY);
         long now = level.getGameTime();
-        WeaponStats stats = weapon.stats(stack);
-        Reload reload = stack.get(ModData.RELOAD.get());
-        int capacity = weapon.capacity(stack);
+        boolean magazineFed = GunItem.isMagazineFed(stack);
         // Creative has unlimited ammunition, as it has unlimited arrows: the
         // gun is presented to the trigger as full and no shot spends a round.
         boolean unlimited = player.hasInfiniteMaterials();
+        if (magazineFed && !unlimited) {
+            Magazines.adopt(stack, weapon);
+        }
+        WeaponStats stats = weapon.stats(stack);
+        Reload reload = stack.get(ModData.RELOAD.get());
+        int capacity = weapon.capacity(stack);
         int rounds = unlimited ? capacity : weapon.rounds(stack);
-        boolean ammoAvailable = unlimited || countAmmo(player, weapon, stack) > 0;
+        boolean ammoAvailable;
+        boolean swapAvailable;
+        if (unlimited) {
+            ammoAvailable = true;
+            swapAvailable = false;
+        } else if (magazineFed) {
+            // What can be loaded is a magazine with rounds in it; the one in
+            // the gun is not carried and so is never its own replacement.
+            boolean carried = !Magazines.loadedMagazineSlots(player, weapon).isEmpty();
+            ammoAvailable = carried;
+            swapAvailable = carried;
+        } else {
+            ammoAvailable = countAmmo(player, weapon, stack) > 0;
+            swapAvailable = nextKind(player, weapon, stack).isPresent();
+        }
 
         // Only the automatic class fires for as long as the trigger is held;
         // every other gun fires once per pull, whatever its rate allows.
@@ -171,14 +198,26 @@ public final class PlayerGunnery {
         Inputs inputs = new Inputs(gunnery.held(), gunnery.reloadRequested(), now, gunnery.nextShotAt(),
                 rounds, capacity, reload != null, reload != null && reload.done(now), ammoAvailable,
                 gunnery.clickedThisPress(), Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS),
-                automatic, gunnery.firedThisPress());
+                automatic, gunnery.firedThisPress(), gunnery.swapRequested(), swapAvailable);
         Action action = Trigger.tick(inputs);
 
-        Gunnery after = gunnery.reloadRequested() ? gunnery.reloadHandled() : gunnery;
+        Gunnery after = gunnery.reloadRequested() || gunnery.swapRequested() ? gunnery.requestsHandled() : gunnery;
         switch (action) {
-            case FIRE -> after = fire(player, level, weapon, stack, stats, now, after, unlimited);
-            case START_RELOAD -> startReload(player, level, stack, stats, now);
-            case FINISH_RELOAD -> finishReload(player, level, weapon, stack, rounds, capacity);
+            case FIRE -> after = fire(player, level, weapon, stack, stats, now, after, unlimited, magazineFed);
+            case START_RELOAD -> startReload(player, level, stack, stats, now, false);
+            case START_SWAP -> startReload(player, level, stack, stats, now, true);
+            case FINISH_RELOAD -> {
+                stack.remove(ModData.RELOAD.get());
+                if (unlimited) {
+                    finishCreativeReload(player, level, weapon, stack, capacity);
+                } else if (magazineFed) {
+                    after = finishMagazineChange(player, level, weapon, stack, after, reload.swap());
+                } else if (reload.swap()) {
+                    finishKindSwap(player, level, weapon, stack, capacity);
+                } else {
+                    finishReload(player, level, weapon, stack, rounds, capacity);
+                }
+            }
             case CLICK_EMPTY -> {
                 play(level, player, ModSounds.EMPTY_CLICK.get(), 0.6f, 1.0f);
                 after = after.clicked();
@@ -191,7 +230,7 @@ public final class PlayerGunnery {
     }
 
     private static Gunnery fire(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
-                                WeaponStats stats, long now, Gunnery gunnery, boolean unlimited) {
+                                WeaponStats stats, long now, Gunnery gunnery, boolean unlimited, boolean magazineFed) {
         Vec3 look = player.getViewVector(1.0f);
         Vec3 origin = muzzle(player, look, gunnery.aiming());
         if (!level.getBlockState(BlockPos.containing(origin)).getCollisionShape(level, BlockPos.containing(origin)).isEmpty()) {
@@ -204,6 +243,10 @@ public final class PlayerGunnery {
         weapon.fire(level, player, stack, shot);
         if (!unlimited) {
             weapon.consumeRound(stack);
+            if (magazineFed && Magazines.inserted(stack).isPresent()) {
+                // The round left the magazine too; the store learns the next one.
+                Magazines.pop(stack, weapon);
+            }
         }
         stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);   // a no-op for creative, as vanilla has it
         ShotReport.play(level, player, weapon.profile(), origin, SoundSource.PLAYERS,
@@ -218,28 +261,85 @@ public final class PlayerGunnery {
         return gunnery.firedUntil(FireClock.next(now, Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS)));
     }
 
-    private static void startReload(Player player, ServerLevel level, ItemStack stack, WeaponStats stats, long now) {
-        stack.set(ModData.RELOAD.get(), new Reload(now, ReloadPlan.durationTicks(stats.fullReloadTicks())));
+    private static void startReload(Player player, ServerLevel level, ItemStack stack, WeaponStats stats, long now,
+                                    boolean swap) {
+        stack.set(ModData.RELOAD.get(), new Reload(now, ReloadPlan.durationTicks(stats.fullReloadTicks()), swap));
         play(level, player, ModSounds.RELOAD_START.get(), 0.8f, 1.0f);
+    }
+
+    /** Creative loads its native round, or keeps the one it holds; it needs no magazine and no ammunition. */
+    private static void finishCreativeReload(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
+                                             int capacity) {
+        Optional<Item> round = chooseAmmo(player, weapon, stack);
+        Item native_ = weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional).orElse(null);
+        Item chosen = round.orElse(weapon.loadedAmmo(stack).orElse(native_));
+        if (chosen != null) {
+            weapon.load(stack, capacity, chosen);
+        } else {
+            weapon.load(stack, capacity);
+        }
+        play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
+    }
+
+    /**
+     * The magazine change: the magazine in the gun comes out and the chosen
+     * one goes in, trading places in the inventory -- so a half-spent
+     * magazine is kept, and a swap walks the carried magazines in order.
+     *
+     * <p>effects: if a loaded magazine the gun takes is carried, puts the
+     * gun's magazine (if any) in its slot and it in the gun, with the sound;
+     * returns the finger remembering the slot. Otherwise nothing: the
+     * magazine was dropped mid-change.
+     */
+    private static Gunnery finishMagazineChange(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
+                                                Gunnery gunnery, boolean swap) {
+        List<Integer> slots = Magazines.loadedMagazineSlots(player, weapon);
+        OptionalInt last = gunnery.lastSwapSlot() < 0 ? OptionalInt.empty() : OptionalInt.of(gunnery.lastSwapSlot());
+        OptionalInt choice = swap ? MagazineChoice.forSwap(slots, last) : MagazineChoice.forReload(slots);
+        if (choice.isEmpty()) {
+            return gunnery;
+        }
+        int slot = choice.getAsInt();
+        ItemStack incoming = player.getInventory().getItem(slot);
+        ItemStack outgoing = Magazines.eject(stack, weapon);
+        player.getInventory().setItem(slot, outgoing);
+        Magazines.insert(stack, weapon, incoming);
+        play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
+        return gunnery.swappedFrom(slot);
+    }
+
+    /**
+     * A gun loaded directly changing what it is loaded with: the rounds in
+     * it go back to the inventory and the next kind carried goes in.
+     *
+     * <p>effects: gives the loaded rounds back (dropped if they do not fit),
+     * then loads the kind after the loaded one in inventory order, as many
+     * as are carried; the sound plays if anything was loaded
+     */
+    private static void finishKindSwap(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack, int capacity) {
+        Optional<Item> next = nextKind(player, weapon, stack);
+        int rounds = weapon.rounds(stack);
+        Optional<Item> loaded = weapon.loadedAmmo(stack)
+                .or(() -> weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional));
+        if (rounds > 0 && loaded.isPresent()) {
+            player.getInventory().placeItemBackInInventory(new ItemStack(loaded.get(), rounds));
+        }
+        weapon.load(stack, 0);
+        if (next.isEmpty()) {
+            return;
+        }
+        int loadedNow = ReloadPlan.roundsToLoad(0, capacity, countItem(player, next.get()));
+        if (loadedNow == 0) {
+            return;
+        }
+        takeItem(player, next.get(), loadedNow);
+        weapon.load(stack, loadedNow, next.get());
+        play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
     }
 
     private static void finishReload(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                      int rounds, int capacity) {
-        stack.remove(ModData.RELOAD.get());
-        boolean unlimited = player.hasInfiniteMaterials();
         Optional<Item> round = chooseAmmo(player, weapon, stack);
-        if (unlimited) {
-            // Creative loads its native round, or keeps the one it holds.
-            Item native_ = weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional).orElse(null);
-            Item chosen = round.orElse(weapon.loadedAmmo(stack).orElse(native_));
-            if (chosen != null) {
-                weapon.load(stack, capacity, chosen);
-            } else {
-                weapon.load(stack, capacity);
-            }
-            play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
-            return;
-        }
         if (round.isEmpty()) {
             return;
         }
@@ -254,11 +354,20 @@ public final class PlayerGunnery {
     }
 
     /**
-     * effects: returns the round a reload of {@code stack} would load, by
-     * {@link AmmoChoice}: what it holds while it holds any, else the first
-     * accepted round in the inventory, hotbar first
+     * effects: returns the kind of round a swap of a directly loaded gun
+     * would load next: the accepted kind after the loaded one in inventory
+     * order, wrapping round; the first carried if the loaded one is not
+     * carried; empty if no kind other than the loaded one is carried
      */
-    public static Optional<Item> chooseAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
+    public static Optional<Item> nextKind(Player player, RangedWeapon weapon, ItemStack stack) {
+        List<Item> carried = carriedKinds(player, weapon);
+        Optional<Item> loaded = weapon.loadedAmmo(stack)
+                .or(() -> weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional));
+        return AmmoChoice.next(loaded, carried);
+    }
+
+    /** effects: returns the accepted kinds of round the player carries, in inventory order, each once */
+    private static List<Item> carriedKinds(Player player, RangedWeapon weapon) {
         List<Item> carried = new ArrayList<>();
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -267,7 +376,16 @@ public final class PlayerGunnery {
                 carried.add(candidate.getItem());
             }
         }
-        return AmmoChoice.choose(weapon.loadedAmmo(stack), weapon.rounds(stack), carried);
+        return carried;
+    }
+
+    /**
+     * effects: returns the round a reload of {@code stack} would load, by
+     * {@link AmmoChoice}: what it holds while it holds any, else the first
+     * accepted round in the inventory, hotbar first
+     */
+    public static Optional<Item> chooseAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
+        return AmmoChoice.choose(weapon.loadedAmmo(stack), weapon.rounds(stack), carriedKinds(player, weapon));
     }
 
     /**
@@ -278,7 +396,7 @@ public final class PlayerGunnery {
         return chooseAmmo(player, weapon, stack).map(round -> countItem(player, round)).orElse(0);
     }
 
-    private static int countItem(Player player, Item item) {
+    static int countItem(Player player, Item item) {
         int count = 0;
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -294,7 +412,7 @@ public final class PlayerGunnery {
      * requires: the player carries at least {@code count} of {@code item}<br>
      * effects: removes that many, first slots first
      */
-    private static void takeItem(Player player, Item item, int count) {
+    static void takeItem(Player player, Item item, int count) {
         Inventory inventory = player.getInventory();
         int remaining = count;
         for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {

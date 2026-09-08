@@ -2,7 +2,7 @@
   "values": {
     "rangedweaponsmod:pistol": {
       "class": "sidearm",
-      "capacity": 12,
+      "capacity": 15,
       "reload_ticks_per_round": 2,
       "fire_rate_ticks": 5,
       "damage": 6.0,
@@ -46,8 +46,8 @@
     },
     "rangedweaponsmod:rifle": {
       "class": "rifle",
-      "capacity": 10,
-      "reload_ticks_per_round": 3,
+      "capacity": 30,
+      "reload_ticks_per_round": 1,
       "fire_rate_ticks": 6,
       "damage": 12.0,
       "projectiles_per_shot": 1,
@@ -63,8 +63,8 @@
     },
     "rangedweaponsmod:scoped_rifle": {
       "class": "rifle",
-      "capacity": 5,
-      "reload_ticks_per_round": 6,
+      "capacity": 30,
+      "reload_ticks_per_round": 1,
       "fire_rate_ticks": 10,
       "damage": 16.0,
       "projectiles_per_shot": 1,
@@ -80,7 +80,7 @@
     },
     "rangedweaponsmod:machine_gun": {
       "class": "automatic",
-      "capacity": 50,
+      "capacity": 75,
       "reload_ticks_per_round": 1,
       "fire_rate_ticks": 3,
       "damage": 6.0,

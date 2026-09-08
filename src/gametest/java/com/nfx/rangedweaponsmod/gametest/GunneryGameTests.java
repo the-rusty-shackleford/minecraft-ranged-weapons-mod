@@ -27,6 +27,13 @@ import com.nfx.rangedweapons.fallback.Fallback;
 import com.nfx.rangedweaponsmod.Handling;
 import com.nfx.rangedweaponsmod.ModData;
 import com.nfx.rangedweaponsmod.ModItems;
+import com.nfx.rangedweaponsmod.GunItem;
+import com.nfx.rangedweaponsmod.MagazineFedWeapon;
+import net.minecraft.world.item.Item;
+import com.nfx.rangedweaponsmod.domain.Magazine;
+import com.nfx.rangedweaponsmod.Magazines;
+import com.nfx.rangedweaponsmod.MagazineMenu;
+import com.nfx.rangedweaponsmod.MagazineItem;
 import com.nfx.rangedweaponsmod.PlayerGunnery;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.Reload;
@@ -37,6 +44,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -57,12 +65,18 @@ import java.util.List;
  *
  * <p>Partitions. Fire: the held trigger fires on its first tick and then
  * every fire-rate ticks (counted through rounds spent); a release stops it;
- * a shot launches the protocol's bullet. Reload: an empty trigger starts a
- * reload only when the inventory has ammunition, and finishing it loads
- * exactly the lesser of the space and the ammunition, consuming that much;
- * no ammunition means no reload and rounds stay at zero; the reload key
- * tops up a part magazine without the trigger. Data: profile and handling
- * read back from the data maps.
+ * a shot launches the protocol's bullet. Magazines (the machine gun): loose
+ * rounds are adopted into a box; an empty trigger takes the first loaded
+ * magazine carried and only a loaded one; R changes a part magazine for
+ * the first loaded one and keeps it; Shift+R walks the carried magazines
+ * in inventory order and wraps; a mixed magazine fires in order with the
+ * next round's stats; the screen fills in inventory order from the family
+ * only. The tube (the shotgun): an empty trigger reloads from the
+ * inventory, loading the lesser of the space and the rounds carried; the
+ * key tops up without the trigger; a gun mid-reload neither fires nor
+ * restarts; Shift+R unloads and loads the next kind, or nothing with
+ * nothing to change to. Data: profile and handling read back from the data
+ * maps.
  *
  * <p>The class has a public no-argument constructor and instance test
  * methods because the gametest registry instantiates the holder class
@@ -74,8 +88,8 @@ public final class GunneryGameTests {
 
     private static final int ARENA_SIZE = 9;
     private static final int FIRE_RATE = 3;
-    private static final int CAPACITY = 50;
-    private static final int RELOAD_TICKS = 50;
+    private static final int CAPACITY = 75;
+    private static final int RELOAD_TICKS = 75;
 
     public GunneryGameTests() {}
 
@@ -229,16 +243,19 @@ public final class GunneryGameTests {
     public void everyGunResolvesWithItsOwnNumbers(GameTestHelper helper) {
         record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family, float damage, float knockback) {}
         for (Expected e : List.of(
-                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 12, 5, 1, true, "small", 6.0f, 0.6f),
+                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 15, 5, 1, true, "small", 6.0f, 0.6f),
                 new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 13, 6, true, "shell", 4.0f, 3.0f),
-                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 10, 6, 1, false, "medium", 12.0f, 1.0f),
-                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 5, 10, 1, false, "medium", 16.0f, 1.5f),
-                new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 50, 3, 1, false, "medium", 6.0f, 0.4f))) {
+                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 30, 6, 1, false, "medium", 12.0f, 1.0f),
+                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 30, 10, 1, false, "medium", 16.0f, 1.5f),
+                new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 75, 3, 1, false, "medium", 6.0f, 0.4f))) {
             ItemStack stack = new ItemStack(e.item());
             RangedWeapon weapon = RangedWeapons.resolve(stack);
             helper.assertTrue(weapon != null, e.item() + " resolves");
+            helper.assertValueEqual(weapon instanceof MagazineFedWeapon, GunItem.isMagazineFed(stack),
+                    e.item() + " is on the native tier exactly when it is magazine-fed");
             helper.assertValueEqual(weapon.profile().weaponClass(), e.cls(), e.item() + " class");
-            helper.assertValueEqual(weapon.capacity(stack), e.capacity(), e.item() + " capacity");
+            helper.assertValueEqual(weapon.capacity(stack), e.capacity(), e.item() + " capacity (with no magazine, the profile's)");
+            helper.assertValueEqual(weapon.stats(stack).capacity(), weapon.capacity(stack), e.item() + " stats agree on the capacity");
             helper.assertValueEqual(weapon.stats(stack).fireRateTicks(), e.rate(), e.item() + " fire rate");
             helper.assertValueEqual(weapon.stats(stack).projectilesPerShot(), e.pellets(), e.item() + " projectiles");
             helper.assertValueEqual(weapon.stats(stack).damage(), e.damage(), e.item() + " damage");
@@ -385,19 +402,22 @@ public final class GunneryGameTests {
     // --- ammunition families -------------------------------------------------
 
     @GameTest(template = "arena", timeoutTicks = 100)
-    public void aReloadTakesAnyRoundOfTheFamilyAndNotAnother(GameTestHelper helper) {
+    public void aMagazineOfAnotherModsMediumRoundGoesInAndASmallMagazineDoesNot(GameTestHelper helper) {
         Gunner g = gunner(helper, 0, 0);
-        // Another mod's medium round (the gametest pack tags iron nuggets medium),
-        // and a small round (gold nuggets) that must be left alone.
-        g.player().getInventory().add(new ItemStack(Items.IRON_NUGGET, 10));
-        g.player().getInventory().add(new ItemStack(Items.GOLD_NUGGET, 10));
-        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 10, "only the medium rounds count");
-        PlayerGunnery.onTrigger(g.player(), true);          // empty gun, trigger pulled: a reload starts
+        // Another mod's medium round (the gametest pack tags iron nuggets
+        // medium) in a rifle magazine -- the family's, so the machine gun
+        // takes it -- and a pistol magazine, another family, that it must not.
+        g.player().getInventory().setItem(3, box(ModItems.PISTOL_MAGAZINE.get(), ModItems.SMALL_ROUND.get(), 10));
+        g.player().getInventory().setItem(4, box(ModItems.RIFLE_MAGAZINE.get(), Items.IRON_NUGGET, 10));
+        helper.assertValueEqual(Magazines.loadedMagazineSlots(g.player(), g.weapon()), List.of(4), "only the medium magazine counts");
+        PlayerGunnery.onTrigger(g.player(), true);          // empty gun, trigger pulled: a magazine change starts
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
             helper.assertValueEqual(g.weapon().rounds(g.gun()), 10, "loaded from the foreign medium rounds");
-            helper.assertValueEqual(g.player().getInventory().countItem(Items.IRON_NUGGET), 0, "all ten spent");
-            helper.assertValueEqual(g.player().getInventory().countItem(Items.GOLD_NUGGET), 10, "the small rounds untouched");
+            helper.assertValueEqual(g.weapon().loadedAmmo(g.gun()).orElseThrow(), Items.IRON_NUGGET, "the store names the round");
+            helper.assertValueEqual(g.weapon().stats(g.gun()).damage(), 9.0f, "and fires with the round's own damage");
+            helper.assertTrue(g.player().getInventory().getItem(4).isEmpty(), "the magazine left its slot for the gun");
+            helper.assertTrue(g.player().getInventory().getItem(3).is(ModItems.PISTOL_MAGAZINE.get()), "the small magazine untouched");
             helper.succeed();
         });
     }
@@ -465,81 +485,285 @@ public final class GunneryGameTests {
         });
     }
 
-    // --- reloading ----------------------------------------------------------
+    // --- reloading: magazines ------------------------------------------------
+
+    /** A magazine of {@code item} holding {@code count} of {@code round}. */
+    private static ItemStack box(MagazineItem item, Item round, int count) {
+        ItemStack magazine = new ItemStack(item);
+        Magazines.setContents(magazine, Magazine.<Item>empty(item.capacity()).push(round, count));
+        return magazine;
+    }
+
+    @GameTest(template = "arena")
+    public void magazinesStackOneTakeADyeAndKnowTheirFamily(GameTestHelper helper) {
+        for (MagazineItem item : ModItems.magazines()) {
+            ItemStack stack = new ItemStack(item);
+            helper.assertValueEqual(stack.getMaxStackSize(), 1, item + " stacks to one: two loads cannot share a stack");
+            helper.assertTrue(stack.is(ItemTags.DYEABLE), item + " takes a dye in the crafting grid");
+            helper.assertTrue(item.accepts(new ItemStack(BuiltInRegistries.ITEM.get(
+                    item.family().equals(AmmoFamilies.SMALL) ? ModItems.SMALL_ROUND.getId() : ModItems.ROUND.getId()))),
+                    item + " takes its family's round");
+            helper.assertFalse(item.accepts(new ItemStack(ModItems.SHELL.get())), item + " refuses a shell");
+        }
+        helper.assertValueEqual(ModItems.PISTOL_MAGAZINE.get().capacity(), 15, "the pistol magazine");
+        helper.assertValueEqual(ModItems.RIFLE_MAGAZINE.get().capacity(), 30, "the rifle magazine");
+        helper.assertValueEqual(ModItems.MACHINE_GUN_BOX.get().capacity(), 75, "the box");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void looseRoundsInAMagazineFedGunBecomeAMagazineOnFirstSight(GameTestHelper helper) {
+        // The gunner loads the store directly, the way a gun saved before
+        // magazines existed (or filled by creative) holds its rounds.
+        Gunner g = gunner(helper, 20, 0);
+        helper.assertTrue(Magazines.inserted(g.gun()).isEmpty(), "no magazine before the first tick");
+        driveTicks(helper, g, 1, 1);
+        helper.runAtTickTime(2, () -> {
+            ItemStack magazine = Magazines.inserted(g.gun()).orElseThrow();
+            helper.assertTrue(magazine.is(ModItems.MACHINE_GUN_BOX.get()), "adopted into the machine gun's box");
+            helper.assertValueEqual(Magazines.contents(magazine).rounds(), 20, "with the rounds it held");
+            helper.assertValueEqual(Magazines.contents(magazine).next().orElseThrow(), ModItems.ROUND.get(), "of its native round");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 20, "the store agrees");
+            helper.succeed();
+        });
+    }
 
     @GameTest(template = "arena", timeoutTicks = 100)
-    public void anEmptyTriggerReloadsFromTheInventory(GameTestHelper helper) {
-        Gunner g = gunner(helper, 0, 64);
+    public void anEmptyTriggerLoadsTheFirstLoadedMagazineCarried(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        g.player().getInventory().setItem(2, new ItemStack(ModItems.MACHINE_GUN_BOX.get()));   // empty: passed over
+        g.player().getInventory().setItem(5, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 40));
+        g.player().getInventory().setItem(7, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 75));
         PlayerGunnery.onTrigger(g.player(), true);
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(2, () -> {
             Reload reload = g.gun().get(ModData.RELOAD.get());
-            helper.assertTrue(reload != null, "a reload started on the empty trigger");
-            helper.assertValueEqual(reload.durationTicks(), RELOAD_TICKS, "reload duration from the profile");
+            helper.assertTrue(reload != null && !reload.swap(), "a magazine change started on the empty trigger");
+            helper.assertValueEqual(reload.durationTicks(), RELOAD_TICKS, "it takes the gun's full reload time");
         });
         helper.runAtTickTime(RELOAD_TICKS, () ->
-                helper.assertValueEqual(g.weapon().rounds(g.gun()), 0, "still empty before the reload is over"));
+                helper.assertValueEqual(g.weapon().rounds(g.gun()), 0, "still empty before the change is over"));
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
-            helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "the reload is over");
-            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY, "a full magazine");
-            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 64 - CAPACITY,
-                    "ammunition consumed");
+            helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "the change is over");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 40, "the first loaded magazine, not the fullest");
+            helper.assertTrue(g.player().getInventory().getItem(5).isEmpty(), "it left slot 5 (the gun had nothing to put there)");
+            helper.assertValueEqual(Magazines.contents(g.player().getInventory().getItem(7)).rounds(), 75, "the other stays");
+            helper.assertValueEqual(g.player().getData(ModData.GUNNERY).lastSwapSlot(), 5, "the finger remembers where it took it from");
             helper.succeed();
         });
     }
 
     @GameTest(template = "arena", timeoutTicks = 60)
-    public void noAmmunitionMeansNoReloadAndAnEmptyGun(GameTestHelper helper) {
+    public void noLoadedMagazineMeansNoReloadAndAnEmptyGun(GameTestHelper helper) {
         Gunner g = gunner(helper, 0, 0);
+        g.player().getInventory().setItem(2, new ItemStack(ModItems.MACHINE_GUN_BOX.get()));   // empty
+        g.player().getInventory().add(new ItemStack(ModItems.ROUND.get(), 64));                // loose rounds load nothing
         PlayerGunnery.onTrigger(g.player(), true);
         driveTicks(helper, g, 1, 10);
         helper.runAtTickTime(11, () -> {
-            helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "no reload without ammunition");
+            helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "no change without a loaded magazine");
             helper.assertValueEqual(g.weapon().rounds(g.gun()), 0, "still empty");
+            helper.assertTrue(g.player().getData(ModData.GUNNERY).clickedThisPress(), "the dry click sounded instead");
             helper.succeed();
         });
     }
 
     @GameTest(template = "arena", timeoutTicks = 100)
-    public void aReloadLoadsOnlyWhatTheInventoryHas(GameTestHelper helper) {
-        Gunner g = gunner(helper, 10, 5);
-        PlayerGunnery.onReloadKey(g.player());
-        driveTicks(helper, g, 1, RELOAD_TICKS + 1);
-        helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
-            helper.assertValueEqual(g.weapon().rounds(g.gun()), 15, "ten plus the five available");
-            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 0, "all five consumed");
+    public void theReloadKeyChangesAPartMagazineForTheFirstLoadedOneAndKeepsIt(GameTestHelper helper) {
+        Gunner g = gunner(helper, 20, 0);                    // adopted into a box of 20 on the first tick
+        g.player().getInventory().setItem(6, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 75));
+        driveTicks(helper, g, 1, 1);
+        helper.runAtTickTime(2, () -> PlayerGunnery.onReloadKey(g.player(), false));
+        driveTicks(helper, g, 3, RELOAD_TICKS + 3);
+        helper.runAtTickTime(RELOAD_TICKS + 4, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 75, "the full magazine went in");
+            ItemStack kept = g.player().getInventory().getItem(6);
+            helper.assertTrue(kept.is(ModItems.MACHINE_GUN_BOX.get()), "the part magazine took its slot");
+            helper.assertValueEqual(Magazines.contents(kept).rounds(), 20, "with what it still held");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 300)
+    public void shiftRWalksTheCarriedMagazinesInInventoryOrderAndWrapsRound(GameTestHelper helper) {
+        Gunner g = gunner(helper, 10, 0);                    // A: adopted, 10 rounds
+        g.player().getInventory().setItem(1, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 20));   // B
+        g.player().getInventory().setItem(3, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 30));   // C
+        driveTicks(helper, g, 1, 1);
+        int change = RELOAD_TICKS + 2;
+        // Three swaps in a row: B in (A to slot 1), C in (B to slot 3), then round to slot 1 again: A in (C to slot 1).
+        helper.runAtTickTime(2, () -> PlayerGunnery.onReloadKey(g.player(), true));
+        driveTicks(helper, g, 3, 2 + change);
+        helper.runAtTickTime(3 + change, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 20, "B went in first");
+            helper.assertValueEqual(Magazines.contents(g.player().getInventory().getItem(1)).rounds(), 10, "A took B's slot");
+            PlayerGunnery.onReloadKey(g.player(), true);
+        });
+        driveTicks(helper, g, 4 + change, 3 + 2 * change);
+        helper.runAtTickTime(4 + 2 * change, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 30, "then C, the next after slot 1");
+            helper.assertValueEqual(Magazines.contents(g.player().getInventory().getItem(3)).rounds(), 20, "B took C's slot");
+            PlayerGunnery.onReloadKey(g.player(), true);
+        });
+        driveTicks(helper, g, 5 + 2 * change, 4 + 3 * change);
+        helper.runAtTickTime(5 + 3 * change, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 10, "then round to A in slot 1");
+            helper.assertValueEqual(Magazines.contents(g.player().getInventory().getItem(1)).rounds(), 30, "C took A's slot");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void aMixedMagazineFiresItsRoundsInOrderAndTheStatsFollowTheNextRound(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        ItemStack magazine = new ItemStack(ModItems.MACHINE_GUN_BOX.get());
+        Magazines.setContents(magazine, Magazine.<Item>empty(75).push(ModItems.ROUND.get(), 2).push(Items.IRON_NUGGET, 1));
+        Magazines.insert(g.gun(), g.weapon(), magazine);
+        helper.assertValueEqual(g.weapon().rounds(g.gun()), 3, "three rounds in the store");
+        helper.assertValueEqual(g.weapon().loadedAmmo(g.gun()).orElseThrow(), ModItems.ROUND.get(), "the round fires first");
+        float base = g.weapon().stats(g.gun()).damage();
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 4);                       // shots at 1 and 4
+        helper.runAtTickTime(5, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 1, "two spent");
+            helper.assertValueEqual(g.weapon().loadedAmmo(g.gun()).orElseThrow(), Items.IRON_NUGGET, "the nugget is next");
+            helper.assertValueEqual(g.weapon().stats(g.gun()).damage(), 9.0f, "and the stats are its now");
+            helper.assertTrue(base != 9.0f, "which differ from the round's (" + base + ")");
+            helper.assertValueEqual(Magazines.contents(Magazines.inserted(g.gun()).orElseThrow()).rounds(), 1, "the magazine agrees");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void theMagazineScreenFillsFromTheInventoryInOrderAndTakesOnlyItsFamily(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        Player player = g.player();
+        ItemStack magazine = new ItemStack(ModItems.RIFLE_MAGAZINE.get());
+        player.setItemInHand(InteractionHand.MAIN_HAND, magazine);
+        player.getInventory().setItem(3, new ItemStack(Items.IRON_NUGGET, 4));     // medium, first in order
+        player.getInventory().setItem(4, new ItemStack(ModItems.SMALL_ROUND.get(), 9)); // not the family
+        player.getInventory().setItem(9, new ItemStack(ModItems.ROUND.get(), 64));   // medium, plenty
+        MagazineMenu menu = new MagazineMenu(1, player.getInventory(), InteractionHand.MAIN_HAND);
+        helper.assertTrue(menu.stillValid(player), "the menu is for the magazine in hand");
+        helper.assertTrue(menu.clickMenuButton(player, MagazineMenu.FILL_BUTTON), "the fill button loads something");
+        Magazine<Item> filled = Magazines.contents(player.getMainHandItem());
+        helper.assertValueEqual(filled.rounds(), 30, "filled to the rifle magazine's capacity");
+        helper.assertValueEqual(filled.segments().get(0).round(), Items.IRON_NUGGET, "the first kind carried fires first");
+        helper.assertValueEqual(filled.segments().get(0).count(), 4, "all four of it");
+        helper.assertValueEqual(filled.segments().get(1).count(), 26, "then the rounds up to the capacity");
+        helper.assertValueEqual(player.getInventory().countItem(ModItems.ROUND.get()), 38, "twenty-six rounds taken");
+        helper.assertValueEqual(player.getInventory().countItem(ModItems.SMALL_ROUND.get()), 9, "the small rounds untouched");
+        helper.assertFalse(menu.getSlot(0).mayPlace(new ItemStack(ModItems.SMALL_ROUND.get())), "a run slot refuses another family");
+        helper.assertTrue(menu.getSlot(0).mayPlace(new ItemStack(ModItems.ROUND.get())), "and takes its own");
+        helper.assertValueEqual(menu.getSlot(1).getItem().getCount(), 26, "the slots show the runs");
+        // Shift-clicking a run out puts its rounds back in the inventory and the magazine forgets them.
+        menu.quickMoveStack(player, 1);
+        helper.assertValueEqual(Magazines.contents(player.getMainHandItem()).rounds(), 4, "the second run came out");
+        helper.assertValueEqual(player.getInventory().countItem(ModItems.ROUND.get()), 64, "and is back in the inventory");
+        helper.succeed();
+    }
+
+    // --- reloading: a gun loaded directly (the shotgun) -----------------------
+
+    /** The shotgun: a tube loaded round by round from the inventory, {@code rounds} in it and {@code shells} carried. */
+    private static Gunner shotgunner(GameTestHelper helper, int rounds, int shells) {
+        Gunner g = gunner(helper, GameType.SURVIVAL, ModItems.SHOTGUN.get(), rounds, 0);
+        if (shells > 0) {
+            g.player().getInventory().add(new ItemStack(ModItems.SHELL.get(), shells));
+        }
+        return g;
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public void anEmptyShotgunReloadsFromTheInventory(GameTestHelper helper) {
+        Gunner g = shotgunner(helper, 0, 64);
+        int reloadTicks = g.weapon().stats(g.gun()).fullReloadTicks();
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, reloadTicks + 1);
+        helper.runAtTickTime(2, () -> {
+            Reload reload = g.gun().get(ModData.RELOAD.get());
+            helper.assertTrue(reload != null, "a reload started on the empty trigger");
+            helper.assertValueEqual(reload.durationTicks(), reloadTicks, "reload duration from the profile");
+        });
+        helper.runAtTickTime(reloadTicks, () ->
+                helper.assertValueEqual(g.weapon().rounds(g.gun()), 0, "still empty before the reload is over"));
+        helper.runAtTickTime(reloadTicks + 2, () -> {
+            helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "the reload is over");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 6, "a full tube");
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 64 - 6, "shells consumed");
             helper.succeed();
         });
     }
 
     @GameTest(template = "arena", timeoutTicks = 100)
-    public void theReloadKeyTopsUpAPartMagazineWithoutTheTrigger(GameTestHelper helper) {
-        Gunner g = gunner(helper, 20, 64);
-        PlayerGunnery.onReloadKey(g.player());
-        driveTicks(helper, g, 1, RELOAD_TICKS + 1);
-        helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
-            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY, "topped up");
-            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 64 - 30,
-                    "thirty consumed");
+    public void aShotgunReloadLoadsOnlyWhatTheInventoryHasAndTheKeyTopsUpWithoutTheTrigger(GameTestHelper helper) {
+        Gunner g = shotgunner(helper, 2, 3);
+        int reloadTicks = g.weapon().stats(g.gun()).fullReloadTicks();
+        PlayerGunnery.onReloadKey(g.player(), false);
+        driveTicks(helper, g, 1, reloadTicks + 1);
+        helper.runAtTickTime(reloadTicks + 2, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 5, "two plus the three available");
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 0, "all three consumed");
             helper.succeed();
         });
     }
 
     @GameTest(template = "arena", timeoutTicks = 100)
     public void aGunMidReloadNeitherFiresNorRestarts(GameTestHelper helper) {
-        Gunner g = gunner(helper, 20, 64);
-        PlayerGunnery.onReloadKey(g.player());
+        Gunner g = shotgunner(helper, 2, 64);
+        int reloadTicks = g.weapon().stats(g.gun()).fullReloadTicks();
+        PlayerGunnery.onReloadKey(g.player(), false);
         PlayerGunnery.onTrigger(g.player(), true);
-        driveTicks(helper, g, 1, RELOAD_TICKS + 1);
-        helper.runAtTickTime(RELOAD_TICKS - 5, () -> {
-            helper.assertValueEqual(g.weapon().rounds(g.gun()), 20, "no shot while reloading");
-            helper.assertValueEqual(g.gun().get(ModData.RELOAD.get()).startedAt(), helper.getLevel().getGameTime() - (RELOAD_TICKS - 6),
+        driveTicks(helper, g, 1, reloadTicks + 1);
+        helper.runAtTickTime(reloadTicks - 5, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 2, "no shot while reloading");
+            helper.assertValueEqual(g.gun().get(ModData.RELOAD.get()).startedAt(), helper.getLevel().getGameTime() - (reloadTicks - 6),
                     "the reload was not restarted by the held trigger");
         });
-        helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
+        helper.runAtTickTime(reloadTicks + 2, () -> {
             helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "the reload finished");
-            helper.assertTrue(g.weapon().rounds(g.gun()) <= CAPACITY && g.weapon().rounds(g.gun()) >= CAPACITY - 1,
+            helper.assertTrue(g.weapon().rounds(g.gun()) <= 6 && g.weapon().rounds(g.gun()) >= 5,
                     "reloaded, then the held trigger fires again: " + g.weapon().rounds(g.gun()));
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public void shiftROnTheShotgunUnloadsTheTubeAndLoadsTheNextKindCarried(GameTestHelper helper) {
+        Gunner g = shotgunner(helper, 0, 0);
+        g.weapon().load(g.gun(), 6, ModItems.SHELL.get());
+        g.player().getInventory().setItem(3, new ItemStack(ModItems.SHELL.get(), 10));
+        g.player().getInventory().setItem(4, new ItemStack(ModItems.SLUG.get(), 4));
+        helper.assertValueEqual(PlayerGunnery.nextKind(g.player(), g.weapon(), g.gun()).orElseThrow(), ModItems.SLUG.get(),
+                "the kind after shells in inventory order");
+        int reloadTicks = g.weapon().stats(g.gun()).fullReloadTicks();
+        PlayerGunnery.onReloadKey(g.player(), true);
+        driveTicks(helper, g, 1, reloadTicks + 1);
+        helper.runAtTickTime(2, () -> {
+            Reload reload = g.gun().get(ModData.RELOAD.get());
+            helper.assertTrue(reload != null && reload.swap(), "a swap started, full tube or not");
+        });
+        helper.runAtTickTime(reloadTicks + 2, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 4, "the four slugs loaded");
+            helper.assertValueEqual(g.weapon().loadedAmmo(g.gun()).orElseThrow(), ModItems.SLUG.get(), "slugs it is");
+            helper.assertValueEqual(g.player().getInventory().countItem(ModItems.SHELL.get()), 16, "the six shells went back");
+            helper.assertValueEqual(g.player().getInventory().countItem(ModItems.SLUG.get()), 0, "the slugs went in");
+            // With only slugs and shells carried and slugs loaded, the next swap goes back to shells.
+            helper.assertValueEqual(PlayerGunnery.nextKind(g.player(), g.weapon(), g.gun()).orElseThrow(), ModItems.SHELL.get(), "round to shells");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void shiftRWithNothingToSwapToDoesNothing(GameTestHelper helper) {
+        Gunner g = shotgunner(helper, 3, 10);              // shells loaded, only shells carried
+        g.weapon().load(g.gun(), 3, ModItems.SHELL.get());
+        PlayerGunnery.onReloadKey(g.player(), true);
+        driveTicks(helper, g, 1, 5);
+        helper.runAtTickTime(6, () -> {
+            helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "no swap with nothing to swap to");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 3, "the tube untouched");
+            helper.assertFalse(g.player().getData(ModData.GUNNERY).swapRequested(), "the request was consumed");
             helper.succeed();
         });
     }

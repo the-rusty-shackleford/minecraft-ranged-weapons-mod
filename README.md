@@ -32,18 +32,39 @@ never on cooldown, so there is no hotbar strobe, no 0.2x movement slowdown,
 and the cadence is the server's, not the client's frame rate. Firing breaks
 a sprint, the way drawing a bow does. A gun in the off hand does nothing.
 
-**Reload.** `R` reloads; so does pulling the trigger on an empty magazine when
-you carry ammunition the gun takes -- any round of its family, from any mod,
-in inventory order; the tooltip names the family (with none, the gun clicks
-once per pull). A
-reload takes the profile's full reload time, the gun is unusable meanwhile, and
-on completion it loads as many rounds as the magazine has room for and your
-inventory can supply. Creative has unlimited ammunition, as it has unlimited
-arrows: every gun fires without spending a round, never needs a reload, and
-the counter shows an infinity sign. The reload is a
-property of the gun (a data component), so a gun dropped mid-reload is still
-mid-reload when picked up; if the clock it was started on is gone (another
-world), the reload is abandoned rather than finished early.
+**Magazines.** Every gun but the shotgun is fed from a detachable magazine:
+a pistol magazine (15 small rounds), a rifle magazine (30 medium, the rifle
+and the scoped rifle share it) or a machine gun box (75 medium), each two
+steel. A gun holds nothing without one. A magazine is an ordered load: the
+rounds go in as runs of one kind, the first run fires first, and a mixed
+magazine -- twelve shells' worth of one kind then three of another -- is the
+point, not an accident. Right-click a magazine to fill it: a row of slots
+for the runs, first to fire on the left, that take the magazine's family and
+nothing else, and a *Fill* button that takes the accepted rounds from your
+inventory in inventory order, the first kind first. Name one in an anvil
+and dye it in a crafting grid, and it says so in the HUD. Capacity is the
+magazine item's, so an extended or a double-stack magazine is another item
+that every gun of the family takes. Guns saved before magazines existed
+have their loose rounds adopted into a magazine on first sight.
+
+**Reload.** `R` changes magazines: the one in the gun comes out, with what
+it still holds, and the first loaded magazine the gun takes in your
+inventory, hotbar first, goes in, trading places with it -- so a half-spent
+magazine is kept, never lost. Pulling the trigger on an empty gun does the
+same when you carry a loaded magazine (with none, the gun clicks once per
+pull; an empty magazine does not count). `Shift+R` swaps: the next loaded
+magazine after the one the last swap took, in inventory order, wrapping
+round, so pressing again walks through everything you carry. The shotgun's
+tube is loaded directly, as it always was: `R` tops it up from the shells
+or slugs you carry, and `Shift+R` unloads it back into your inventory and
+loads the next kind you carry. A change or a swap takes the profile's full
+reload time, the gun is unusable meanwhile, and the reload is a property of
+the gun (a data component), so a gun dropped mid-reload is still mid-reload
+when picked up; if the clock it was started on is gone (another world), the
+reload is abandoned rather than finished early. Creative has unlimited
+ammunition, as it has unlimited arrows: every gun fires without spending a
+round, needs no magazine, never reloads, and the counter shows an infinity
+sign.
 
 **Recoil.** Each shot kicks the camera up by the gun's `recoil_pitch` and a
 random side by `recoil_yaw`, and the kick recovers exponentially at `recovery`
@@ -79,9 +100,11 @@ little. Through the scoped rifle it is a scope: the view narrows four times,
 the scope's mask covers all but a circle, the crosshair stays, and the gun is
 out of the way. Both zooms are client config.
 
-**The counter.** Rounds over capacity beside the hotbar while a gun is held,
-red at a fifth of a magazine, with a progress bar during a reload. Hidden with
-the rest of the HUD (`F1`).
+**The counter.** Beside the hotbar while a gun is held: the round that fires
+next as its own icon, rounds over capacity beside it, red at a fifth of a
+magazine, and under them the magazine's name in its dye colour (or *No
+magazine* in red; for the shotgun, the kind of round loaded), with a
+progress bar during a reload. Hidden with the rest of the HUD (`F1`).
 
 **Where a round goes.** It leaves the muzzle -- forward, to the main-hand
 side, a little below the eye; on the line of sight when aiming, or a scope
@@ -101,12 +124,12 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 |---|---|---|---|---|---|
 | Class | sidearm | shotgun | rifle | rifle | automatic |
 | Fire | one per pull, 5 ticks | one per pull, 13 ticks (the pump) | one per pull, 6 ticks | one per pull, 10 ticks (the bolt) | held, every 3 ticks |
-| Magazine | 12 small rounds | 6 shells | 10 medium rounds | 5 medium rounds | 50 medium rounds |
+| Magazine | pistol magazine, 15 small rounds | tube of 6 shells | rifle magazine, 30 medium rounds | rifle magazine, 30 medium rounds | box, 75 medium rounds |
 | Damage | 4 | 6 pellets of 3.5 | 9 | 14 | 5.5 |
 | Falls off | to half past 28 blocks, from 10 | to a fifth past 18 blocks, from 5 | no | no | no |
 | Spread | 0.03 | 0.11 | 0.012 | 0.006 | 0.05 |
 | Reach | 20 | 12 | 40 | 64 | 28 |
-| Reload | 24 ticks | 48 ticks | 30 ticks | 30 ticks | 50 ticks |
+| Reload | 30 ticks | 48 ticks | 30 ticks | 30 ticks | 75 ticks |
 | Kick | 1.6 up | 4.5 up | 2.2 up | 3.0 up | 0.55 up |
 | Aiming spread | 0.5 | 0.7 | 0.35 | 0.15 | 0.35 |
 | Held | one hand | two | two | two | two |
@@ -131,10 +154,12 @@ family, so another mod's rounds of the same family load too.
 The shotgun takes shells or slugs. A shell is buckshot: six pellets of 4,
 a spread of 0.07, falling off past five blocks. A slug is one round of 18
 with almost no spread and reach to thirty blocks, and the same push. The
-gun loads one kind at a time: while any rounds remain, a reload tops up
+tube holds one kind at a time: while any rounds remain, a reload tops up
 with the kind loaded; once empty, it takes the first kind it finds in the
-inventory, hotbar first -- keep the round you want next nearest the front.
-The counter shows the round loaded when it is not the gun's own. What a
+inventory, hotbar first; `Shift+R` unloads and changes to the next kind.
+In a magazine the kinds mix, run by run, and the gun's numbers follow the
+round that fires next -- the protocol's store is told the next round after
+every shot, so the stats, the falloff and the counter's icon are its. What a
 round changes is the protocol's `rangedweapons:ammo` data map
 (`data/rangedweapons/data_maps/item/ammo.json`); the shotgun's profile is
 its buckshot.
@@ -265,17 +290,25 @@ Four tiers. The first two run under `./gradlew check` (and so `build`); the
 other two are for eyes and hands.
 
 - `./gradlew test` -- plain JUnit against the `domain` source set, the pure
-  layer: the fire clock, the trigger's rule table, the reload plan, the recoil
-  model, stance spread, and the recipe tree. That source set is compiled against nothing but the
+  layer: the fire clock, the trigger's rule table (the swap among them), the
+  reload plan, the magazine (runs, order, fill) and which magazine or kind a
+  change takes, the recoil model, stance spread, and the recipe tree. That source set is compiled against nothing but the
   JDK, so a `net.minecraft` import there is a compile error. Partitions are
   written at the top of each test class.
 - `./gradlew runGameTestServer` -- gametests on a real headless server. The
   tests are a mod of their own (`src/gametest`) so they exercise the mod from
   outside: the data resolves to a weapon with the right capacity; a held
-  trigger fires at the profile's rate and a release stops it; an empty pull
-  starts a reload only with ammunition in the inventory; a reload takes its
-  full time, consumes exactly what it loads, and blocks fire meanwhile; a
-  reload takes any round of the gun's family and none of another; a round
+  trigger fires at the profile's rate and a release stops it; loose rounds
+  in a magazine-fed gun become a magazine; an empty pull takes the first
+  loaded magazine carried and only a loaded one; `R` changes a part
+  magazine for the first loaded one and keeps it; `Shift+R` walks the
+  carried magazines in order and wraps; a mixed magazine fires in order
+  with the next round's stats; the screen fills in inventory order from the
+  family only; the shotgun's tube reloads from the inventory, takes its full
+  time, consumes exactly what it loads, blocks fire meanwhile, and `Shift+R`
+  unloads it and loads the next kind, or nothing with nothing to change to;
+  a magazine of another mod's medium round goes in and a small one does
+  not; a round
   goes where the crosshair points and not parallel to it; the
   gun's use is the press, consumed without a swing, a repeat is not a new
   pull, and the off hand is not operated; creative fires an empty gun for

@@ -430,6 +430,131 @@ def scope_icon():
     return px
 
 
+# ------------------------------------------------------- the magazine icons
+#
+# Each magazine is two textures: the body, and a band across it that the
+# game tints with the magazine's dye (tint index 1), painted mid-grey so an
+# undyed band reads as plain steel and a dyed one as that colour.
+
+def _magazine_body(put, x0, x1, y0, y1, curve=0):
+    """A magazine seen side-on: a steel box from (x0, y0) to (x1, y1), its
+    top edge the feed lips, its base plate a shade darker, a witness line
+    of round tops down the front; `curve` shears the lower half forward, a
+    banana magazine."""
+    m, ml, md = PALETTE["metal_mid"], PALETTE["metal_light"], PALETTE["metal_dark"]
+    brass = PALETTE["brass"]
+    mid = (y0 + y1) // 2
+    for y in range(y0, y1 + 1):
+        shift = 0 if y <= mid else min(curve, (y - mid) * curve // max(1, y1 - mid))
+        for x in range(x0 + shift, x1 + 1 + shift):
+            edge = x == x0 + shift or x == x1 + shift or y == y1
+            put(x, y, ml if y == y0 else md if edge else m)
+    for y in range(y0 + 2, y1 - 1, 2):                    # round tops showing at the witness slot
+        shift = 0 if y <= mid else min(curve, (y - mid) * curve // max(1, y1 - mid))
+        put(x0 + 1 + shift, y, brass)
+    for x in range(x0, x1 + 1):                            # the base plate
+        put(x + (min(curve, curve) if y1 > mid else 0), y1, md)
+
+
+def _band(px, x0, x1, y):
+    """The tintable band: a two-pixel stripe across the body at row y, on a
+    canvas of its own -- the body texture stays where the band goes so the
+    tint multiplies grey, not transparency."""
+    band, put = _canvas()
+    grey = (150, 150, 150)
+    for yy in (y, y + 1):
+        for x in range(x0, x1 + 1):
+            put(x, yy, grey)
+    return band
+
+
+def pistol_magazine_icon():
+    """A short straight single-stack magazine."""
+    px, put = _canvas()
+    _magazine_body(put, 5, 9, 2, 13)
+    return px, _band(px, 5, 9, 7)
+
+
+def rifle_magazine_icon():
+    """A longer curved magazine."""
+    px, put = _canvas()
+    _magazine_body(put, 4, 9, 1, 14, curve=3)
+    return px, _band(px, 4, 9, 7)
+
+
+def machine_gun_box_icon():
+    """A belt box: wide and squat, a lid line across the top, a latch."""
+    m, ml, md = PALETTE["metal_mid"], PALETTE["metal_light"], PALETTE["metal_dark"]
+    px, put = _canvas()
+    for y in range(4, 14):
+        for x in range(1, 15):
+            edge = x in (1, 14) or y == 13
+            put(x, y, ml if y == 4 else md if edge else m)
+    for x in range(1, 15):
+        put(x, 6, md)                                      # the lid's seam
+    put(7, 5, PALETTE["brass"])
+    put(8, 5, PALETTE["brass"])
+    return px, _band(px, 1, 14, 9)
+
+
+MAGAZINE_ICONS = {
+    "pistol_magazine": pistol_magazine_icon,
+    "rifle_magazine": rifle_magazine_icon,
+    "machine_gun_box": machine_gun_box_icon,
+}
+
+
+# --------------------------------------------------------- the magazine screen
+
+def magazine_gui():
+    """The magazine screen's background, 176x166 in the game's own idiom: the
+    grey panel with its bevel, five run slots in a row, and the player's
+    inventory below where every container puts it."""
+    w, h = 176, 166
+    px = [[(0, 0, 0, 0) for _ in range(w)] for _ in range(h)]
+
+    def put(x, y, c):
+        if 0 <= x < w and 0 <= y < h:
+            px[y][x] = (*c, 255)
+
+    panel, light, dark, black = (198, 198, 198), (255, 255, 255), (85, 85, 85), (0, 0, 0)
+    for y in range(h):
+        for x in range(w):
+            corner = (x < 3 and y < 3) or (x >= w - 3 and y >= h - 3) or (x < 3 and y >= h - 3) or (x >= w - 3 and y < 3)
+            if corner and ((x in (0, w - 1) and y in (0, 1, h - 2, h - 1)) or (y in (0, h - 1) and x in (0, 1, w - 2, w - 1))):
+                continue
+            if x == 0 or y == 0 or x == w - 1 or y == h - 1:
+                put(x, y, black)
+            elif x <= 2 or y <= 2:
+                put(x, y, light)
+            elif x >= w - 3 or y >= h - 3:
+                put(x, y, dark)
+            else:
+                put(x, y, panel)
+
+    def slot(x, y):
+        # An 18x18 sunken square: dark top-left edges, light bottom-right, grey well.
+        for yy in range(y - 1, y + 17):
+            for xx in range(x - 1, x + 17):
+                if yy == y - 1 or xx == x - 1:
+                    put(xx, yy, (55, 55, 55))
+                elif yy == y + 16 or xx == x + 16:
+                    put(xx, yy, light)
+                else:
+                    put(xx, yy, (139, 139, 139))
+        put(x + 16, y - 1, panel)
+        put(x - 1, y + 16, panel)
+
+    for i in range(5):
+        slot(44 + 18 * i, 37)
+    for row in range(3):
+        for col in range(9):
+            slot(8 + 18 * col, 84 + 18 * row)
+    for col in range(9):
+        slot(8 + 18 * col, 142)
+    return px
+
+
 PART_ICONS = {
     "steel_ingot": steel_ingot_icon,
     "lower_receiver": lower_receiver_icon,
@@ -847,6 +972,11 @@ def main(argv) -> int:
         write_png(ASSETS / "textures/gui/scope.png", 256, 256, scope_mask())
         for name, fn in PART_ICONS.items():
             write_png(ASSETS / f"textures/item/{name}.png", 16, 16, fn())
+        for name, fn in MAGAZINE_ICONS.items():
+            body, band = fn()
+            write_png(ASSETS / f"textures/item/{name}.png", 16, 16, body)
+            write_png(ASSETS / f"textures/item/{name}_band.png", 16, 16, band)
+        write_png(ASSETS / "textures/gui/magazine.png", 176, 166, magazine_gui())
         stale = ASSETS / "textures/item/machine_gun.png"
         if stale.exists():
             stale.unlink()
@@ -860,6 +990,11 @@ def main(argv) -> int:
         for name in ("round", "small_round", "shell", "slug", *PART_ICONS):
             (ASSETS / f"models/item/{name}.json").write_text(json.dumps(
                 {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}}, indent=2) + "\n")
+        for name in MAGAZINE_ICONS:
+            # Two layers: the body, and the band the dye tints (tint index 1).
+            (ASSETS / f"models/item/{name}.json").write_text(json.dumps(
+                {"parent": "minecraft:item/generated", "textures": {
+                    "layer0": f"{MODID}:item/{name}", "layer1": f"{MODID}:item/{name}_band"}}, indent=2) + "\n")
     if "booth" in want:
         # Calibration models for the photo booth, as items of the gametest mod:
         # an unmistakable axes model (red tip on +X, blue tail on -X, green

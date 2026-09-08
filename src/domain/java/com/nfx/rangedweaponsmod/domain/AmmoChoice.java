@@ -56,4 +56,29 @@ public final class AmmoChoice {
         }
         return carried.stream().findFirst();
     }
+
+    /**
+     * Which kind a swap (Shift+R) of a directly loaded gun changes to.
+     *
+     * <p>effects: returns the kind after {@code loaded} in {@code carried},
+     * wrapping round to the first; the first of {@code carried} if
+     * {@code loaded} is empty or not carried; empty if {@code carried} holds
+     * nothing but {@code loaded} -- there is nothing to change to
+     *
+     * @param loaded  the kind loaded now, if known
+     * @param carried the accepted kinds the player carries, in inventory order, each once
+     * @param <T>     however a round is named
+     * @return the kind to change to
+     */
+    public static <T> Optional<T> next(Optional<T> loaded, List<T> carried) {
+        if (carried.isEmpty()) {
+            return Optional.empty();
+        }
+        int at = loaded.map(carried::indexOf).orElse(-1);
+        if (at < 0) {
+            return Optional.of(carried.get(0));
+        }
+        T candidate = carried.get((at + 1) % carried.size());
+        return candidate.equals(loaded.get()) ? Optional.empty() : Optional.of(candidate);
+    }
 }

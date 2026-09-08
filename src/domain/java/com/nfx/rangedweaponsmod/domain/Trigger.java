@@ -29,6 +29,11 @@ package com.nfx.rangedweaponsmod.domain;
  * <ol>
  *   <li>Reloading: finish when the reload is done, otherwise nothing -- a
  *       gun mid-reload neither fires nor restarts its reload.</li>
+ *   <li>A swap was asked for (Shift+R) and there is something to swap to
+ *       -- another loaded magazine, or another kind of round for a gun
+ *       loaded directly: start one. A swap is a reload that changes what
+ *       is loaded rather than topping it up, so it goes ahead with a full
+ *       magazine too.</li>
  *   <li>A reload was asked for, the magazine is not full and there is
  *       ammunition: start one. The reload key works without the trigger.</li>
  *   <li>Trigger not held: nothing.</li>
@@ -48,6 +53,8 @@ public final class Trigger {
         FIRE,
         /** Begin a reload of the held gun. */
         START_RELOAD,
+        /** Begin a swap: out with what is loaded, in with the next magazine or kind. */
+        START_SWAP,
         /** The reload's time is up: load the rounds. */
         FINISH_RELOAD,
         /** The magazine is empty and nothing can be loaded: the dry click. */
@@ -72,12 +79,23 @@ public final class Trigger {
      * @param ammoAvailable    whether the inventory holds at least one round to load
      * @param clickedThisPress whether the dry click already sounded for this press
      * @param automatic        whether the weapon fires for as long as the trigger is held; if not, once per pull
- * @param firedThisPress   whether it has already fired since the trigger was pressed
- * @param fireRateTicks    ticks between shots
+     * @param firedThisPress   whether it has already fired since the trigger was pressed
+     * @param fireRateTicks    ticks between shots
+     * @param swapRequested    whether the swap key was pressed since the last tick
+     * @param swapAvailable    whether there is another magazine, or another kind of round, to swap to
      */
     public record Inputs(boolean held, boolean reloadRequested, long now, long nextShotAt, int rounds, int capacity,
                          boolean reloading, boolean reloadDone, boolean ammoAvailable, boolean clickedThisPress,
-                         int fireRateTicks, boolean automatic, boolean firedThisPress) {
+                         int fireRateTicks, boolean automatic, boolean firedThisPress,
+                         boolean swapRequested, boolean swapAvailable) {
+        /** The inputs with no swap asked for. */
+        public Inputs(boolean held, boolean reloadRequested, long now, long nextShotAt, int rounds, int capacity,
+                      boolean reloading, boolean reloadDone, boolean ammoAvailable, boolean clickedThisPress,
+                      int fireRateTicks, boolean automatic, boolean firedThisPress) {
+            this(held, reloadRequested, now, nextShotAt, rounds, capacity, reloading, reloadDone, ammoAvailable,
+                    clickedThisPress, fireRateTicks, automatic, firedThisPress, false, false);
+        }
+
         /**
          * @throws IllegalArgumentException if the RI does not hold
          */
@@ -107,6 +125,9 @@ public final class Trigger {
     public static Action tick(Inputs in) {
         if (in.reloading()) {
             return in.reloadDone() ? Action.FINISH_RELOAD : Action.IDLE;
+        }
+        if (in.swapRequested() && in.swapAvailable()) {
+            return Action.START_SWAP;
         }
         if (in.reloadRequested() && in.rounds() < in.capacity() && in.ammoAvailable()) {
             return Action.START_RELOAD;

@@ -59,4 +59,24 @@ final class AmmoChoiceTest {
     void roundsMayNotBeNegative() {
         assertThrows(IllegalArgumentException.class, () -> AmmoChoice.choose(Optional.empty(), -1, List.of()));
     }
+
+    @Test
+    void aSwapChangesToTheKindAfterTheLoadedOneAndWraps() {
+        assertEquals(Optional.of("slug"), AmmoChoice.next(Optional.of("shell"), List.of("shell", "slug")));
+        assertEquals(Optional.of("shell"), AmmoChoice.next(Optional.of("slug"), List.of("shell", "slug")));
+        assertEquals(Optional.of("slug"), AmmoChoice.next(Optional.of("shell"), List.of("shell", "slug", "flare")));
+    }
+
+    @Test
+    void aSwapWithOnlyTheLoadedKindCarriedHasNothingToChangeTo() {
+        assertEquals(Optional.empty(), AmmoChoice.next(Optional.of("shell"), List.of("shell")));
+        assertEquals(Optional.empty(), AmmoChoice.next(Optional.of("shell"), List.of()));
+        assertEquals(Optional.empty(), AmmoChoice.next(Optional.empty(), List.of()));
+    }
+
+    @Test
+    void aSwapFromAnUnknownOrUncarriedKindTakesTheFirstCarried() {
+        assertEquals(Optional.of("slug"), AmmoChoice.next(Optional.empty(), List.of("slug", "shell")));
+        assertEquals(Optional.of("slug"), AmmoChoice.next(Optional.of("flare"), List.of("slug", "shell")));
+    }
 }

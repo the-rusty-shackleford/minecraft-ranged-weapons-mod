@@ -31,5 +31,21 @@
   "item.rangedweaponsmod.pump": "Shotgun Pump",
   "item.rangedweaponsmod.scope": "Rifle Scope",
   "itemGroup.rangedweaponsmod": "Ranged Weapons",
-  "item.rangedweaponsmod.slug": "Shotgun Slug"
+  "item.rangedweaponsmod.slug": "Shotgun Slug",
+  "item.rangedweaponsmod.pistol_magazine": "Pistol Magazine",
+  "item.rangedweaponsmod.rifle_magazine": "Rifle Magazine",
+  "item.rangedweaponsmod.machine_gun_box": "Machine Gun Box",
+  "item.rangedweaponsmod.magazine.holds": "Holds %s %s",
+  "item.rangedweaponsmod.magazine.empty": "Empty",
+  "item.rangedweaponsmod.magazine.loaded": "%s / %s loaded, first to fire first:",
+  "item.rangedweaponsmod.gun.magazine": "%s: %s / %s",
+  "item.rangedweaponsmod.gun.next": "Next: %s",
+  "item.rangedweaponsmod.gun.no_magazine": "No magazine",
+  "item.rangedweaponsmod.gun.takes_magazines": "Takes magazines of %s",
+  "hud.rangedweaponsmod.no_magazine": "No magazine",
+  "screen.rangedweaponsmod.magazine.fill": "Fill",
+  "screen.rangedweaponsmod.magazine.first": "Fires first →",
+  "screen.rangedweaponsmod.magazine.next": "Next: %s",
+  "screen.rangedweaponsmod.magazine.empty": "Empty",
+  "screen.rangedweaponsmod.magazine.fill.tooltip": "Fill from your inventory: the first kind of round you carry first, then the next, until the magazine is full"
 }

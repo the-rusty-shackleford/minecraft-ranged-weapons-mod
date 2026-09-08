@@ -184,6 +184,7 @@ public final class CraftingGameTests {
         List<String> expected = new ArrayList<>();
         expected.addAll(Blueprints.guns());
         expected.addAll(Blueprints.ammunition());
+        expected.addAll(Blueprints.magazines());
         expected.addAll(Blueprints.parts());
         helper.assertValueEqual(shown, expected, "the tab's contents");
         Set<String> ours = new HashSet<>();

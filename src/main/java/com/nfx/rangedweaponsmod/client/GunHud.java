@@ -20,6 +20,11 @@ package com.nfx.rangedweaponsmod.client;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweaponsmod.GunItem;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.Item;
+import net.minecraft.network.chat.Component;
+import java.util.Optional;
+import com.nfx.rangedweaponsmod.Magazines;
 import com.nfx.rangedweaponsmod.ModData;
 import com.nfx.rangedweaponsmod.Reload;
 import net.minecraft.client.DeltaTracker;
@@ -31,10 +36,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * The ammo counter: {@code rounds / capacity} to the right of the hotbar,
- * and a bar that fills while a reload runs. Drawn only while a gun is held;
- * everything it shows is on the stack (the rounds and the reload, both
- * synced) or in the profile (the capacity, synced with the data map).
+ * The ammo counter to the right of the hotbar: the round that fires next as
+ * its item's icon, {@code rounds / capacity} beside it, the magazine's label
+ * under it in the magazine's colour (or the round's name, for a gun loaded
+ * directly), and a bar that fills while a reload runs. Drawn only while a
+ * gun is held; everything it shows is on the stack (the rounds, the reload
+ * and the inserted magazine, all synced) or in the profile (the capacity,
+ * synced with the data map).
  */
 public final class GunHud {
     private GunHud() {}
@@ -47,6 +55,8 @@ public final class GunHud {
     private static final int BAR_HEIGHT = 3;
     /** Rounds at or below which the counter turns red: a fifth of the magazine. */
     private static final int LOW_FRACTION = 5;
+    /** An item icon's size. */
+    private static final int ICON = 16;
 
     static void render(GuiGraphics graphics, DeltaTracker delta) {
         if (!ClientConfig.HUD_ENABLED.get()) {
@@ -72,27 +82,47 @@ public final class GunHud {
         int screenHeight = graphics.guiHeight();
         // Just right of the hotbar, which is 182 wide and centred.
         int x = screenWidth / 2 + 91 + 6;
-        int y = screenHeight - 19;
+        int y = screenHeight - 22;
 
         boolean unlimited = mc.player.hasInfiniteMaterials();
+        boolean magazineFed = GunItem.isMagazineFed(stack);
+        Optional<ItemStack> magazine = Magazines.inserted(stack);
+        if (magazineFed && !unlimited && magazine.isPresent()) {
+            capacity = Magazines.contents(magazine.get()).capacity();
+        }
         String text = unlimited ? "\u221e / " + capacity : rounds + " / " + capacity;
         int color = !unlimited && rounds * LOW_FRACTION <= capacity ? TEXT_LOW_COLOR : TEXT_COLOR;
-        graphics.drawString(font, text, x, y, color, true);
 
-        // The round loaded, when it is not the gun's native one: a slug in
-        // the shotgun says so; buckshot needs no saying.
-        weapon.loadedAmmo(stack).ifPresent(round -> {
-            boolean nativeRound = weapon.profile().ammoItem()
-                    .map(id -> BuiltInRegistries.ITEM.getKey(round).equals(id)).orElse(false);
-            if (!nativeRound) {
-                graphics.drawString(font, round.getDescription(), x, y + font.lineHeight + 1, TEXT_COLOR, true);
+        // The round that fires next, as its own icon: a slug looks like a
+        // slug. Beside it the count; under both, what is loaded.
+        Optional<Item> next = weapon.loadedAmmo(stack)
+                .or(() -> weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional));
+        int iconY = y - 6;
+        if (next.isPresent() && (rounds > 0 || unlimited || !magazineFed)) {
+            graphics.renderItem(new ItemStack(next.get()), x, iconY);
+        }
+        int textX = x + ICON + 4;
+        graphics.drawString(font, text, textX, iconY + 4, color, true);
+
+        Component label;
+        int labelColor = TEXT_COLOR;
+        if (magazineFed && !unlimited) {
+            if (magazine.isPresent()) {
+                label = magazine.get().getHoverName();
+                labelColor = 0xFF000000 | DyedItemColor.getOrDefault(magazine.get(), 0xFFFFFF);
+            } else {
+                label = Component.translatable("hud.rangedweaponsmod.no_magazine");
+                labelColor = TEXT_LOW_COLOR;
             }
-        });
+        } else {
+            label = next.map(Item::getDescription).orElse(Component.empty());
+        }
+        graphics.drawString(font, label, x, iconY + ICON + 2, labelColor, true);
 
         Reload reload = stack.get(ModData.RELOAD.get());
         if (reload != null && mc.level != null) {
             float progress = reload.progress(mc.level.getGameTime());
-            int barY = y - BAR_HEIGHT - 2;
+            int barY = iconY - BAR_HEIGHT - 2;
             graphics.fill(x, barY, x + BAR_WIDTH, barY + BAR_HEIGHT, BAR_BACK);
             graphics.fill(x, barY, x + Math.round(BAR_WIDTH * progress), barY + BAR_HEIGHT, BAR_FILL);
         }

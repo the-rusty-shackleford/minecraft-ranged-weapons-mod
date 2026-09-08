@@ -20,6 +20,10 @@ package com.nfx.rangedweaponsmod.client;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.GunItem;
 import com.nfx.rangedweaponsmod.ModItems;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.minecraft.world.item.component.DyedItemColor;
+import com.nfx.rangedweaponsmod.ModData;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
@@ -75,6 +79,18 @@ public final class ClientSetup {
         // Below the crosshair: the mask must not cover it.
         event.registerBelow(VanillaGuiLayers.CROSSHAIR,
                 ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "scope"), Aiming::renderScope);
+    }
+
+    @SubscribeEvent
+    public static void registerScreens(RegisterMenuScreensEvent event) {
+        event.register(ModData.MAGAZINE_MENU.get(), MagazineScreen::new);
+    }
+
+    /** A magazine's band takes the dye's colour; undyed, it is the band as painted. */
+    @SubscribeEvent
+    public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
+        event.register((stack, tintIndex) -> tintIndex == 1 ? DyedItemColor.getOrDefault(stack, 0xFFFFFFFF) : 0xFFFFFFFF,
+                ModItems.magazines().toArray(Item[]::new));
     }
 
     @SubscribeEvent

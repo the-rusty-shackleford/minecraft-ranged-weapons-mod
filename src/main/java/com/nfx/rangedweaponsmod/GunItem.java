@@ -54,24 +54,45 @@ public final class GunItem extends Item {
         TWO_HANDED
     }
 
+    /** How the gun takes its rounds. */
+    public enum Feed {
+        /** A detachable magazine, loaded whole; the gun holds nothing without one. */
+        MAGAZINE,
+        /** An internal magazine -- a shotgun's tube -- loaded round by round from the inventory. */
+        INTERNAL
+    }
+
     private final Grip grip;
     private final boolean scoped;
+    private final Feed feed;
 
     /**
      * @param properties the item's
      * @param grip       how it is carried
      * @param scoped     whether aiming down its sights looks through a scope: a real
      *                   magnification and the scope's mask, rather than a slight lean in
+     * @param feed       how it takes its rounds
      */
-    public GunItem(Properties properties, Grip grip, boolean scoped) {
+    public GunItem(Properties properties, Grip grip, boolean scoped, Feed feed) {
         super(properties);
         this.grip = grip;
         this.scoped = scoped;
+        this.feed = feed;
     }
 
     /** How this gun is carried in third person. */
     public Grip grip() {
         return grip;
+    }
+
+    /** How this gun takes its rounds. */
+    public Feed feed() {
+        return feed;
+    }
+
+    /** effects: returns whether {@code stack} is a gun fed from a detachable magazine */
+    public static boolean isMagazineFed(ItemStack stack) {
+        return stack.getItem() instanceof GunItem gun && gun.feed() == Feed.MAGAZINE;
     }
 
     /** Whether aiming down its sights looks through a scope. */
@@ -127,10 +148,22 @@ public final class GunItem extends Item {
             tooltip.add(Component.translatable("item.rangedweaponsmod.gun.no_profile").withStyle(ChatFormatting.RED));
             return;
         }
-        tooltip.add(Component.translatable("item.rangedweaponsmod.gun.rounds", weapon.rounds(stack), weapon.capacity(stack))
-                .withStyle(ChatFormatting.GRAY));
+        if (feed == Feed.MAGAZINE) {
+            Magazines.inserted(stack).ifPresentOrElse(magazine -> {
+                tooltip.add(Component.translatable("item.rangedweaponsmod.gun.magazine", magazine.getHoverName(),
+                        weapon.rounds(stack), Magazines.contents(magazine).capacity()).withStyle(ChatFormatting.GRAY));
+                weapon.loadedAmmo(stack).ifPresent(round -> tooltip.add(
+                        Component.translatable("item.rangedweaponsmod.gun.next", round.getDescription())
+                                .withStyle(ChatFormatting.GRAY)));
+            }, () -> tooltip.add(Component.translatable("item.rangedweaponsmod.gun.no_magazine")
+                    .withStyle(ChatFormatting.GRAY)));
+        } else {
+            tooltip.add(Component.translatable("item.rangedweaponsmod.gun.rounds", weapon.rounds(stack), weapon.capacity(stack))
+                    .withStyle(ChatFormatting.GRAY));
+        }
         weapon.profile().ammoFamily().ifPresent(family -> tooltip.add(
-                Component.translatable("item.rangedweaponsmod.gun.takes", AmmoFamilies.displayName(family))
-                        .withStyle(ChatFormatting.DARK_GRAY)));
+                Component.translatable(feed == Feed.MAGAZINE
+                        ? "item.rangedweaponsmod.gun.takes_magazines" : "item.rangedweaponsmod.gun.takes",
+                        AmmoFamilies.displayName(family)).withStyle(ChatFormatting.DARK_GRAY)));
     }
 }

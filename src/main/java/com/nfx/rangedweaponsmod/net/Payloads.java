@@ -33,14 +33,14 @@ public final class Payloads {
     private Payloads() {}
 
     /** Bumped when a payload's shape changes; a mismatch refuses the connection early. */
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
         registrar.playToServer(TriggerPayload.TYPE, TriggerPayload.STREAM_CODEC,
                 (payload, context) -> PlayerGunnery.onTrigger(context.player(), payload.held()));
         registrar.playToServer(ReloadPayload.TYPE, ReloadPayload.STREAM_CODEC,
-                (payload, context) -> PlayerGunnery.onReloadKey(context.player()));
+                (payload, context) -> PlayerGunnery.onReloadKey(context.player(), payload.swap()));
         registrar.playToServer(AimPayload.TYPE, AimPayload.STREAM_CODEC,
                 (payload, context) -> PlayerGunnery.onAim(context.player(), payload.aiming()));
         registrar.playToClient(ShotFiredPayload.TYPE, ShotFiredPayload.STREAM_CODEC,

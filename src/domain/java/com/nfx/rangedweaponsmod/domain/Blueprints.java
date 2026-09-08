@@ -149,11 +149,27 @@ public final class Blueprints {
     public static final Blueprint SLUG_RECIPE = new Shaped(SLUG, Category.COMBAT, SLUG, 4,
             List.of("P", "G", "I"), Map.of('P', PAPER, 'G', GUNPOWDER, 'I', IRON), List.of(GUNPOWDER, IRON));
 
+    public static final String PISTOL_MAGAZINE = NS + ":pistol_magazine";
+    public static final String RIFLE_MAGAZINE = NS + ":rifle_magazine";
+    public static final String MACHINE_GUN_BOX = NS + ":machine_gun_box";
+
+    // The magazines: two steel each, told apart by the shape -- a short
+    // stack for the pistol's, a staggered pair for the rifle's curve, a
+    // pair side by side for the squat box. Steel, so a magazine costs a
+    // little more than the rounds it holds and less than any gun.
+    public static final Blueprint PISTOL_MAGAZINE_RECIPE = new Shaped(PISTOL_MAGAZINE, Category.COMBAT, PISTOL_MAGAZINE, 1,
+            List.of("T", "T"), Map.of('T', STEEL), List.of(STEEL));
+    public static final Blueprint RIFLE_MAGAZINE_RECIPE = new Shaped(RIFLE_MAGAZINE, Category.COMBAT, RIFLE_MAGAZINE, 1,
+            List.of("T ", " T"), Map.of('T', STEEL), List.of(STEEL));
+    public static final Blueprint MACHINE_GUN_BOX_RECIPE = new Shaped(MACHINE_GUN_BOX, Category.COMBAT, MACHINE_GUN_BOX, 1,
+            List.of("TT"), Map.of('T', STEEL), List.of(STEEL));
+
     private static final List<Blueprint> ALL = List.of(
             STEEL_INGOT_RECIPE, LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
             STOCK_RECIPE, PUMP_RECIPE, SCOPE_RECIPE,
             PISTOL_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
-            SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE);
+            SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE,
+            PISTOL_MAGAZINE_RECIPE, RIFLE_MAGAZINE_RECIPE, MACHINE_GUN_BOX_RECIPE);
 
     /** The tags this mod's own parts fill: a recipe taking the tag is, for the tally, taking the part. */
     private static final Map<String, String> FILLS = Map.of(STEEL, STEEL_INGOT);
@@ -174,6 +190,11 @@ public final class Blueprints {
     /** effects: returns the ammunition's item ids, in the order the tab shows them */
     public static List<String> ammunition() {
         return List.of(SMALL_ROUND, ROUND, SHELL, SLUG);
+    }
+
+    /** effects: returns the magazines' item ids, in the order the tab shows them */
+    public static List<String> magazines() {
+        return List.of(PISTOL_MAGAZINE, RIFLE_MAGAZINE, MACHINE_GUN_BOX);
     }
 
     /** effects: returns the parts' item ids */

@@ -24,6 +24,7 @@ import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.net.ReloadPayload;
 import com.nfx.rangedweaponsmod.net.TriggerPayload;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.InteractionHand;
 
@@ -107,7 +108,8 @@ public final class TriggerInput {
         }
         while (Keys.RELOAD.consumeClick()) {
             if (player != null && GunItem.isGun(player.getMainHandItem())) {
-                PacketDistributor.sendToServer(ReloadPayload.INSTANCE);
+                // Shift+R is the swap: the same key, so it is rebound with it.
+                PacketDistributor.sendToServer(new ReloadPayload(Screen.hasShiftDown()));
             }
         }
         Aiming.tick(mc, player);

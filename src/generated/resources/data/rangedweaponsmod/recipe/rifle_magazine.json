@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "T": {
+      "tag": "c:ingots/steel"
+    }
+  },
+  "pattern": [
+    "T ",
+    " T"
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:rifle_magazine"
+  }
+}

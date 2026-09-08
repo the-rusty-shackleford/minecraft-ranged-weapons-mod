@@ -18,6 +18,13 @@
 package com.nfx.rangedweaponsmod.gametest;
 
 import com.nfx.rangedweaponsmod.ModItems;
+import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.Items;
+import net.minecraft.network.chat.Component;
+import net.minecraft.core.component.DataComponents;
+import com.nfx.rangedweaponsmod.domain.Magazine;
+import com.nfx.rangedweaponsmod.Magazines;
+import com.nfx.rangedweaponsmod.MagazineMenu;
 import com.nfx.rangedweaponsmod.client.ArmPoses;
 import com.nfx.rangedweaponsmod.ModTabs;
 import com.nfx.rangedweapons.api.RangedWeapon;
@@ -226,8 +233,38 @@ public final class PhotoBooth {
         })));
         s.add(new Step(t[0] += 5, () -> mc.setScreen(new InventoryScreen(player))));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-parts-inventory")));
+        s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
+
+        // Magazines: the HUD with a labelled, dyed magazine in the pistol,
+        // survival so the label shows; then the screen a rifle magazine is
+        // filled in, holding a mixed load, with rounds in the inventory for
+        // the fill button to take.
+        s.add(new Step(t[0] += 1, () -> onServer(mc, sp -> {
+            ItemStack pistol = new ItemStack(ModItems.PISTOL.get());
+            ItemStack magazine = new ItemStack(ModItems.PISTOL_MAGAZINE.get());
+            magazine.set(DataComponents.CUSTOM_NAME, Component.literal("Bedside"));
+            magazine.set(DataComponents.DYED_COLOR, new DyedItemColor(0xC0392B, true));
+            Magazines.setContents(magazine, Magazine.<Item>empty(15).push(ModItems.SMALL_ROUND.get(), 9));
+            RangedWeapon weapon = RangedWeapons.resolve(pistol);
+            if (weapon != null) {
+                Magazines.insert(pistol, weapon, magazine);
+            }
+            sp.setItemInHand(InteractionHand.MAIN_HAND, pistol);
+            sp.getInventory().setItem(1, magazine.copy());
+        })));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-magazine-hud")));
+        s.add(new Step(t[0] += 1, () -> onServer(mc, sp -> {
+            ItemStack magazine = new ItemStack(ModItems.RIFLE_MAGAZINE.get());
+            Magazines.setContents(magazine, Magazine.<Item>empty(30).push(ModItems.ROUND.get(), 12).push(Items.IRON_NUGGET, 3));
+            sp.setItemInHand(InteractionHand.MAIN_HAND, magazine);
+            sp.getInventory().setItem(9, new ItemStack(ModItems.ROUND.get(), 40));
+            MagazineMenu.open(sp, InteractionHand.MAIN_HAND);
+        })));
+        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-magazine-screen")));
         s.add(new Step(t[0] += 1, () -> {
-            mc.setScreen(null);
+            if (mc.player != null) {
+                mc.player.closeContainer();
+            }
             onServer(mc, sp -> sp.setGameMode(GameType.CREATIVE));
         }));
 

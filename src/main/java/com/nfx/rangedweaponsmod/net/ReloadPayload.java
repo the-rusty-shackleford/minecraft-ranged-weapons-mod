@@ -19,19 +19,25 @@ package com.nfx.rangedweaponsmod.net;
 
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-/** Client to server: the reload key was pressed. Carries nothing. */
-public record ReloadPayload() implements CustomPacketPayload {
-
-    public static final ReloadPayload INSTANCE = new ReloadPayload();
+/**
+ * Client to server: the reload key was pressed -- with Shift, a swap (out
+ * with what is loaded, in with the next magazine or kind) rather than a
+ * top-up.
+ *
+ * @param swap whether Shift was held
+ */
+public record ReloadPayload(boolean swap) implements CustomPacketPayload {
 
     public static final Type<ReloadPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "reload"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, ReloadPayload> STREAM_CODEC = StreamCodec.unit(INSTANCE);
+    public static final StreamCodec<RegistryFriendlyByteBuf, ReloadPayload> STREAM_CODEC =
+            ByteBufCodecs.BOOL.<RegistryFriendlyByteBuf>cast().map(ReloadPayload::new, ReloadPayload::swap);
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

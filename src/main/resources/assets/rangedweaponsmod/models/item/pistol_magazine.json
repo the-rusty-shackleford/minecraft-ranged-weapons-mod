@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "rangedweaponsmod:item/pistol_magazine",
+    "layer1": "rangedweaponsmod:item/pistol_magazine_band"
+  }
+}

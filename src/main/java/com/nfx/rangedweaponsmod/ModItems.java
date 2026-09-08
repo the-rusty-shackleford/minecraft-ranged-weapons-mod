@@ -18,6 +18,10 @@
 package com.nfx.rangedweaponsmod;
 
 import net.minecraft.world.item.CreativeModeTabs;
+import com.nfx.rangedweapons.api.AmmoFamilies;
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.WeaponClass;
+import java.util.Optional;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -39,23 +43,23 @@ public final class ModItems {
 
     /** A sidearm: one hand, one shot per pull, small rounds. */
     public static final DeferredItem<GunItem> PISTOL =
-            ITEMS.registerItem("pistol", p -> new GunItem(p, GunItem.Grip.ONE_HANDED, false), new Item.Properties().durability(800));
+            ITEMS.registerItem("pistol", p -> new GunItem(p, GunItem.Grip.ONE_HANDED, false, GunItem.Feed.MAGAZINE), new Item.Properties().durability(800));
 
     /** A pump shotgun: shells, a spread of pellets, brutal close and a sting at range. */
     public static final DeferredItem<GunItem> SHOTGUN =
-            ITEMS.registerItem("shotgun", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false), new Item.Properties().durability(500));
+            ITEMS.registerItem("shotgun", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false, GunItem.Feed.INTERNAL), new Item.Properties().durability(500));
 
     /** A semi-automatic rifle: medium rounds, accurate, one shot per pull. */
     public static final DeferredItem<GunItem> RIFLE =
-            ITEMS.registerItem("rifle", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false), new Item.Properties().durability(700));
+            ITEMS.registerItem("rifle", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false, GunItem.Feed.MAGAZINE), new Item.Properties().durability(700));
 
     /** A bolt-action rifle with a scope: medium rounds, the hardest hit and the longest reach. */
     public static final DeferredItem<GunItem> SCOPED_RIFLE =
-            ITEMS.registerItem("scoped_rifle", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, true), new Item.Properties().durability(600));
+            ITEMS.registerItem("scoped_rifle", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, true, GunItem.Feed.MAGAZINE), new Item.Properties().durability(600));
 
     /** A light machine gun: medium rounds, the one gun that fires for as long as the trigger is held. */
     public static final DeferredItem<GunItem> MACHINE_GUN =
-            ITEMS.registerItem("machine_gun", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false), new Item.Properties().durability(1200));
+            ITEMS.registerItem("machine_gun", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false, GunItem.Feed.MAGAZINE), new Item.Properties().durability(1200));
 
     /** A small round: the pistol's. */
     public static final DeferredItem<Item> SMALL_ROUND =
@@ -72,6 +76,42 @@ public final class ModItems {
     /** A shotgun slug: one heavy round from the same gun, for reach and a single hard hit. */
     public static final DeferredItem<Item> SLUG =
             ITEMS.registerItem("slug", Item::new, new Item.Properties().stacksTo(64));
+
+    // The magazines: one default per family that a magazine-fed gun takes.
+    // Capacity is the item's, so an extended or a double-stack magazine is
+    // another item here with other numbers, and every gun of the family
+    // takes it.
+
+    /** The pistol's magazine: fifteen small rounds. */
+    public static final DeferredItem<MagazineItem> PISTOL_MAGAZINE = ITEMS.registerItem("pistol_magazine",
+            p -> new MagazineItem(p, AmmoFamilies.SMALL, 15), new Item.Properties());
+    /** The rifles' magazine: thirty medium rounds. */
+    public static final DeferredItem<MagazineItem> RIFLE_MAGAZINE = ITEMS.registerItem("rifle_magazine",
+            p -> new MagazineItem(p, AmmoFamilies.MEDIUM, 30), new Item.Properties());
+    /** The machine gun's box: seventy-five medium rounds. */
+    public static final DeferredItem<MagazineItem> MACHINE_GUN_BOX = ITEMS.registerItem("machine_gun_box",
+            p -> new MagazineItem(p, AmmoFamilies.MEDIUM, 75), new Item.Properties());
+
+    private static final List<DeferredItem<MagazineItem>> MAGAZINES = List.of(PISTOL_MAGAZINE, RIFLE_MAGAZINE, MACHINE_GUN_BOX);
+
+    /** effects: returns every magazine this mod registers, in the order the tab shows them */
+    public static List<MagazineItem> magazines() {
+        return MAGAZINES.stream().map(DeferredHolder::get).toList();
+    }
+
+    /**
+     * effects: returns the magazine a gun of {@code weapon}'s family is
+     * issued by default -- the one loose rounds are adopted into: the
+     * machine gun's box for the machine gun, else the first magazine of the
+     * family; empty if the family has none
+     */
+    public static Optional<MagazineItem> defaultMagazineFor(RangedWeapon weapon) {
+        if (weapon.profile().weaponClass() == WeaponClass.AUTOMATIC) {
+            return Optional.of(MACHINE_GUN_BOX.get());
+        }
+        return weapon.profile().ammoFamily().flatMap(family ->
+                magazines().stream().filter(m -> m.family().equals(family)).findFirst());
+    }
 
     // The parts. A gun is assembled from these (see the domain's Blueprints);
     // they are plain items, never GunItems, so nothing that treats a gun as
@@ -123,6 +163,7 @@ public final class ModItems {
             event.accept(ROUND.get());
             event.accept(SHELL.get());
             event.accept(SLUG.get());
+            magazines().forEach(event::accept);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             parts().forEach(event::accept);

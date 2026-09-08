@@ -32,45 +32,57 @@ package com.nfx.rangedweaponsmod;
  * @param reloadRequested  whether the reload key was pressed and not yet acted on
  * @param firedThisPress   whether the gun has fired since the trigger was pressed; a semi-automatic fires once per pull
  * @param aiming           whether the player is aiming down the sights
+ * @param swapRequested    whether the swap key (Shift+R) was pressed and not yet acted on
+ * @param lastSwapSlot     the inventory slot the last swap took its magazine from, or -1: swaps walk the inventory from there
  */
 public record Gunnery(boolean held, long nextShotAt, boolean clickedThisPress, boolean reloadRequested,
-                      boolean firedThisPress, boolean aiming) {
+                      boolean firedThisPress, boolean aiming, boolean swapRequested, int lastSwapSlot) {
 
-    /** Trigger released, nothing scheduled, sights down. */
-    public static final Gunnery RELEASED = new Gunnery(false, 0L, false, false, false, false);
+    /** Trigger released, nothing scheduled, sights down, no swap yet. */
+    public static final Gunnery RELEASED = new Gunnery(false, 0L, false, false, false, false, false, -1);
 
     /** effects: returns this with the trigger pressed, the click and the one-shot latch armed again */
     public Gunnery pressed() {
-        return new Gunnery(true, nextShotAt, false, reloadRequested, false, aiming);
+        return new Gunnery(true, nextShotAt, false, reloadRequested, false, aiming, swapRequested, lastSwapSlot);
     }
 
     /** effects: returns this with the trigger released */
     public Gunnery released() {
-        return new Gunnery(false, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming);
+        return new Gunnery(false, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming, swapRequested, lastSwapSlot);
     }
 
     /** effects: returns this having just fired, with the next shot allowed at {@code tick} */
     public Gunnery firedUntil(long tick) {
-        return new Gunnery(held, tick, clickedThisPress, reloadRequested, true, aiming);
+        return new Gunnery(held, tick, clickedThisPress, reloadRequested, true, aiming, swapRequested, lastSwapSlot);
     }
 
     /** effects: returns this with the empty click spent for this press */
     public Gunnery clicked() {
-        return new Gunnery(held, nextShotAt, true, reloadRequested, firedThisPress, aiming);
+        return new Gunnery(held, nextShotAt, true, reloadRequested, firedThisPress, aiming, swapRequested, lastSwapSlot);
     }
 
     /** effects: returns this with a reload asked for */
     public Gunnery reloadAsked() {
-        return new Gunnery(held, nextShotAt, clickedThisPress, true, firedThisPress, aiming);
+        return new Gunnery(held, nextShotAt, clickedThisPress, true, firedThisPress, aiming, swapRequested, lastSwapSlot);
     }
 
-    /** effects: returns this with the reload request consumed */
-    public Gunnery reloadHandled() {
-        return new Gunnery(held, nextShotAt, clickedThisPress, false, firedThisPress, aiming);
+    /** effects: returns this with a swap asked for */
+    public Gunnery swapAsked() {
+        return new Gunnery(held, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming, true, lastSwapSlot);
+    }
+
+    /** effects: returns this with the reload and swap requests consumed */
+    public Gunnery requestsHandled() {
+        return new Gunnery(held, nextShotAt, clickedThisPress, false, firedThisPress, aiming, false, lastSwapSlot);
+    }
+
+    /** effects: returns this remembering that a swap took its magazine from {@code slot} */
+    public Gunnery swappedFrom(int slot) {
+        return new Gunnery(held, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming, swapRequested, slot);
     }
 
     /** effects: returns this with the sights up or down */
     public Gunnery aiming(boolean aiming) {
-        return new Gunnery(held, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming);
+        return new Gunnery(held, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming, swapRequested, lastSwapSlot);
     }
 }

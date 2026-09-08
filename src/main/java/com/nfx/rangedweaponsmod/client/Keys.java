@@ -27,7 +27,7 @@ public final class Keys {
 
     public static final String CATEGORY = "key.categories.rangedweaponsmod";
 
-    /** Reload the held gun. R by default; rebindable in Controls. */
+    /** Reload the held gun; with Shift, swap what is loaded. R by default; rebindable in Controls. */
     public static final KeyMapping RELOAD =
             new KeyMapping("key.rangedweaponsmod.reload", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, CATEGORY);
 

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "rangedweaponsmod:item/machine_gun_box",
+    "layer1": "rangedweaponsmod:item/machine_gun_box_band"
+  }
+}

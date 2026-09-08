@@ -34,18 +34,27 @@ import net.minecraft.network.codec.StreamCodec;
  *
  * @param startedAt     the game time the reload began
  * @param durationTicks how long it takes
+ * @param swap          whether it is a swap (Shift+R): out with what is loaded, in with the next
+ *                      magazine or kind of round -- rather than a top-up
  */
-public record Reload(long startedAt, int durationTicks) {
+public record Reload(long startedAt, int durationTicks, boolean swap) {
 
     public static final Codec<Reload> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.LONG.fieldOf("started_at").forGetter(Reload::startedAt),
-            Codec.intRange(1, Integer.MAX_VALUE).fieldOf("duration_ticks").forGetter(Reload::durationTicks)
+            Codec.intRange(1, Integer.MAX_VALUE).fieldOf("duration_ticks").forGetter(Reload::durationTicks),
+            Codec.BOOL.optionalFieldOf("swap", false).forGetter(Reload::swap)
     ).apply(i, Reload::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, Reload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_LONG, Reload::startedAt,
             ByteBufCodecs.VAR_INT, Reload::durationTicks,
+            ByteBufCodecs.BOOL, Reload::swap,
             Reload::new);
+
+    /** A plain reload. */
+    public Reload(long startedAt, int durationTicks) {
+        this(startedAt, durationTicks, false);
+    }
 
     /**
      * @throws IllegalArgumentException if {@code durationTicks < 1}

@@ -22,6 +22,7 @@ import com.nfx.rangedweaponsmod.domain.Trigger.Inputs;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -34,7 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * no ammunition -- trigger held or not (works without the trigger; loses to
  * reloading). Trigger: not held (nothing, whatever else is true). Empty
  * magazine: ammunition available / none and not yet clicked / none and
- * already clicked. Loaded: clock ready / not ready. Inputs RI: capacity 0,
+ * already clicked. Loaded: clock ready / not ready. Swap requested: with
+ * something to swap to (a full magazine too; loses to reloading; beats a
+ * reload asked in the same tick) / nothing. Inputs RI: capacity 0,
  * rounds above capacity or negative, fire rate 0 or above the maximum,
  * reloadDone without reloading.
  */
@@ -51,6 +54,11 @@ final class TriggerTest {
     private static Inputs with(Inputs b, boolean held, boolean reloadRequested, long now, long nextShotAt, int rounds,
                                boolean reloading, boolean reloadDone, boolean ammo, boolean clicked) {
         return new Inputs(held, reloadRequested, now, nextShotAt, rounds, b.capacity(), reloading, reloadDone, ammo, clicked, b.fireRateTicks(), b.automatic(), b.firedThisPress());
+    }
+
+    private static Inputs swap(Inputs b, boolean reloading, boolean reloadRequested, int rounds, boolean available) {
+        return new Inputs(b.held(), reloadRequested, b.now(), b.nextShotAt(), rounds, b.capacity(), reloading, false,
+                b.ammoAvailable(), b.clickedThisPress(), b.fireRateTicks(), b.automatic(), b.firedThisPress(), true, available);
     }
 
     // --- rule 1: reloading ---------------------------------------------------
@@ -202,5 +210,32 @@ final class TriggerTest {
                 false, false, true, false, b.fireRateTicks(), false, true)), "an empty gun still reloads");
         assertEquals(Action.IDLE, Trigger.tick(new Inputs(false, false, b.now(), b.nextShotAt(), 3, b.capacity(),
                 false, false, true, false, b.fireRateTicks(), false, true)), "released is released");
+    }
+
+    // --- rule 2: a swap asked for --------------------------------------------
+
+    @Test
+    void aSwapWithSomethingToSwapToStartsEvenWithAFullMagazine() {
+        assertEquals(Action.START_SWAP, Trigger.tick(swap(base(), false, false, 10, true)));
+        assertEquals(Action.START_SWAP, Trigger.tick(swap(base(), false, false, CAPACITY, true)));
+        assertEquals(Action.START_SWAP, Trigger.tick(swap(base(), false, false, 0, true)));
+    }
+
+    @Test
+    void aSwapWithNothingToSwapToFallsThroughToTheOtherRules() {
+        assertEquals(Action.FIRE, Trigger.tick(swap(base(), false, false, 10, false)));
+        assertEquals(Action.START_RELOAD, Trigger.tick(swap(base(), false, true, 10, false)));
+    }
+
+    @Test
+    void aSwapLosesToAReloadInProgressAndBeatsAReloadAskedTheSameTick() {
+        assertEquals(Action.IDLE, Trigger.tick(swap(base(), true, false, 10, true)));
+        assertEquals(Action.START_SWAP, Trigger.tick(swap(base(), false, true, 10, true)));
+    }
+
+    @Test
+    void theThirteenArgumentInputsAskForNoSwap() {
+        assertFalse(base().swapRequested());
+        assertFalse(base().swapAvailable());
     }
 }

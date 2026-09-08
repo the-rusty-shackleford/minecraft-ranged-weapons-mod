@@ -28,3 +28,4 @@ thought and someone later would want to know *why*.
 | D-0010 | Rounds of one family may differ; the gun loads one kind at a time; damage matches the mod the players compare to |
 | D-0011 | The trigger is the attack key, cancelled outright; the use key is vanilla's |
 | D-0012 | Every sound is a cut of a CC0 field recording; synthesis is retired |
+| D-0013 | Magazines are ordered loads on the gun's stack; the gun's capacity is the magazine's; the protocol is untouched |
