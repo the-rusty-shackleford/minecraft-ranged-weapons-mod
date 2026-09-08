@@ -206,24 +206,31 @@ that were calibrated by photograph in the booth, never derived.
 2. Give it a profile in `weapons.json` -- its `ammo_family` and its native
    `ammo` round, which you tag into the family -- and, if the class default
    is wrong for it, a `handling.json` entry.
-3. A model, a texture, a shot sound and a far report: `devtools/art/build.py`
-   is the generator for the ones shipped, run with `uv run devtools/art/build.py`.
-   A shot is synthesized as a microphone hears one -- the muzzle's blast
-   pulse, a few milliseconds of turbulent spray, the ground's reflection, a
-   band-limited low thump and a darkening outdoor tail with distant echoes;
-   no sine anywhere, since a tone is what makes a shot sound like a game.
-   The action -- a pump racked, a bolt worked, a magazine out and in, the
-   hammer on an empty chamber -- is built the same way: each contact is a
-   burst of noise striking a bank of damped, inharmonic modes (steel
-   ringing, each partial dying at its own rate) over a knock of band-limited
-   noise for the receiver's weight, and each slide is stick-slip, hundreds
-   of small catches a second through a resonance that moves with the contact.
+3. A model and a texture: `devtools/art/build.py` is the generator for the
+   ones shipped, run with `uv run devtools/art/build.py`. A shot sound and
+   any action sound: a field recording of a real firearm, cut and re-timed
+   by the same script. Nothing is synthesized any more -- three rounds of
+   synthesis each measured realistic and each was heard as arcade. Put the
+   recording under `devtools/art/sounds/src/`, credit it in
+   `devtools/art/sounds/SOURCES.md` (Creative Commons Zero only, so it can
+   be committed and shipped without terms), and describe the cut in
+   `RECORDINGS`: which seconds of which recording, placed where, at what
+   gain. A pump or a bolt recorded a second after the shot is moved up under
+   its tail, inside the gun's `fire_rate_ticks`.
 4. Photograph it: `./gradlew runPhotoBooth` (below) and look at the pictures.
 5. A recipe: a `Blueprint` in `Blueprints` (with a unit test pinning where it
    sits in the tree), then `./gradlew runData`; and lang entries.
 
 No gunnery code changes. The trigger, the reload, the recoil and the counter
 read everything from the profile and the handling.
+
+## Third-party recordings
+
+Every sound the mod plays is cut from a recording listed in
+`devtools/art/sounds/SOURCES.md`, each dedicated to the public domain by its
+recordist under Creative Commons Zero on freesound.org. Attribution is not
+required by that dedication; the recordists are named there because they
+should be. The code and the art stay under this repository's own license.
 
 ## Client config
 

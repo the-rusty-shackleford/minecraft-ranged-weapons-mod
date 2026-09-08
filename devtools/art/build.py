@@ -7,8 +7,10 @@ Run from the repository root:
 Everything it writes lands under src/main/resources/assets/rangedweaponsmod/
 and is committed; this script is the source of truth for those files, and the
 photo booth run (`./gradlew photoBooth`) is how the result is looked at.
-Original work throughout -- nothing here is derived from another mod's assets.
-Sounds need ffmpeg with libvorbis on the PATH.
+The textures and models are original work -- nothing here is derived from
+another mod's assets. The sounds are cut from field recordings of real
+firearms dedicated to the public domain (CC0) by their recordists, listed in
+sounds/SOURCES.md. Sounds need ffmpeg with libvorbis on the PATH.
 """
 from __future__ import annotations
 
@@ -701,50 +703,61 @@ BOOTH_VARIANTS = {
 
 
 # ------------------------------------------------------------------- sounds
+#
+# Every sound is cut from a field recording of a real firearm -- see
+# sounds/SOURCES.md for what was recorded, by whom, and the CC0 dedication
+# that lets it be shipped and committed. Nothing is synthesized: three rounds
+# of synthesis (sines, then a blast-wave model, then modal impacts) each
+# measured "realistic" and each was heard as arcade, because a recording
+# carries a thousand details no model of it does.
+#
+# What this stage does is editing, not sound design: cut a take out of a
+# recording, move it in time, fade its edges, mix a few takes, normalize. The
+# guns' cycle times force the re-timing -- a pump-action shotgun can fire
+# again 0.65 s after a shot, a bolt-action rifle 0.5 s, so the pump and the
+# bolt recorded a second and more after the shot are moved up under its tail,
+# where a fast shooter's hands put them.
 
 RATE = 44100
+SOURCES = Path(__file__).resolve().parent / "sounds" / "src"
 
 
-def synth(seconds, fn):
-    n = int(RATE * seconds)
-    return [max(-1.0, min(1.0, fn(i / RATE, i / n))) for i in range(n)]
+def decode(stem):
+    """Reads sounds/src/<stem>.ogg through ffmpeg as mono float samples at RATE."""
+    path = SOURCES / f"{stem}.ogg"
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(path), "-f", "f32le", "-ac", "1",
+                          "-ar", str(RATE), "pipe:1"], capture_output=True, check=True).stdout
+    return list(struct.unpack(f"<{len(raw) // 4}f", raw))
 
 
-def write_ogg(path: Path, samples) -> None:
-    """Writes 16-bit mono PCM through ffmpeg into Ogg Vorbis. Bit-exact, so
-    the same samples give the same bytes and an unchanged sound is an
-    unchanged file in the diff."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    pcm = b"".join(struct.pack("<h", int(s * 32767)) for s in samples)
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(RATE), "-ac", "1",
-                    "-i", "pipe:0", "-c:a", "libvorbis", "-q:a", "5", "-fflags", "+bitexact", "-flags", "+bitexact", str(path)],
-                   input=pcm, check=True)
+def take(stem, start, end=None, at=0.0, gain=1.0, fade_in=0.003, fade_out=0.03):
+    """One cut of a recording: the samples of `stem` from `start` to `end`
+    seconds (`None`: its end), faded in and out over the given seconds so a
+    cut never clicks, to be placed `at` seconds into the result at `gain`."""
+    return (stem, start, end, at, gain, fade_in, fade_out)
 
 
-def lowpass(samples, hz):
-    """One-pole lowpass; hz is the -3 dB point."""
-    a = 1.0 - math.exp(-2.0 * math.pi * hz / RATE)
-    out, y = [], 0.0
-    for x in samples:
-        y += (x - y) * a
-        out.append(y)
-    return out
-
-
-def lowpass2(samples, hz):
-    """Two poles: 12 dB an octave, enough to keep noise from reading as hiss."""
-    return lowpass(lowpass(samples, hz), hz)
-
-
-def highpass(samples, hz):
-    """One-pole highpass: the input minus its lowpass."""
-    return [x - y for x, y in zip(samples, lowpass(samples, hz))]
-
-
-def saturate(samples, drive):
-    """Soft clipping: tanh, so the peaks compress and grow harmonics instead of cracking."""
-    top = math.tanh(drive)
-    return [math.tanh(x * drive) / top for x in samples]
+def assemble(takes, peak):
+    """Mixes the takes into one clip and normalizes it to `peak`. The clip is
+    as long as the latest take runs; nothing is added -- no reverb, no tone,
+    no filtering -- so what is heard is the recordings and their timing."""
+    cuts = []
+    for stem, start, end, at, gain, fade_in, fade_out in takes:
+        samples = decode(stem)
+        i0 = int(start * RATE)
+        i1 = len(samples) if end is None else min(len(samples), int(end * RATE))
+        cut = samples[i0:i1]
+        n_in, n_out = int(fade_in * RATE), int(fade_out * RATE)
+        for i in range(min(n_in, len(cut))):
+            cut[i] *= i / n_in
+        for i in range(min(n_out, len(cut))):
+            cut[len(cut) - 1 - i] *= i / n_out
+        cuts.append((int(at * RATE), [c * gain for c in cut]))
+    out = [0.0] * max(i0 + len(c) for i0, c in cuts)
+    for i0, cut in cuts:
+        for i, s in enumerate(cut):
+            out[i0 + i] += s
+    return normalize(out, peak)
 
 
 def normalize(samples, peak=0.95):
@@ -752,298 +765,69 @@ def normalize(samples, peak=0.95):
     return [x * peak / top for x in samples]
 
 
-def slapback(samples, delays_ms, gains):
-    """Discrete early reflections: the outdoors answering the shot."""
-    out = list(samples)
-    for ms, g in zip(delays_ms, gains):
-        d = int(RATE * ms / 1000)
-        for i in range(d, len(out)):
-            out[i] += samples[i - d] * g
-    return out
+def write_ogg(path: Path, samples) -> None:
+    """Writes 16-bit mono PCM through ffmpeg into Ogg Vorbis. Bit-exact, so
+    the same samples give the same bytes and an unchanged sound is an
+    unchanged file in the diff."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pcm = b"".join(struct.pack("<h", int(max(-1.0, min(1.0, s)) * 32767)) for s in samples)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(RATE), "-ac", "1",
+                    "-i", "pipe:0", "-c:a", "libvorbis", "-q:a", "5", "-fflags", "+bitexact", "-flags", "+bitexact", str(path)],
+                   input=pcm, check=True)
 
 
-def modes_ring(excitation, modes):
-    """Drives a bank of damped resonators with an excitation: each mode is
-    (hz, t60 seconds, amplitude), a two-pole filter ringing at hz and dying
-    to -60 dB in t60. Struck steel is a few such partials at inharmonic
-    spacings, each dying at its own rate -- which is what a bare sine, however
-    quickly it fades, never sounds like."""
-    n = len(excitation)
-    out = [0.0] * n
-    for hz, t60, amp in modes:
-        r = math.exp(-6.9078 / (t60 * RATE))
-        th = 2 * math.pi * hz / RATE
-        c, rr, g = 2 * r * math.cos(th), r * r, amp * math.sin(th)
-        y1 = y2 = 0.0
-        for i, x in enumerate(excitation):
-            y = c * y1 - rr * y2 + x
-            out[i] += g * y
-            y2, y1 = y1, y
-    return out
-
-
-def impact(noise, strike_ms, modes, body_band, body_ms, body_gain):
-    """One mechanical contact: a burst of noise strike_ms long strikes a
-    bank of modes (the part ringing, see modes_ring) over a knock of
-    band-limited noise body_ms long between body_band's edges (the weight of
-    the receiver taking the blow). Peak-normalized; the caller scales it."""
-    longest = max(t60 for _, t60, _ in modes)
-    length = int(RATE * (longest * 1.5 + body_ms / 1000.0 + strike_ms / 1000.0))
-    tau = strike_ms / 1000.0
-    strike = [(noise.next() * 2 - 1) * math.exp(-i / RATE / tau) if i < 4 * tau * RATE else 0.0 for i in range(length)]
-    ring = modes_ring(strike, modes)
-    knock = bandnoise(noise, length, *body_band)
-    knock = [k * body_gain * math.exp(-i / RATE / (body_ms / 1000.0)) * (1 - math.exp(-i / RATE / 0.0008))
-             for i, k in enumerate(knock)]
-    return normalize([a + b for a, b in zip(ring, knock)], 1.0)
-
-
-def rasp(noise, seconds, hz_from, hz_to, q, catches_per_s):
-    """A part sliding in a well: stick-slip, hundreds of tiny catches a
-    second at random moments, each a small strike, with the faint hiss of
-    the contact between them -- through one resonance of quality q that
-    moves from hz_from to hz_to as the contact does, under a hump envelope
-    (the slide starts from rest and stops). Peak-normalized."""
-    n = int(RATE * seconds)
-    p = catches_per_s / RATE
-    out = [0.0] * n
-    y1 = y2 = 0.0
-    for i in range(n):
-        x = (noise.next() * 2 - 1) if noise.next() < p else 0.0
-        x += (noise.next() * 2 - 1) * 0.12
-        u = i / n
-        hz = hz_from + (hz_to - hz_from) * u
-        r = math.exp(-math.pi * (hz / q) / RATE)
-        th = 2 * math.pi * hz / RATE
-        y = 2 * r * math.cos(th) * y1 - r * r * y2 + x
-        y2, y1 = y1, y
-        out[i] = y * math.sin(math.pi * u) ** 0.8
-    return normalize(out, 1.0)
-
-
-def place(out, at, samples, gain):
-    """Adds gain * samples into out starting at `at` seconds, clipped to out."""
-    i0 = int(at * RATE)
-    for i, s in enumerate(samples):
-        if i0 + i < len(out):
-            out[i0 + i] += gain * s
-
-
-# The modes of the parts that get struck (hz, t60 seconds, amplitude): all
-# inharmonic, all short. A catch is a small latch; a ring is a slide or bolt
-# handle, brighter and longer; a clack is a pump or a magazine driven home,
-# low and dull; a seat is the receiver itself taking a magazine.
-CATCH_MODES = ((2350, 0.025, 1.0), (3620, 0.020, 0.7), (5210, 0.014, 0.5), (1480, 0.030, 0.4))
-RING_MODES = ((2350, 0.045, 1.0), (3620, 0.035, 0.7), (5210, 0.025, 0.5), (7100, 0.015, 0.3), (1480, 0.030, 0.4))
-CLACK_MODES = ((610, 0.040, 1.0), (940, 0.030, 0.6), (1750, 0.020, 0.5), (2900, 0.015, 0.35))
-SEAT_MODES = ((380, 0.050, 1.0), (620, 0.035, 0.7), (1240, 0.020, 0.4), (2600, 0.012, 0.3))
-HAMMER_MODES = ((3150, 0.012, 1.0), (4720, 0.009, 0.6), (6380, 0.006, 0.4), (1930, 0.018, 0.5))
-
-
-def mechanism(n, seed, events):
-    """Sounds of the gun's action after the shot, at the seconds given: a
-    "clack" is a part driven home (a pump racked, a magazine seated) -- the
-    part sliding for 60 ms, then the stop, an impact with the receiver's
-    weight under it; a "ring" is a bolt handle or a slide catching, lighter
-    and brighter steel on steel. Each event is (seconds, kind, gain), the
-    seconds being the moment of the stop. Neither is a tone: each is a
-    strike into damped, inharmonic modes (see impact). The strikes are
-    peak-normalized transients; the factors below put a stop about 10 dB
-    under the blast in a 20 ms loudness, its slide 8 dB under that."""
-    out = [0.0] * n
-    noise = Noise(seed)
-    for at, kind, gain in events:
-        if kind == "clack":
-            place(out, max(0.0, at - 0.06), rasp(noise, 0.06, 900, 1500, 1.5, 500), 0.35 * gain)
-            place(out, at, impact(noise, 2.5, CLACK_MODES, (150, 700), 30, 1.2), 0.9 * gain)
-        else:
-            place(out, at, impact(noise, 1.2, RING_MODES, (300, 1200), 10, 0.35), 1.0 * gain)
-    return out
-
-
-def bandnoise(noise, n, lo_hz, hi_hz):
-    """White noise kept between lo_hz and hi_hz (second-order roll-offs)."""
-    raw = [noise.next() * 2 - 1 for _ in range(n)]
-    return highpass(lowpass2(raw, hi_hz), lo_hz)
-
-
-def friedlander(n, peak, t_ms):
-    """The blast wave of a muzzle, as it is measured: an instant rise to
-    the peak, an exponential fall through zero into a shallower negative
-    phase, over a few milliseconds. No tone in it, only its length."""
-    tau = t_ms / 1000.0
-    out = []
-    for i in range(n):
-        t = i / RATE
-        out.append(peak * (1.0 - t / tau) * math.exp(-t / tau) if t < 6 * tau else 0.0)
-    return out
-
-
-def darkening_tail(noise, n, rt60, hz_start, hz_end, onset_ms):
-    """Diffuse outdoor decay: noise whose level falls to -60 dB in rt60 seconds
-    and whose brightness falls with it -- the treble is gone long before the
-    rumble is. Fades in over onset_ms, since the first reflections come from
-    the ground and the nearest walls, not everywhere at once."""
-    raw = [noise.next() * 2 - 1 for _ in range(n)]
-    out = [0.0] * n
-    lp = 0.0
-    for i, r in enumerate(raw):
-        t = i / RATE
-        cutoff = hz_end + (hz_start - hz_end) * math.exp(-t * (3.0 / rt60))
-        a = min(1.0, 2 * math.pi * cutoff / RATE)
-        lp += (r - lp) * a
-        env = math.exp(-6.9078 * t / rt60) * (1 - math.exp(-t / (onset_ms / 1000.0)))
-        out[i] = lp * env
-    return out
-
-
-def gunshot(seed, seconds, blast_ms, blast, spray_ms, spray, spray_band, thump, thump_decay, thump_band,
-            near=((2.8, 0.55), (6.5, 0.3), (11.0, 0.18)), tail=0.35, rt60=1.1, tail_hz=(1600, 180),
-            echoes=((85, 0.22), (190, 0.14), (340, 0.08)), mech=(), drive=1.6, top_hz=5500):
-    """
-    A gunshot as a microphone a few metres off hears one, in five parts:
-
-    blast   the Friedlander pulse of the muzzle, blast_ms long -- the whole
-            "crack"; a rifle's is short and hard, a shotgun's long and round
-    spray   the turbulent gas behind it: broadband noise in spray_band,
-            gone in spray_ms
-    near    the same pulse back off the ground and the nearest walls a few
-            milliseconds later, darker: (ms, gain) pairs
-    thump   the weight in the chest: noise between thump_band's edges (no
-            sine -- a tone is what makes a shot sound like a game), rising
-            in a few milliseconds and gone in thump_decay seconds
-    tail    the outdoors: a darkening diffuse decay of rt60 seconds under
-            discrete echoes off distant surfaces, (ms, gain) pairs
-    mech    the action after it (see mechanism)
-
-    Mixed, driven gently into saturation so the peak flattens the way a
-    recording of a shot clips, and the fizz above top_hz rolled off.
-    """
-    n = int(RATE * seconds)
-    noise = Noise(seed)
-    ts = [i / RATE for i in range(n)]
-
-    blast_part = friedlander(n, blast, blast_ms)
-    spray_src = bandnoise(noise, n, *spray_band)
-    spray_part = [s * spray * math.exp(-t / (spray_ms / 1000.0)) for s, t in zip(spray_src, ts)]
-    front = [b + s for b, s in zip(blast_part, spray_part)]
-    near_part = slapback([f for f in front], [ms for ms, _ in near], [g for _, g in near])
-    near_part = lowpass2([np - f for np, f in zip(near_part, front)], 2200)
-
-    thump_src = bandnoise(noise, n, *thump_band)
-    thump_part = [s * thump * math.exp(-t / thump_decay) * (1 - math.exp(-t / 0.004)) for s, t in zip(thump_src, ts)]
-
-    tail_part = [s * tail for s in darkening_tail(noise, n, rt60, tail_hz[0], tail_hz[1], 12.0)]
-    echo_src = lowpass2(front, 900)
-    echo_part = slapback([0.0] * n, [ms for ms, _ in echoes], [g for _, g in echoes])
-    for ms, g in echoes:
-        d = int(RATE * ms / 1000)
-        for i in range(d, n):
-            echo_part[i] += echo_src[i - d] * g * math.exp(-(i - d) / RATE * 4.0)
-
-    mech_part = mechanism(n, seed ^ 0x55AA, mech)
-
-    mix = [f + nr + th + tl + ec + m for f, nr, th, tl, ec, m in
-           zip(front, near_part, thump_part, tail_part, echo_part, mech_part)]
-    return normalize(lowpass2(saturate(mix, drive), top_hz))
-
-
-def machine_gun_shot():
-    # Short and hard, the tail cut short so seven a second stay distinct.
-    return gunshot(seed=0xB4E7, seconds=0.45, blast_ms=1.6, blast=1.0, spray_ms=6, spray=0.9, spray_band=(300, 3800),
-                   thump=0.7, thump_decay=0.12, thump_band=(40, 140), tail=0.22, rt60=0.7,
-                   echoes=((70, 0.15), (150, 0.08)), mech=(), drive=1.8, top_hz=5000)
-
-
-def pistol_shot():
-    # A short, bright bark: a small blast, a quick spray, little weight, the slide after.
-    return gunshot(seed=0x51A7, seconds=0.6, blast_ms=1.2, blast=1.0, spray_ms=4, spray=0.8, spray_band=(400, 4500),
-                   thump=0.5, thump_decay=0.09, thump_band=(60, 180), tail=0.3, rt60=0.9,
-                   echoes=((60, 0.18), (140, 0.1), (260, 0.05)), mech=((0.045, "ring", 0.25),), drive=1.6)
-
-
-def shotgun_shot():
-    # The boom: a long, round blast, heavy spray, real weight under it, a
-    # long tail with room in it -- and the pump racked after: two clacks.
-    return gunshot(seed=0x5406, seconds=1.4, blast_ms=4.0, blast=1.0, spray_ms=14, spray=1.1, spray_band=(150, 2800),
-                   thump=1.3, thump_decay=0.28, thump_band=(30, 110), tail=0.45, rt60=1.5, tail_hz=(1200, 140),
-                   echoes=((90, 0.25), (200, 0.16), (360, 0.1), (560, 0.05)),
-                   mech=((0.5, "clack", 0.6), (0.66, "clack", 0.7)), drive=1.5, top_hz=4500)
-
-
-def rifle_shot():
-    # A whip-crack: a very short blast, bright spray, a firm thump, and the
-    # report rolling away across the valley in diminishing returns.
-    return gunshot(seed=0x21F1, seconds=1.3, blast_ms=1.4, blast=1.0, spray_ms=5, spray=1.0, spray_band=(400, 5000),
-                   thump=0.8, thump_decay=0.16, thump_band=(45, 150), tail=0.4, rt60=1.4,
-                   echoes=((95, 0.24), (220, 0.16), (390, 0.1), (620, 0.05)), mech=((0.08, "ring", 0.2),), drive=1.7)
-
-
-def scoped_rifle_shot():
-    # Heavier still, the same valley, and the bolt worked after: open, close.
-    return gunshot(seed=0x5C0E, seconds=1.5, blast_ms=1.8, blast=1.0, spray_ms=6, spray=1.0, spray_band=(350, 4500),
-                   thump=1.0, thump_decay=0.2, thump_band=(40, 140), tail=0.42, rt60=1.5,
-                   echoes=((95, 0.24), (220, 0.16), (390, 0.1), (620, 0.05)),
-                   mech=((0.55, "ring", 0.45), (0.57, "clack", 0.45), (0.74, "clack", 0.5), (0.76, "ring", 0.35)), drive=1.7)
-
-
-def far_shot():
-    # The same shot a hundred blocks off: the blast dulled to a thud, no
-    # spray to speak of, and a tail that is mostly the land answering.
-    shot = gunshot(seed=0x7A5, seconds=1.4, blast_ms=6.0, blast=0.6, spray_ms=10, spray=0.2, spray_band=(150, 900),
-                   thump=0.9, thump_decay=0.3, thump_band=(30, 120), tail=0.6, rt60=1.6, tail_hz=(900, 150),
-                   echoes=((120, 0.3), (260, 0.2), (450, 0.12)), drive=1.3, top_hz=1200)
-    return normalize(lowpass(shot, 700), 0.85)
-
-
-def empty_click():
-    # The hammer falling on nothing: the sear letting go, a tick, then the
-    # hammer's own dry clack -- small steel, quickly still.
-    noise = Noise(0x11)
-    out = [0.0] * int(RATE * 0.08)
-    place(out, 0.0, impact(noise, 0.8, CATCH_MODES, (400, 1200), 6, 0.3), 0.35)
-    place(out, 0.012, impact(noise, 1.5, HAMMER_MODES, (300, 900), 12, 1.4), 1.0)
-    return normalize(lowpass2(saturate(out, 1.3), 9000), 0.7)
-
-
-def reload_start():
-    # Magazine out: the release catch lets go, the magazine slides down out
-    # of the well -- the resonance falling as it clears -- and knocks softly
-    # into the hand.
-    noise = Noise(0x33)
-    out = [0.0] * int(RATE * 0.32)
-    place(out, 0.0, impact(noise, 1.0, CATCH_MODES, (400, 1200), 8, 0.4), 0.6)
-    place(out, 0.03, rasp(noise, 0.19, 2200, 1400, 1.5, 400), 0.55)
-    place(out, 0.21, impact(noise, 3.0, SEAT_MODES, (120, 500), 30, 1.4), 0.5)
-    return normalize(lowpass2(saturate(out, 1.3), 8000), 0.8)
-
-
-def reload_end():
-    # Magazine in: the fresh one up the well, seating home with the
-    # receiver's weight behind it and the catch snapping over, then the
-    # slide let go -- steel forward on steel, and the round driven into the
-    # chamber behind it.
-    noise = Noise(0x55)
-    out = [0.0] * int(RATE * 0.34)
-    place(out, 0.0, rasp(noise, 0.11, 1400, 2200, 1.5, 450), 0.5)
-    place(out, 0.11, impact(noise, 3.0, SEAT_MODES, (120, 500), 35, 1.6), 0.85)
-    place(out, 0.115, impact(noise, 0.8, CATCH_MODES, (400, 1200), 6, 0.3), 0.3)
-    place(out, 0.22, impact(noise, 2.0, RING_MODES, (200, 700), 30, 1.0), 1.0)
-    place(out, 0.235, impact(noise, 1.5, CLACK_MODES, (150, 600), 25, 1.0), 0.6)
-    return normalize(lowpass2(saturate(out, 1.3), 8000), 0.8)
-
-
-SOUNDS = {
-    "machine_gun_shot": machine_gun_shot,
-    "pistol_shot": pistol_shot,
-    "shotgun_shot": shotgun_shot,
-    "rifle_shot": rifle_shot,
-    "scoped_rifle_shot": scoped_rifle_shot,
-    "far_shot": far_shot,
-    "empty_click": empty_click,
-    "reload_start": reload_start,
-    "reload_end": reload_end,
+# The shipped sounds: which recording, which seconds of it, placed where.
+# Times are in seconds. A shot's take starts about 20 ms before the report so
+# the attack is the recording's own; a tail is cut where it has fallen 40 dB
+# and faded over its last stretch. In-game volumes: shots 1.0, reloads 0.8,
+# the click 0.6 -- the peaks here keep the old balance between them.
+RECORDINGS = {
+    # A 9mm pistol on a range: the report and its outdoor tail, whole.
+    "pistol_shot": (0.95, [take("427592-9mm-pistol-shot", 0.12)]),
+    # An AR-15, the same range, the same day.
+    "rifle_shot": (0.95, [take("427596-ar15-rifle-shot", 0.06)]),
+    # A .303 Lee-Enfield: a short, hard report, already close to a machine
+    # gun's per-round length, faded a touch sooner so seven a second stack
+    # rather than smear.
+    "machine_gun_shot": (0.95, [take("450852-lee-enfield-303-shot", 0.21, fade_out=0.08)]),
+    # A 20-gauge on the same range as the pistol and the AR-15, whole, with
+    # a Mossberg 500's pump under its tail from another recording: the two
+    # strokes (back at 1.30 s, forward at 1.72 s in that take, where a
+    # limiter had squeezed the blast down to their level) at 0.29 s and
+    # 0.53 s, inside the 0.65 s the gun takes to fire again, and at a
+    # quarter gain, which puts a pump about ten decibels under a report.
+    "shotgun_shot": (0.95, [
+        take("427595-20-gauge-shotgun-shot", 0.05),
+        take("159710-mossberg-500a-shot-and-pump", 1.27, 1.68, at=0.26, gain=0.25, fade_in=0.008),
+        take("159710-mossberg-500a-shot-and-pump", 1.69, 2.5, at=0.50, gain=0.25, fade_in=0.008, fade_out=0.2),
+    ]),
+    # A 1903 Springfield in .30-06 -- a bolt-action's crack, sharper than the
+    # AR-15's report -- with a Mauser 98k's bolt worked over its tail: lifted
+    # and drawn at 0.22 s, driven home at 0.50 s (the gun fires again at
+    # 0.5 s). The bolt recording is hot and noisy next to the rifle's, so it
+    # sits at a quarter gain under the tail, a bolt's distance under a crack.
+    "scoped_rifle_shot": (0.95, [
+        take("169261-springfield-1903-30-06-shot", 0.58, 2.0, fade_out=0.3),
+        take("802673-mauser-98k-bolt", 0.20, 0.80, at=0.22, gain=0.25, fade_in=0.01, fade_out=0.06),
+        take("802673-mauser-98k-bolt", 1.20, 1.70, at=0.50, gain=0.25, fade_in=0.01, fade_out=0.08),
+    ]),
+    # An M110 fired at a distance with the land answering: the report and its
+    # echo, as heard a long way off.
+    "far_shot": (0.85, [take("815476-m110-shot-echo", 0.25, fade_out=0.15)]),
+    # A rifle dry-fired: the striker on an empty chamber.
+    "empty_click": (0.7, [take("725402-rifle-dry-fire", 0.02)]),
+    # A 1911's magazine dropping out, in a dead room.
+    "reload_start": (0.8, [take("104407-1911-magazine-out", 0.19)]),
+    # The 9mm's magazine seated (0.56 s in the recording) and the slide run
+    # (1.55 s and 1.70 s), the wait between them shortened so the slide
+    # follows the seat by 0.45 s and the whole fits the reload's end.
+    "reload_end": (0.8, [
+        take("427593-9mm-pistol-load-and-chamber", 0.50, 1.35, fade_out=0.1),
+        take("427593-9mm-pistol-load-and-chamber", 1.50, at=0.45, fade_in=0.005),
+    ]),
 }
+
+SOUNDS = {name: (lambda spec=spec: assemble(spec[1], spec[0])) for name, spec in RECORDINGS.items()}
 
 
 def sounds_json():

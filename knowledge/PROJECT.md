@@ -85,6 +85,21 @@ Decided by Rusty on 2026-09-06, in this order:
    vanilla for doors, chests and villagers, nothing mined with a gun in
    hand; the action sounds (reloads, empty click, pump and bolt) rebuilt
    as modal impacts and stick-slip slides, no tones.
+6. Done (1.5.0, asked 2026-09-07 -- "still kinda fruity"): every sound
+   replaced by a cut of a CC0 field recording of a real firearm
+   (`devtools/art/sounds/`, D-0012); synthesis retired.
+7. Next (decided 2026-09-07): magazines -- see D-0013 when written. A
+   magazine is an ordered list of rounds (mixed allowed), one item per
+   family (pistol 15, rifle 30 shared with the scoped rifle, machine-gun
+   box 75; capacity a magazine property so extended and double-stack
+   variants can come), filled in a small screen on right-click with a
+   "fill from inventory" button, labelled by anvil, coloured by dye;
+   the gun carries the inserted magazine and it comes out with what is
+   left; Shift+R ejects and inserts the next magazine in inventory order
+   (on the shotgun, whose tube stays as it is: unload and reload with the
+   next accepted round kind); plain R reloads when empty; an icon by the
+   hotbar shows what is loaded; mags from two steel; loose rounds in guns
+   already in the world become an inserted magazine on first use.
 3. Done (1.2.0): crafting as assembly -- receivers of steel, a barrel, a
    stock, a scope, then the gun in a shape that follows its silhouette;
    the pistol cheapest, the machine gun the most involved.
