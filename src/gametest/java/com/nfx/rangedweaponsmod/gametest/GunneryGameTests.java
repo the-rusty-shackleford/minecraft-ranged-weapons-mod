@@ -250,9 +250,9 @@ public final class GunneryGameTests {
         record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family, float damage, float knockback) {}
         for (Expected e : List.of(
                 new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 15, 5, 1, true, "small", 6.0f, 0.6f),
-                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 13, 6, true, "shell", 4.0f, 3.0f),
+                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 15, 6, true, "shell", 4.0f, 3.0f),
                 new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 30, 6, 1, false, "medium", 12.0f, 1.0f),
-                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 30, 10, 1, false, "medium", 16.0f, 1.5f),
+                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 30, 20, 1, false, "medium", 16.0f, 1.5f),
                 new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 75, 3, 1, false, "medium", 6.0f, 0.4f))) {
             ItemStack stack = new ItemStack(e.item());
             RangedWeapon weapon = RangedWeapons.resolve(stack);
@@ -408,22 +408,32 @@ public final class GunneryGameTests {
     // --- ammunition families -------------------------------------------------
 
     @GameTest(template = "arena", timeoutTicks = 100)
-    public void aMagazineOfAnotherModsMediumRoundGoesInAndASmallMagazineDoesNot(GameTestHelper helper) {
+    public void aGunTakesOnlyTheMagazinesOfItsTagWhateverRoundsTheyShare(GameTestHelper helper) {
         Gunner g = gunner(helper, 0, 0);
-        // Another mod's medium round (the gametest pack tags iron nuggets
-        // medium) in a rifle magazine -- the family's, so the machine gun
-        // takes it -- and a pistol magazine, another family, that it must not.
+        // A rifle magazine holds the machine gun's rounds -- another mod's
+        // medium round even, the gametest pack tags iron nuggets medium --
+        // and still does not fit the machine gun: only a box does. The
+        // rounds inside are the family's; the magazine itself is the tag's.
         g.player().getInventory().setItem(3, box(ModItems.PISTOL_MAGAZINE.get(), ModItems.SMALL_ROUND.get(), 10));
         g.player().getInventory().setItem(4, box(ModItems.RIFLE_MAGAZINE.get(), Items.IRON_NUGGET, 10));
-        helper.assertValueEqual(Magazines.loadedMagazineSlots(g.player(), g.weapon()), List.of(4), "only the medium magazine counts");
+        g.player().getInventory().setItem(6, box(ModItems.MACHINE_GUN_BOX.get(), Items.IRON_NUGGET, 10));
+        helper.assertValueEqual(Magazines.loadedMagazineSlots(g.player(), g.gun(), g.weapon()), List.of(6), "only the box counts");
+        ItemStack rifle = new ItemStack(ModItems.RIFLE.get());
+        RangedWeapon rifleWeapon = RangedWeapons.resolve(rifle);
+        helper.assertValueEqual(Magazines.loadedMagazineSlots(g.player(), rifle, rifleWeapon), List.of(4), "the rifle takes the rifle magazine and not the box");
+        helper.assertTrue(Magazines.accepts(new ItemStack(ModItems.SCOPED_RIFLE.get()), rifleWeapon,
+                new ItemStack(ModItems.RIFLE_MAGAZINE.get())), "the scoped rifle shares the rifle's magazines");
+        helper.assertFalse(Magazines.accepts(new ItemStack(ModItems.PISTOL.get()), RangedWeapons.resolve(new ItemStack(ModItems.PISTOL.get())),
+                new ItemStack(ModItems.RIFLE_MAGAZINE.get())), "the pistol refuses a rifle magazine");
         PlayerGunnery.onTrigger(g.player(), true);          // empty gun, trigger pulled: a magazine change starts
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
-            helper.assertValueEqual(g.weapon().rounds(g.gun()), 10, "loaded from the foreign medium rounds");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 10, "loaded from the box of foreign medium rounds");
             helper.assertValueEqual(g.weapon().loadedAmmo(g.gun()).orElseThrow(), Items.IRON_NUGGET, "the store names the round");
             helper.assertValueEqual(g.weapon().stats(g.gun()).damage(), 9.0f, "and fires with the round's own damage");
-            helper.assertTrue(g.player().getInventory().getItem(4).isEmpty(), "the magazine left its slot for the gun");
-            helper.assertTrue(g.player().getInventory().getItem(3).is(ModItems.PISTOL_MAGAZINE.get()), "the small magazine untouched");
+            helper.assertTrue(g.player().getInventory().getItem(6).isEmpty(), "the box left its slot for the gun");
+            helper.assertTrue(g.player().getInventory().getItem(4).is(ModItems.RIFLE_MAGAZINE.get()), "the rifle magazine untouched");
+            helper.assertTrue(g.player().getInventory().getItem(3).is(ModItems.PISTOL_MAGAZINE.get()), "the pistol magazine untouched");
             helper.succeed();
         });
     }

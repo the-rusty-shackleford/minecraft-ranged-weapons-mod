@@ -161,9 +161,18 @@ public final class GunItem extends Item {
             tooltip.add(Component.translatable("item.rangedweaponsmod.gun.rounds", weapon.rounds(stack), weapon.capacity(stack))
                     .withStyle(ChatFormatting.GRAY));
         }
-        weapon.profile().ammoFamily().ifPresent(family -> tooltip.add(
-                Component.translatable(feed == Feed.MAGAZINE
-                        ? "item.rangedweaponsmod.gun.takes_magazines" : "item.rangedweaponsmod.gun.takes",
-                        AmmoFamilies.displayName(family)).withStyle(ChatFormatting.DARK_GRAY)));
+        if (feed == Feed.MAGAZINE) {
+            Handling.of(stack).magazines().ifPresentOrElse(
+                    tag -> tooltip.add(Component.translatable("item.rangedweaponsmod.gun.takes_magazines",
+                            Component.translatable("tag.item." + tag.location().getNamespace() + "."
+                                    + tag.location().getPath().replace('/', '.'))).withStyle(ChatFormatting.DARK_GRAY)),
+                    () -> weapon.profile().ammoFamily().ifPresent(family -> tooltip.add(
+                            Component.translatable("item.rangedweaponsmod.gun.takes_magazines_of", AmmoFamilies.displayName(family))
+                                    .withStyle(ChatFormatting.DARK_GRAY))));
+        } else {
+            weapon.profile().ammoFamily().ifPresent(family -> tooltip.add(
+                    Component.translatable("item.rangedweaponsmod.gun.takes", AmmoFamilies.displayName(family))
+                            .withStyle(ChatFormatting.DARK_GRAY)));
+        }
     }
 }

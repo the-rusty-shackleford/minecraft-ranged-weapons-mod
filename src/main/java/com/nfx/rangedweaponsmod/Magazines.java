@@ -74,10 +74,21 @@ public final class Magazines {
         return inserted == null ? Optional.empty() : Optional.of(inserted.stack().copy());
     }
 
-    /** effects: returns whether {@code magazine} is a magazine that {@code weapon} takes: one of its family */
-    public static boolean accepts(RangedWeapon weapon, ItemStack magazine) {
+    /**
+     * effects: returns whether {@code magazine} is a magazine that {@code gun}
+     * takes: one in the magazine tag its handling names (a pistol takes
+     * pistol magazines, a machine gun its box, though both hold rounds a
+     * rifle magazine holds too), and always one of the gun's round family --
+     * a tag that named a magazine of another family would be a mistake in
+     * the data, not a gun that fires the wrong round. With no tag named, any
+     * magazine of the family.
+     */
+    public static boolean accepts(ItemStack gun, RangedWeapon weapon, ItemStack magazine) {
         Optional<TagKey<Item>> family = weapon.profile().ammoFamily();
-        return family.isPresent() && magazine.getItem() instanceof MagazineItem item && item.family().equals(family.get());
+        if (family.isEmpty() || !(magazine.getItem() instanceof MagazineItem item) || !item.family().equals(family.get())) {
+            return false;
+        }
+        return Handling.of(gun).magazines().map(magazine::is).orElse(true);
     }
 
     /**
@@ -148,7 +159,7 @@ public final class Magazines {
         if (inserted(gun).isPresent() || weapon.rounds(gun) == 0) {
             return false;
         }
-        Optional<MagazineItem> item = ModItems.defaultMagazineFor(weapon);
+        Optional<MagazineItem> item = ModItems.defaultMagazineFor(gun, weapon);
         Optional<Item> round = weapon.loadedAmmo(gun)
                 .or(() -> weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional));
         if (item.isEmpty() || round.isEmpty()) {
@@ -162,16 +173,16 @@ public final class Magazines {
     }
 
     /**
-     * effects: returns the inventory slots holding a magazine {@code weapon}
+     * effects: returns the inventory slots holding a magazine {@code gun}
      * takes with rounds in it, in inventory order -- hotbar first, as the
      * container numbers them
      */
-    public static List<Integer> loadedMagazineSlots(Player player, RangedWeapon weapon) {
+    public static List<Integer> loadedMagazineSlots(Player player, ItemStack gun, RangedWeapon weapon) {
         List<Integer> slots = new ArrayList<>();
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack candidate = inventory.getItem(slot);
-            if (accepts(weapon, candidate) && contents(candidate).rounds() > 0) {
+            if (accepts(gun, weapon, candidate) && contents(candidate).rounds() > 0) {
                 slots.add(slot);
             }
         }

@@ -184,7 +184,7 @@ public final class PlayerGunnery {
         } else if (magazineFed) {
             // What can be loaded is a magazine with rounds in it; the one in
             // the gun is not carried and so is never its own replacement.
-            boolean carried = !Magazines.loadedMagazineSlots(player, weapon).isEmpty();
+            boolean carried = !Magazines.loadedMagazineSlots(player, stack, weapon).isEmpty();
             ammoAvailable = carried;
             swapAvailable = carried;
         } else {
@@ -229,7 +229,7 @@ public final class PlayerGunnery {
         if (after.cycleAt() > 0 && now >= after.cycleAt()) {
             if (after.cycleSound() != null) {
                 BuiltInRegistries.SOUND_EVENT.getOptional(after.cycleSound())
-                        .ifPresent(sound -> play(level, player, sound, 0.9f, 1.0f));
+                        .ifPresent(sound -> play(level, player, sound, 1.0f, 1.0f));
             }
             after = after.cycled();
         }
@@ -284,7 +284,7 @@ public final class PlayerGunnery {
         int duration;
         if (magazineFed && !player.hasInfiniteMaterials()) {
             int standard = weapon.profile().defaults().capacity();
-            int incoming = chooseMagazine(player, weapon, gunnery, swap)
+            int incoming = chooseMagazine(player, stack, weapon, gunnery, swap)
                     .map(slot -> Magazines.contents(player.getInventory().getItem(slot)).capacity())
                     .orElse(standard);
             duration = ReloadPlan.magazineChangeTicks(Handling.of(stack).magazineChangeTicks(), standard, incoming);
@@ -296,8 +296,9 @@ public final class PlayerGunnery {
     }
 
     /** effects: returns the inventory slot a change or a swap would take its magazine from right now, if any */
-    private static Optional<Integer> chooseMagazine(Player player, RangedWeapon weapon, Gunnery gunnery, boolean swap) {
-        List<Integer> slots = Magazines.loadedMagazineSlots(player, weapon);
+    private static Optional<Integer> chooseMagazine(Player player, ItemStack stack, RangedWeapon weapon, Gunnery gunnery,
+                                                    boolean swap) {
+        List<Integer> slots = Magazines.loadedMagazineSlots(player, stack, weapon);
         OptionalInt last = gunnery.lastSwapSlot() < 0 ? OptionalInt.empty() : OptionalInt.of(gunnery.lastSwapSlot());
         OptionalInt choice = swap ? MagazineChoice.forSwap(slots, last) : MagazineChoice.forReload(slots);
         return choice.isPresent() ? Optional.of(choice.getAsInt()) : Optional.empty();
@@ -329,7 +330,7 @@ public final class PlayerGunnery {
      */
     private static Gunnery finishMagazineChange(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                                 Gunnery gunnery, boolean swap) {
-        Optional<Integer> choice = chooseMagazine(player, weapon, gunnery, swap);
+        Optional<Integer> choice = chooseMagazine(player, stack, weapon, gunnery, swap);
         if (choice.isEmpty()) {
             return gunnery;
         }

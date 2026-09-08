@@ -11,7 +11,8 @@
         "airborne": 1.8,
         "aiming": 0.5
       },
-      "magazine_change_ticks": 24
+      "magazine_change_ticks": 24,
+      "magazines": "rangedweaponsmod:magazines/pistol"
     },
     "rangedweaponsmod:shotgun": {
       "recoil_pitch": 4.5,
@@ -38,7 +39,8 @@
         "airborne": 2.0,
         "aiming": 0.35
       },
-      "magazine_change_ticks": 30
+      "magazine_change_ticks": 30,
+      "magazines": "rangedweaponsmod:magazines/rifle"
     },
     "rangedweaponsmod:scoped_rifle": {
       "recoil_pitch": 3.0,
@@ -53,7 +55,8 @@
       },
       "magazine_change_ticks": 30,
       "cycle_sound": "rangedweaponsmod:bolt",
-      "cycle_delay_ticks": 5
+      "cycle_delay_ticks": 5,
+      "magazines": "rangedweaponsmod:magazines/rifle"
     },
     "rangedweaponsmod:machine_gun": {
       "recoil_pitch": 0.55,
@@ -65,7 +68,8 @@
         "sprinting": 2.0,
         "airborne": 1.8
       },
-      "magazine_change_ticks": 50
+      "magazine_change_ticks": 50,
+      "magazines": "rangedweaponsmod:magazines/machine_gun"
     }
   }
 }

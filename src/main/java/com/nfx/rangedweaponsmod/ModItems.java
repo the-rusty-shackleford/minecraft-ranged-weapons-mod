@@ -20,9 +20,9 @@ package com.nfx.rangedweaponsmod;
 import net.minecraft.world.item.CreativeModeTabs;
 import com.nfx.rangedweapons.api.AmmoFamilies;
 import com.nfx.rangedweapons.api.RangedWeapon;
-import com.nfx.rangedweapons.api.WeaponClass;
 import java.util.Optional;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -100,17 +100,12 @@ public final class ModItems {
     }
 
     /**
-     * effects: returns the magazine a gun of {@code weapon}'s family is
-     * issued by default -- the one loose rounds are adopted into: the
-     * machine gun's box for the machine gun, else the first magazine of the
-     * family; empty if the family has none
+     * effects: returns the magazine {@code gun} is issued by default -- the
+     * one loose rounds are adopted into: the first of this mod's magazines
+     * the gun takes (see {@link Magazines#accepts}); empty if it takes none
      */
-    public static Optional<MagazineItem> defaultMagazineFor(RangedWeapon weapon) {
-        if (weapon.profile().weaponClass() == WeaponClass.AUTOMATIC) {
-            return Optional.of(MACHINE_GUN_BOX.get());
-        }
-        return weapon.profile().ammoFamily().flatMap(family ->
-                magazines().stream().filter(m -> m.family().equals(family)).findFirst());
+    public static Optional<MagazineItem> defaultMagazineFor(ItemStack gun, RangedWeapon weapon) {
+        return magazines().stream().filter(m -> Magazines.accepts(gun, weapon, new ItemStack(m))).findFirst();
     }
 
     // The parts. A gun is assembled from these (see the domain's Blueprints);

@@ -38,7 +38,11 @@ and the scoped rifle share it) or a machine gun box (75 medium), each two
 steel. A gun holds nothing without one. A magazine is an ordered load: the
 rounds go in as runs of one kind, the first run fires first, and a mixed
 magazine -- twelve shells' worth of one kind then three of another -- is the
-point, not an accident. Right-click a magazine to fill it: a row of slots
+point, not an accident. Which magazines a gun takes is a tag, not the
+rounds: the pistol takes `#rangedweaponsmod:magazines/pistol`, the rifles
+`magazines/rifle`, the machine gun `magazines/machine_gun` (its handling
+names the tag), so a rifle magazine never goes into the machine gun though
+both hold medium rounds, and an extended magazine joins its gun's tag. Right-click a magazine to fill it: a row of slots
 for the runs, first to fire on the left, that take the magazine's family and
 nothing else, and a *Fill* button that takes the accepted rounds from your
 inventory in inventory order, the first kind first. Name one in an anvil
@@ -128,7 +132,7 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 | | Pistol | Shotgun | Rifle | Scoped rifle | Machine gun |
 |---|---|---|---|---|---|
 | Class | sidearm | shotgun | rifle | rifle | automatic |
-| Fire | one per pull, 5 ticks | one per pull, 13 ticks (the pump) | one per pull, 6 ticks | one per pull, 10 ticks (the bolt) | held, every 3 ticks |
+| Fire | one per pull, 5 ticks | one per pull, 15 ticks (the pump) | one per pull, 6 ticks | one per pull, 20 ticks (the bolt) | held, every 3 ticks |
 | Magazine | pistol magazine, 15 small rounds | tube of 6 shells | rifle magazine, 30 medium rounds | rifle magazine, 30 medium rounds | box, 75 medium rounds |
 | Damage | 4 | 6 pellets of 3.5 | 9 | 14 | 5.5 |
 | Falls off | to half past 28 blocks, from 10 | to a fifth past 18 blocks, from 5 | no | no | no |

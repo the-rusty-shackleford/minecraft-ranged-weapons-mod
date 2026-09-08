@@ -99,7 +99,9 @@ Decided by Rusty on 2026-09-06, in this order:
    the HUD shows the next round's icon and the magazine's name in its
    colour; loose rounds are adopted on first sight. 2.0.1: a change takes
    the gun's `magazine_change_ticks` (handling), a quarter more per
-   doubling of the standard capacity, never a time per round. Extended
+   doubling of the standard capacity, never a time per round. 2.2.0:
+   magazines have tags (`magazines/pistol`, `/rifle`, `/machine_gun`) and
+   a gun's handling names the tag it takes. Extended
    magazines, when they come: another `MagazineItem` with its capacity, a
    recipe, a texture; nothing else changes.
 3. Done (1.2.0): crafting as assembly -- receivers of steel, a barrel, a

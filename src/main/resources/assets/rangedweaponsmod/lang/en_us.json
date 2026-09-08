@@ -41,7 +41,7 @@
   "item.rangedweaponsmod.gun.magazine": "%s: %s / %s",
   "item.rangedweaponsmod.gun.next": "Next: %s",
   "item.rangedweaponsmod.gun.no_magazine": "No magazine",
-  "item.rangedweaponsmod.gun.takes_magazines": "Takes magazines of %s",
+  "item.rangedweaponsmod.gun.takes_magazines": "Takes %s",
   "hud.rangedweaponsmod.no_magazine": "No magazine",
   "screen.rangedweaponsmod.magazine.fill": "Fill",
   "screen.rangedweaponsmod.magazine.first": "Fires first →",
@@ -49,5 +49,9 @@
   "screen.rangedweaponsmod.magazine.empty": "Empty",
   "screen.rangedweaponsmod.magazine.fill.tooltip": "Fill from your inventory: the first kind of round you carry first, then the next, until the magazine is full",
   "subtitles.rangedweaponsmod.shotgun_pump": "Shotgun racked",
-  "subtitles.rangedweaponsmod.bolt": "Bolt worked"
+  "subtitles.rangedweaponsmod.bolt": "Bolt worked",
+  "item.rangedweaponsmod.gun.takes_magazines_of": "Takes any magazine of %s",
+  "tag.item.rangedweaponsmod.magazines.pistol": "pistol magazines",
+  "tag.item.rangedweaponsmod.magazines.rifle": "rifle magazines",
+  "tag.item.rangedweaponsmod.magazines.machine_gun": "machine gun boxes"
 }

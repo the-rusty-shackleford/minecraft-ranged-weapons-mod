@@ -24,6 +24,9 @@ import com.nfx.rangedweapons.api.WeaponClass;
 import com.nfx.rangedweaponsmod.domain.StanceSpread.Factors;
 import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.tags.TagKey;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -36,7 +39,7 @@ import net.minecraft.world.item.ItemStack;
  *
  * <p>RI: {@code recoilPitch, recoilYaw >= 0} and finite; {@code recovery}
  * in {@code (0, 1]}; {@code spread} not null; {@code magazineChangeTicks >= 1};
- * {@code cycleSound} not null; {@code cycleDelayTicks >= 0}.
+ * {@code cycleSound} and {@code magazines} not null; {@code cycleDelayTicks >= 0}.
  *
  * @param recoilPitch         degrees the view kicks up per shot
  * @param recoilYaw           degrees the view kicks sideways per shot, direction random
@@ -48,18 +51,22 @@ import net.minecraft.world.item.ItemStack;
  *                            racked, a bolt cycled -- played {@code cycleDelayTicks}
  *                            after each shot; empty for a gun that cycles itself
  * @param cycleDelayTicks     ticks after a shot the cycle sound plays
+ * @param magazines           the item tag of the magazines the gun takes -- a pistol takes
+ *                            pistol magazines, whatever rounds they hold in common with a
+ *                            rifle's; empty for a gun that takes any magazine of its round
+ *                            family, or is loaded directly
  */
 public record Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread, int magazineChangeTicks,
-                       Optional<ResourceLocation> cycleSound, int cycleDelayTicks) {
+                       Optional<ResourceLocation> cycleSound, int cycleDelayTicks, Optional<TagKey<Item>> magazines) {
 
-    /** A handling with the class's magazine change time and no cycle sound. */
+    /** A handling with the class's magazine change time, no cycle sound and no magazine tag. */
     public Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread) {
         this(recoilPitch, recoilYaw, recovery, spread, 30);
     }
 
-    /** A handling with no cycle sound. */
+    /** A handling with no cycle sound and no magazine tag. */
     public Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread, int magazineChangeTicks) {
-        this(recoilPitch, recoilYaw, recovery, spread, magazineChangeTicks, Optional.empty(), 5);
+        this(recoilPitch, recoilYaw, recovery, spread, magazineChangeTicks, Optional.empty(), 5, Optional.empty());
     }
 
     private static final Codec<Factors> FACTORS_CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -73,7 +80,8 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
     /**
      * The datapack shape: {@code recoil_pitch}, {@code recoil_yaw}, {@code recovery},
      * optional {@code spread} factors, optional {@code magazine_change_ticks} (30),
-     * optional {@code cycle_sound} (a sound event id) with {@code cycle_delay_ticks} (5).
+     * optional {@code cycle_sound} (a sound event id) with {@code cycle_delay_ticks} (5),
+     * optional {@code magazines} (an item tag id).
      */
     public static final Codec<Handling> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.floatRange(0.0f, Float.MAX_VALUE).fieldOf("recoil_pitch").forGetter(Handling::recoilPitch),
@@ -82,7 +90,8 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
             FACTORS_CODEC.optionalFieldOf("spread", Factors.DEFAULT).forGetter(Handling::spread),
             Codec.intRange(1, Integer.MAX_VALUE).optionalFieldOf("magazine_change_ticks", 30).forGetter(Handling::magazineChangeTicks),
             ResourceLocation.CODEC.optionalFieldOf("cycle_sound").forGetter(Handling::cycleSound),
-            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("cycle_delay_ticks", 5).forGetter(Handling::cycleDelayTicks)
+            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("cycle_delay_ticks", 5).forGetter(Handling::cycleDelayTicks),
+            TagKey.codec(Registries.ITEM).optionalFieldOf("magazines").forGetter(Handling::magazines)
     ).apply(i, Handling::new));
 
     /**
@@ -109,6 +118,9 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
         }
         if (cycleDelayTicks < 0) {
             throw new IllegalArgumentException("cycleDelayTicks must be >= 0, was " + cycleDelayTicks);
+        }
+        if (magazines == null) {
+            throw new IllegalArgumentException("magazines must not be null");
         }
     }
 

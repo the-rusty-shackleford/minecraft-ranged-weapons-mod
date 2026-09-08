@@ -862,10 +862,20 @@ def take(stem, start, end=None, at=0.0, gain=1.0, fade_in=0.003, fade_out=0.03):
     return (stem, start, end, at, gain, fade_in, fade_out)
 
 
-def assemble(takes, peak):
-    """Mixes the takes into one clip and normalizes it to `peak`. The clip is
-    as long as the latest take runs; nothing is added -- no reverb, no tone,
-    no filtering -- so what is heard is the recordings and their timing."""
+def saturate(samples, drive):
+    """Soft clipping: tanh, so the peaks compress and the body comes up --
+    the way a recording of a close, sharp transient is limited on the way
+    in. Used to lift a click-like sound (a pump, a bolt) whose peaks would
+    otherwise leave its body far below anything a report has."""
+    top = math.tanh(drive)
+    return [math.tanh(x * drive) / top for x in samples]
+
+
+def assemble(takes, peak, drive=1.0):
+    """Mixes the takes into one clip and normalizes it to `peak`, driven into
+    soft clipping first if `drive` is above one. The clip is as long as the
+    latest take runs; nothing is added -- no reverb, no tone, no filtering
+    -- so what is heard is the recordings and their timing."""
     cuts = []
     for stem, start, end, at, gain, fade_in, fade_out in takes:
         samples = decode(stem)
@@ -882,6 +892,8 @@ def assemble(takes, peak):
     for i0, cut in cuts:
         for i, s in enumerate(cut):
             out[i0 + i] += s
+    if drive > 1.0:
+        out = saturate(normalize(out, 1.0), drive)
     return normalize(out, peak)
 
 
@@ -931,16 +943,20 @@ RECORDINGS = {
     # A rifle dry-fired: the striker on an empty chamber.
     "empty_click": (0.7, [take("725402-rifle-dry-fire", 0.02)]),
     # The shotgun's pump, both strokes of the Mossberg's, the wait between
-    # them shortened from 0.42 s to 0.28 s: a rack, heard on its own.
-    "shotgun_pump": (0.85, [
+    # them shortened from 0.42 s to 0.28 s: a rack, heard on its own, driven
+    # into soft clipping so its body sits where a report's does -- the raw
+    # strokes are clicks 28 dB above their own body, and at a report's peak
+    # they were too quiet to hear between shots.
+    "shotgun_pump": (0.98, [
         take("159710-mossberg-500a-shot-and-pump", 1.27, 1.68, fade_in=0.005),
         take("159710-mossberg-500a-shot-and-pump", 1.69, 2.5, at=0.28, fade_in=0.005, fade_out=0.2),
-    ]),
-    # The Mauser 98k's bolt: lifted and drawn, then driven home 0.32 s later.
-    "bolt": (0.75, [
+    ], 3.0),
+    # The Mauser 98k's bolt: lifted and drawn, then driven home 0.32 s later,
+    # driven up the same way.
+    "bolt": (0.95, [
         take("802673-mauser-98k-bolt", 0.20, 0.80, fade_in=0.01, fade_out=0.06),
         take("802673-mauser-98k-bolt", 1.20, 1.70, at=0.32, fade_in=0.01, fade_out=0.08),
-    ]),
+    ], 2.5),
     # A 1911's magazine dropping out, in a dead room.
     "reload_start": (0.8, [take("104407-1911-magazine-out", 0.19)]),
     # The 9mm's magazine seated (0.56 s in the recording) and the slide run
@@ -952,7 +968,8 @@ RECORDINGS = {
     ]),
 }
 
-SOUNDS = {name: (lambda spec=spec: assemble(spec[1], spec[0])) for name, spec in RECORDINGS.items()}
+SOUNDS = {name: (lambda spec=spec: assemble(spec[1], spec[0], spec[2] if len(spec) > 2 else 1.0))
+          for name, spec in RECORDINGS.items()}
 
 
 def sounds_json():
