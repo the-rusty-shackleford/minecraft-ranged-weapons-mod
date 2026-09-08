@@ -24,6 +24,12 @@ package com.nfx.rangedweaponsmod.domain;
  * magazine up with as many as the inventory can give, and takes the weapon's
  * full reload time whether it loads one round or fifty -- the time is the
  * magazine change, not the rounds.
+ *
+ * <p>A detachable magazine's change is the same pair of movements whatever
+ * the magazine holds, so it takes the gun's own change time, not a time per
+ * round of capacity; only a magazine larger than the gun's standard one
+ * takes longer, a quarter more per doubling, for being heavier and
+ * clumsier in the hand.
  */
 public final class ReloadPlan {
     private ReloadPlan() {}
@@ -82,5 +88,39 @@ public final class ReloadPlan {
      */
     public static boolean done(long now, long startedAt, int durationTicks) {
         return now < startedAt || now - startedAt >= durationTicks;
+    }
+
+    /**
+     * effects: returns how long changing a detachable magazine takes:
+     * {@code baseTicks} for a magazine of the standard capacity or smaller,
+     * and a quarter of that more (rounded up) for every doubling of the
+     * standard capacity the magazine reaches -- twice the standard, five
+     * quarters; four times, three halves; at least one tick<br>
+     * throws: {@link IllegalArgumentException} if {@code baseTicks < 0},
+     * {@code standardCapacity < 1} or {@code capacity < 1}
+     *
+     * @param baseTicks        the gun's magazine change time
+     * @param standardCapacity the capacity of the gun's standard magazine
+     * @param capacity         the capacity of the magazine going in
+     * @return ticks from start to finish
+     */
+    public static int magazineChangeTicks(int baseTicks, int standardCapacity, int capacity) {
+        if (baseTicks < 0) {
+            throw new IllegalArgumentException("baseTicks must be >= 0, was " + baseTicks);
+        }
+        if (standardCapacity < 1) {
+            throw new IllegalArgumentException("standardCapacity must be >= 1, was " + standardCapacity);
+        }
+        if (capacity < 1) {
+            throw new IllegalArgumentException("capacity must be >= 1, was " + capacity);
+        }
+        int doublings = 0;
+        long threshold = 2L * standardCapacity;
+        while (capacity >= threshold) {
+            doublings++;
+            threshold *= 2;
+        }
+        int extra = (int) Math.ceil(baseTicks * 0.25 * doublings);
+        return Math.max(1, baseTicks + extra);
     }
 }

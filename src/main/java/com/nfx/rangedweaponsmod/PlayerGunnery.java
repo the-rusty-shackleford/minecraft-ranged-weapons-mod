@@ -204,8 +204,8 @@ public final class PlayerGunnery {
         Gunnery after = gunnery.reloadRequested() || gunnery.swapRequested() ? gunnery.requestsHandled() : gunnery;
         switch (action) {
             case FIRE -> after = fire(player, level, weapon, stack, stats, now, after, unlimited, magazineFed);
-            case START_RELOAD -> startReload(player, level, stack, stats, now, false);
-            case START_SWAP -> startReload(player, level, stack, stats, now, true);
+            case START_RELOAD -> startReload(player, level, weapon, stack, stats, now, false, magazineFed, after);
+            case START_SWAP -> startReload(player, level, weapon, stack, stats, now, true, magazineFed, after);
             case FINISH_RELOAD -> {
                 stack.remove(ModData.RELOAD.get());
                 if (unlimited) {
@@ -261,10 +261,36 @@ public final class PlayerGunnery {
         return gunnery.firedUntil(FireClock.next(now, Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS)));
     }
 
-    private static void startReload(Player player, ServerLevel level, ItemStack stack, WeaponStats stats, long now,
-                                    boolean swap) {
-        stack.set(ModData.RELOAD.get(), new Reload(now, ReloadPlan.durationTicks(stats.fullReloadTicks()), swap));
+    /**
+     * effects: starts the reload on the gun, with the sound. A tube's reload
+     * takes the profile's full reload time. A magazine change takes the
+     * gun's handling time, the same whatever the magazine holds -- and a
+     * quarter more per doubling of the standard capacity for the magazine
+     * that would go in now, if one is carried (the choice is made again when
+     * the change finishes, on whatever is carried then).
+     */
+    private static void startReload(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
+                                    WeaponStats stats, long now, boolean swap, boolean magazineFed, Gunnery gunnery) {
+        int duration;
+        if (magazineFed && !player.hasInfiniteMaterials()) {
+            int standard = weapon.profile().defaults().capacity();
+            int incoming = chooseMagazine(player, weapon, gunnery, swap)
+                    .map(slot -> Magazines.contents(player.getInventory().getItem(slot)).capacity())
+                    .orElse(standard);
+            duration = ReloadPlan.magazineChangeTicks(Handling.of(stack).magazineChangeTicks(), standard, incoming);
+        } else {
+            duration = ReloadPlan.durationTicks(stats.fullReloadTicks());
+        }
+        stack.set(ModData.RELOAD.get(), new Reload(now, duration, swap));
         play(level, player, ModSounds.RELOAD_START.get(), 0.8f, 1.0f);
+    }
+
+    /** effects: returns the inventory slot a change or a swap would take its magazine from right now, if any */
+    private static Optional<Integer> chooseMagazine(Player player, RangedWeapon weapon, Gunnery gunnery, boolean swap) {
+        List<Integer> slots = Magazines.loadedMagazineSlots(player, weapon);
+        OptionalInt last = gunnery.lastSwapSlot() < 0 ? OptionalInt.empty() : OptionalInt.of(gunnery.lastSwapSlot());
+        OptionalInt choice = swap ? MagazineChoice.forSwap(slots, last) : MagazineChoice.forReload(slots);
+        return choice.isPresent() ? Optional.of(choice.getAsInt()) : Optional.empty();
     }
 
     /** Creative loads its native round, or keeps the one it holds; it needs no magazine and no ammunition. */
@@ -293,13 +319,11 @@ public final class PlayerGunnery {
      */
     private static Gunnery finishMagazineChange(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                                 Gunnery gunnery, boolean swap) {
-        List<Integer> slots = Magazines.loadedMagazineSlots(player, weapon);
-        OptionalInt last = gunnery.lastSwapSlot() < 0 ? OptionalInt.empty() : OptionalInt.of(gunnery.lastSwapSlot());
-        OptionalInt choice = swap ? MagazineChoice.forSwap(slots, last) : MagazineChoice.forReload(slots);
+        Optional<Integer> choice = chooseMagazine(player, weapon, gunnery, swap);
         if (choice.isEmpty()) {
             return gunnery;
         }
-        int slot = choice.getAsInt();
+        int slot = choice.get();
         ItemStack incoming = player.getInventory().getItem(slot);
         ItemStack outgoing = Magazines.eject(stack, weapon);
         player.getInventory().setItem(slot, outgoing);

@@ -89,7 +89,8 @@ public final class GunneryGameTests {
     private static final int ARENA_SIZE = 9;
     private static final int FIRE_RATE = 3;
     private static final int CAPACITY = 75;
-    private static final int RELOAD_TICKS = 75;
+    /** The machine gun's magazine change, from its handling: the same whatever the box holds. */
+    private static final int RELOAD_TICKS = 50;
 
     public GunneryGameTests() {}
 
@@ -162,7 +163,7 @@ public final class GunneryGameTests {
         helper.assertTrue(weapon != null, "the machine gun resolves to a weapon");
         helper.assertValueEqual(weapon.capacity(gun), CAPACITY, "capacity from the profile");
         helper.assertValueEqual(weapon.stats(gun).fireRateTicks(), FIRE_RATE, "fire rate from the profile");
-        helper.assertValueEqual(weapon.stats(gun).fullReloadTicks(), RELOAD_TICKS, "full reload from the profile");
+        helper.assertValueEqual(weapon.stats(gun).fullReloadTicks(), CAPACITY, "the profile's full reload (a tick a round), which a magazine change does not use");
         helper.assertTrue(weapon.profile().weaponClass() == WeaponClass.AUTOMATIC, "class from the profile");
         helper.assertTrue(weapon.profile().ammoItem().map(Object::toString).orElse("").equals("rangedweaponsmod:round"),
                 "ammunition from the profile");
@@ -175,6 +176,9 @@ public final class GunneryGameTests {
         Handling declared = Handling.of(new ItemStack(ModItems.MACHINE_GUN.get()));
         helper.assertValueEqual(declared.recoilPitch(), 0.55f, "recoil pitch from the data map");
         helper.assertValueEqual(declared.recovery(), 0.35f, "recovery from the data map");
+        helper.assertValueEqual(declared.magazineChangeTicks(), 50, "the box's change time from the data map");
+        helper.assertValueEqual(Handling.of(new ItemStack(ModItems.PISTOL.get())).magazineChangeTicks(), 24, "the pistol's");
+        helper.assertValueEqual(Handling.defaultFor(WeaponClass.RIFLE).magazineChangeTicks(), 30, "a rifle's by default");
         Handling fallback = Handling.of(new ItemStack(ModItems.ROUND.get()));
         helper.assertTrue(fallback.equals(Handling.defaultFor(WeaponClass.UNCLASSIFIED)),
                 "an item with neither handling nor profile gets the unclassified default");
@@ -539,7 +543,7 @@ public final class GunneryGameTests {
         helper.runAtTickTime(2, () -> {
             Reload reload = g.gun().get(ModData.RELOAD.get());
             helper.assertTrue(reload != null && !reload.swap(), "a magazine change started on the empty trigger");
-            helper.assertValueEqual(reload.durationTicks(), RELOAD_TICKS, "it takes the gun's full reload time");
+            helper.assertValueEqual(reload.durationTicks(), RELOAD_TICKS, "it takes the gun's magazine change time, not a time per round");
         });
         helper.runAtTickTime(RELOAD_TICKS, () ->
                 helper.assertValueEqual(g.weapon().rounds(g.gun()), 0, "still empty before the change is over"));

@@ -33,14 +33,21 @@ import net.minecraft.world.item.ItemStack;
  * default per weapon class for a gun no pack has described. Immutable.
  *
  * <p>RI: {@code recoilPitch, recoilYaw >= 0} and finite; {@code recovery}
- * in {@code (0, 1]}; {@code spread} not null.
+ * in {@code (0, 1]}; {@code spread} not null; {@code magazineChangeTicks >= 1}.
  *
- * @param recoilPitch degrees the view kicks up per shot
- * @param recoilYaw   degrees the view kicks sideways per shot, direction random
- * @param recovery    the fraction of the kick recovered each tick
- * @param spread      how stance scales the weapon's spread
+ * @param recoilPitch         degrees the view kicks up per shot
+ * @param recoilYaw           degrees the view kicks sideways per shot, direction random
+ * @param recovery            the fraction of the kick recovered each tick
+ * @param spread              how stance scales the weapon's spread
+ * @param magazineChangeTicks how long a detachable magazine takes to change, for a
+ *                            magazine of the standard size; the same whatever it holds
  */
-public record Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread) {
+public record Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread, int magazineChangeTicks) {
+
+    /** A handling with the class's magazine change time. */
+    public Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread) {
+        this(recoilPitch, recoilYaw, recovery, spread, 30);
+    }
 
     private static final Codec<Factors> FACTORS_CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("crouching", Factors.DEFAULT.crouching()).forGetter(Factors::crouching),
@@ -50,12 +57,16 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
             Codec.floatRange(Float.MIN_VALUE, Float.MAX_VALUE).optionalFieldOf("aiming", Factors.DEFAULT.aiming()).forGetter(Factors::aiming)
     ).apply(i, Factors::new));
 
-    /** The datapack shape: {@code recoil_pitch}, {@code recoil_yaw}, {@code recovery}, optional {@code spread} factors. */
+    /**
+     * The datapack shape: {@code recoil_pitch}, {@code recoil_yaw}, {@code recovery},
+     * optional {@code spread} factors, optional {@code magazine_change_ticks} (30).
+     */
     public static final Codec<Handling> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.floatRange(0.0f, Float.MAX_VALUE).fieldOf("recoil_pitch").forGetter(Handling::recoilPitch),
             Codec.floatRange(0.0f, Float.MAX_VALUE).fieldOf("recoil_yaw").forGetter(Handling::recoilYaw),
             Codec.floatRange(Float.MIN_VALUE, 1.0f).fieldOf("recovery").forGetter(Handling::recovery),
-            FACTORS_CODEC.optionalFieldOf("spread", Factors.DEFAULT).forGetter(Handling::spread)
+            FACTORS_CODEC.optionalFieldOf("spread", Factors.DEFAULT).forGetter(Handling::spread),
+            Codec.intRange(1, Integer.MAX_VALUE).optionalFieldOf("magazine_change_ticks", 30).forGetter(Handling::magazineChangeTicks)
     ).apply(i, Handling::new));
 
     /**
@@ -73,6 +84,9 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
         }
         if (spread == null) {
             throw new IllegalArgumentException("spread must not be null");
+        }
+        if (magazineChangeTicks < 1) {
+            throw new IllegalArgumentException("magazineChangeTicks must be >= 1, was " + magazineChangeTicks);
         }
     }
 
@@ -97,14 +111,15 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
     /**
      * effects: returns a default handling for a class: sidearms and rifles
      * kick once and settle, shotguns kick hard, automatics kick lightly and
-     * often, a flame weapon not at all
+     * often, a flame weapon not at all; a sidearm's magazine changes in 24
+     * ticks, a rifle's in 30, an automatic's box in 50
      *
      * @param weaponClass the profile's class
      * @return a handling; never null
      */
     public static Handling defaultFor(WeaponClass weaponClass) {
         if (weaponClass == WeaponClass.SIDEARM) {
-            return new Handling(1.5f, 0.6f, 0.45f, Factors.DEFAULT);
+            return new Handling(1.5f, 0.6f, 0.45f, Factors.DEFAULT, 24);
         }
         if (weaponClass == WeaponClass.RIFLE) {
             return new Handling(2.5f, 0.8f, 0.4f, Factors.DEFAULT);
@@ -113,7 +128,7 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
             return new Handling(4.0f, 1.2f, 0.35f, Factors.DEFAULT);
         }
         if (weaponClass == WeaponClass.AUTOMATIC) {
-            return new Handling(0.55f, 0.25f, 0.35f, Factors.DEFAULT);
+            return new Handling(0.55f, 0.25f, 0.35f, Factors.DEFAULT, 50);
         }
         if (weaponClass == WeaponClass.LAUNCHER) {
             return new Handling(5.0f, 1.0f, 0.3f, Factors.DEFAULT);

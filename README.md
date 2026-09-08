@@ -57,9 +57,14 @@ magazine after the one the last swap took, in inventory order, wrapping
 round, so pressing again walks through everything you carry. The shotgun's
 tube is loaded directly, as it always was: `R` tops it up from the shells
 or slugs you carry, and `Shift+R` unloads it back into your inventory and
-loads the next kind you carry. A change or a swap takes the profile's full
-reload time, the gun is unusable meanwhile, and the reload is a property of
-the gun (a data component), so a gun dropped mid-reload is still mid-reload
+loads the next kind you carry. A change or a swap takes the gun's magazine
+change time from its handling (`magazine_change_ticks`: pistol 24, rifles
+30, machine gun 50) whatever the magazine holds -- pulling a magazine and
+seating another is the same pair of movements full or empty -- and a
+quarter longer per doubling of the standard capacity for a larger magazine,
+heavier and clumsier in the hand; the tube's reload takes the profile's
+full reload time. The gun is unusable meanwhile, and the reload is a
+property of the gun (a data component), so a gun dropped mid-reload is still mid-reload
 when picked up; if the clock it was started on is gone (another world), the
 reload is abandoned rather than finished early. Creative has unlimited
 ammunition, as it has unlimited arrows: every gun fires without spending a
@@ -129,7 +134,7 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 | Falls off | to half past 28 blocks, from 10 | to a fifth past 18 blocks, from 5 | no | no | no |
 | Spread | 0.03 | 0.11 | 0.012 | 0.006 | 0.05 |
 | Reach | 20 | 12 | 40 | 64 | 28 |
-| Reload | 30 ticks | 48 ticks | 30 ticks | 30 ticks | 75 ticks |
+| Magazine change | 24 ticks | 48 ticks (the tube, round by round) | 30 ticks | 30 ticks | 50 ticks |
 | Kick | 1.6 up | 4.5 up | 2.2 up | 3.0 up | 0.55 up |
 | Aiming spread | 0.5 | 0.7 | 0.35 | 0.15 | 0.35 |
 | Held | one hand | two | two | two | two |

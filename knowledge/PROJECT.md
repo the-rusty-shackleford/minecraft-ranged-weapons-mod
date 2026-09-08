@@ -61,7 +61,7 @@ gun loads one kind at a time (`D-0010`).
 
 ## How it is verified
 
-`./gradlew check`: 110 plain-JUnit tests against `domain`, and thirty-eight gametests
+`./gradlew check`: 113 plain-JUnit tests against `domain`, and thirty-eight gametests
 on a headless server. `devtools/recipes/collisions.py` checks the recipes
 against the pack's jars. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
@@ -97,9 +97,11 @@ Decided by Rusty on 2026-09-06, in this order:
    magazine carried and keeps the old one; Shift+R walks the carried
    magazines (on the shotgun: unloads the tube and loads the next kind);
    the HUD shows the next round's icon and the magazine's name in its
-   colour; loose rounds are adopted on first sight. Extended magazines,
-   when they come: another `MagazineItem` with its capacity, a recipe, a
-   texture; nothing else changes.
+   colour; loose rounds are adopted on first sight. 2.0.1: a change takes
+   the gun's `magazine_change_ticks` (handling), a quarter more per
+   doubling of the standard capacity, never a time per round. Extended
+   magazines, when they come: another `MagazineItem` with its capacity, a
+   recipe, a texture; nothing else changes.
 3. Done (1.2.0): crafting as assembly -- receivers of steel, a barrel, a
    stock, a scope, then the gun in a shape that follows its silhouette;
    the pistol cheapest, the machine gun the most involved.

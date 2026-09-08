@@ -87,4 +87,30 @@ final class ReloadPlanTest {
         assertTrue(ReloadPlan.done(99, 100, 50));
         assertTrue(ReloadPlan.done(0, 1_000_000, 50));
     }
+
+    // --- a detachable magazine's change ---------------------------------------
+
+    @Test
+    void aStandardOrSmallerMagazineChangesInTheGunsOwnTime() {
+        assertEquals(30, ReloadPlan.magazineChangeTicks(30, 30, 30));
+        assertEquals(30, ReloadPlan.magazineChangeTicks(30, 30, 10));
+        assertEquals(30, ReloadPlan.magazineChangeTicks(30, 30, 59));
+        assertEquals(50, ReloadPlan.magazineChangeTicks(50, 75, 75));
+    }
+
+    @Test
+    void aLargerMagazineTakesAQuarterMorePerDoubling() {
+        assertEquals(38, ReloadPlan.magazineChangeTicks(30, 30, 60));       // twice: 30 + ceil(7.5)
+        assertEquals(45, ReloadPlan.magazineChangeTicks(30, 30, 120));      // four times: 30 + 15
+        assertEquals(53, ReloadPlan.magazineChangeTicks(30, 30, 240));      // eight times
+        assertEquals(63, ReloadPlan.magazineChangeTicks(50, 75, 150));      // the box doubled
+    }
+
+    @Test
+    void aChangeIsNeverOverBeforeItBeganAndRefusesNonsense() {
+        assertEquals(1, ReloadPlan.magazineChangeTicks(0, 30, 30));
+        assertThrows(IllegalArgumentException.class, () -> ReloadPlan.magazineChangeTicks(-1, 30, 30));
+        assertThrows(IllegalArgumentException.class, () -> ReloadPlan.magazineChangeTicks(30, 0, 30));
+        assertThrows(IllegalArgumentException.class, () -> ReloadPlan.magazineChangeTicks(30, 30, 0));
+    }
 }
