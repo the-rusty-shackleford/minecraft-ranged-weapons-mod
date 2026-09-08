@@ -417,18 +417,18 @@ public final class GunneryGameTests {
         helper.succeed();
     }
 
-    // --- the press, through the item ---------------------------------------
+    // --- the use key is not the trigger ------------------------------------
 
     @GameTest(template = "arena", timeoutTicks = 60)
-    public void theGunsUseIsThePressAndConsumesTheClick(GameTestHelper helper) {
+    public void theGunsUsePassesTheClickOnAndPullsNoTrigger(GameTestHelper helper) {
         Gunner g = gunner(helper, CAPACITY, 0);
         var result = g.gun().getItem().use(helper.getLevel(), g.player(), InteractionHand.MAIN_HAND);
-        helper.assertTrue(result.getResult().consumesAction(), "the click is consumed, so the off hand is not tried");
+        helper.assertFalse(result.getResult().consumesAction(), "the use key passes on, so a door or chest under the crosshair gets it");
         helper.assertFalse(result.getResult().shouldSwing(), "no arm swing");
-        helper.assertTrue(g.player().getData(ModData.GUNNERY).held(), "the trigger is held after use()");
-        driveTicks(helper, g, 1, 7);                       // shots at 1, 4, 7
+        helper.assertFalse(g.player().getData(ModData.GUNNERY).held(), "the trigger is not held after use()");
+        driveTicks(helper, g, 1, 7);
         helper.runAtTickTime(8, () -> {
-            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY - 3, "rounds after a use() press held 7 ticks");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY, "no round spent by a use() held 7 ticks");
             helper.succeed();
         });
     }
@@ -456,7 +456,13 @@ public final class GunneryGameTests {
         var result = g.gun().getItem().use(helper.getLevel(), g.player(), InteractionHand.OFF_HAND);
         helper.assertFalse(result.getResult().consumesAction(), "an off-hand gun passes the click on");
         helper.assertFalse(g.player().getData(ModData.GUNNERY).held(), "and pulls no trigger");
-        helper.succeed();
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 2);
+        helper.runAtTickTime(3, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY - 1, "the main-hand gun fires on the trigger");
+            helper.assertValueEqual(g.weapon().rounds(g.player().getOffhandItem()), CAPACITY, "the off-hand gun does not");
+            helper.succeed();
+        });
     }
 
     // --- reloading ----------------------------------------------------------

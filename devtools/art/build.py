@@ -711,11 +711,13 @@ def synth(seconds, fn):
 
 
 def write_ogg(path: Path, samples) -> None:
-    """Writes 16-bit mono PCM through ffmpeg into Ogg Vorbis."""
+    """Writes 16-bit mono PCM through ffmpeg into Ogg Vorbis. Bit-exact, so
+    the same samples give the same bytes and an unchanged sound is an
+    unchanged file in the diff."""
     path.parent.mkdir(parents=True, exist_ok=True)
     pcm = b"".join(struct.pack("<h", int(s * 32767)) for s in samples)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(RATE), "-ac", "1",
-                    "-i", "pipe:0", "-c:a", "libvorbis", "-q:a", "5", str(path)],
+                    "-i", "pipe:0", "-c:a", "libvorbis", "-q:a", "5", "-fflags", "+bitexact", "-flags", "+bitexact", str(path)],
                    input=pcm, check=True)
 
 
@@ -760,28 +762,102 @@ def slapback(samples, delays_ms, gains):
     return out
 
 
+def modes_ring(excitation, modes):
+    """Drives a bank of damped resonators with an excitation: each mode is
+    (hz, t60 seconds, amplitude), a two-pole filter ringing at hz and dying
+    to -60 dB in t60. Struck steel is a few such partials at inharmonic
+    spacings, each dying at its own rate -- which is what a bare sine, however
+    quickly it fades, never sounds like."""
+    n = len(excitation)
+    out = [0.0] * n
+    for hz, t60, amp in modes:
+        r = math.exp(-6.9078 / (t60 * RATE))
+        th = 2 * math.pi * hz / RATE
+        c, rr, g = 2 * r * math.cos(th), r * r, amp * math.sin(th)
+        y1 = y2 = 0.0
+        for i, x in enumerate(excitation):
+            y = c * y1 - rr * y2 + x
+            out[i] += g * y
+            y2, y1 = y1, y
+    return out
+
+
+def impact(noise, strike_ms, modes, body_band, body_ms, body_gain):
+    """One mechanical contact: a burst of noise strike_ms long strikes a
+    bank of modes (the part ringing, see modes_ring) over a knock of
+    band-limited noise body_ms long between body_band's edges (the weight of
+    the receiver taking the blow). Peak-normalized; the caller scales it."""
+    longest = max(t60 for _, t60, _ in modes)
+    length = int(RATE * (longest * 1.5 + body_ms / 1000.0 + strike_ms / 1000.0))
+    tau = strike_ms / 1000.0
+    strike = [(noise.next() * 2 - 1) * math.exp(-i / RATE / tau) if i < 4 * tau * RATE else 0.0 for i in range(length)]
+    ring = modes_ring(strike, modes)
+    knock = bandnoise(noise, length, *body_band)
+    knock = [k * body_gain * math.exp(-i / RATE / (body_ms / 1000.0)) * (1 - math.exp(-i / RATE / 0.0008))
+             for i, k in enumerate(knock)]
+    return normalize([a + b for a, b in zip(ring, knock)], 1.0)
+
+
+def rasp(noise, seconds, hz_from, hz_to, q, catches_per_s):
+    """A part sliding in a well: stick-slip, hundreds of tiny catches a
+    second at random moments, each a small strike, with the faint hiss of
+    the contact between them -- through one resonance of quality q that
+    moves from hz_from to hz_to as the contact does, under a hump envelope
+    (the slide starts from rest and stops). Peak-normalized."""
+    n = int(RATE * seconds)
+    p = catches_per_s / RATE
+    out = [0.0] * n
+    y1 = y2 = 0.0
+    for i in range(n):
+        x = (noise.next() * 2 - 1) if noise.next() < p else 0.0
+        x += (noise.next() * 2 - 1) * 0.12
+        u = i / n
+        hz = hz_from + (hz_to - hz_from) * u
+        r = math.exp(-math.pi * (hz / q) / RATE)
+        th = 2 * math.pi * hz / RATE
+        y = 2 * r * math.cos(th) * y1 - r * r * y2 + x
+        y2, y1 = y1, y
+        out[i] = y * math.sin(math.pi * u) ** 0.8
+    return normalize(out, 1.0)
+
+
+def place(out, at, samples, gain):
+    """Adds gain * samples into out starting at `at` seconds, clipped to out."""
+    i0 = int(at * RATE)
+    for i, s in enumerate(samples):
+        if i0 + i < len(out):
+            out[i0 + i] += gain * s
+
+
+# The modes of the parts that get struck (hz, t60 seconds, amplitude): all
+# inharmonic, all short. A catch is a small latch; a ring is a slide or bolt
+# handle, brighter and longer; a clack is a pump or a magazine driven home,
+# low and dull; a seat is the receiver itself taking a magazine.
+CATCH_MODES = ((2350, 0.025, 1.0), (3620, 0.020, 0.7), (5210, 0.014, 0.5), (1480, 0.030, 0.4))
+RING_MODES = ((2350, 0.045, 1.0), (3620, 0.035, 0.7), (5210, 0.025, 0.5), (7100, 0.015, 0.3), (1480, 0.030, 0.4))
+CLACK_MODES = ((610, 0.040, 1.0), (940, 0.030, 0.6), (1750, 0.020, 0.5), (2900, 0.015, 0.35))
+SEAT_MODES = ((380, 0.050, 1.0), (620, 0.035, 0.7), (1240, 0.020, 0.4), (2600, 0.012, 0.3))
+HAMMER_MODES = ((3150, 0.012, 1.0), (4720, 0.009, 0.6), (6380, 0.006, 0.4), (1930, 0.018, 0.5))
+
+
 def mechanism(n, seed, events):
-    """Sounds of the gun's action after the shot, at the seconds given:
-    a "clack" is a short burst of bright noise with a low thunk under it (a
-    pump racked, a magazine seated); a "ring" is a metallic ping (a bolt
-    handle, a slide). Each event is (seconds, kind, gain)."""
+    """Sounds of the gun's action after the shot, at the seconds given: a
+    "clack" is a part driven home (a pump racked, a magazine seated) -- the
+    part sliding for 60 ms, then the stop, an impact with the receiver's
+    weight under it; a "ring" is a bolt handle or a slide catching, lighter
+    and brighter steel on steel. Each event is (seconds, kind, gain), the
+    seconds being the moment of the stop. Neither is a tone: each is a
+    strike into damped, inharmonic modes (see impact). The strikes are
+    peak-normalized transients; the factors below put a stop about 10 dB
+    under the blast in a 20 ms loudness, its slide 8 dB under that."""
     out = [0.0] * n
     noise = Noise(seed)
     for at, kind, gain in events:
-        i0 = int(at * RATE)
         if kind == "clack":
-            length = int(0.035 * RATE)
-            burst = highpass(lowpass2([noise.next() * 2 - 1 for _ in range(length)], 3500), 1200)
-            for i, b in enumerate(burst):
-                tt = i / RATE
-                if i0 + i < n:
-                    out[i0 + i] += gain * (b * math.exp(-tt * 90) + 0.6 * math.sin(2 * math.pi * 170 * tt) * math.exp(-tt * 60))
+            place(out, max(0.0, at - 0.06), rasp(noise, 0.06, 900, 1500, 1.5, 500), 0.35 * gain)
+            place(out, at, impact(noise, 2.5, CLACK_MODES, (150, 700), 30, 1.2), 0.9 * gain)
         else:
-            length = int(0.09 * RATE)
-            for i in range(length):
-                tt = i / RATE
-                if i0 + i < n:
-                    out[i0 + i] += gain * (math.sin(2 * math.pi * 2600 * tt) + 0.5 * math.sin(2 * math.pi * 4100 * tt)) * math.exp(-tt * 350)
+            place(out, at, impact(noise, 1.2, RING_MODES, (300, 1200), 10, 0.35), 1.0 * gain)
     return out
 
 
@@ -921,45 +997,40 @@ def far_shot():
 
 
 def empty_click():
+    # The hammer falling on nothing: the sear letting go, a tick, then the
+    # hammer's own dry clack -- small steel, quickly still.
     noise = Noise(0x11)
-
-    def fn(t, u):
-        tick = math.sin(2 * math.pi * 2400 * t) * math.exp(-t * 400)
-        body = (noise.next() * 2 - 1) * 0.25 * math.exp(-t * 300)
-        return 0.7 * (tick + body)
-
-    return synth(0.06, fn)
+    out = [0.0] * int(RATE * 0.08)
+    place(out, 0.0, impact(noise, 0.8, CATCH_MODES, (400, 1200), 6, 0.3), 0.35)
+    place(out, 0.012, impact(noise, 1.5, HAMMER_MODES, (300, 900), 12, 1.4), 1.0)
+    return normalize(lowpass2(saturate(out, 1.3), 9000), 0.7)
 
 
 def reload_start():
+    # Magazine out: the release catch lets go, the magazine slides down out
+    # of the well -- the resonance falling as it clears -- and knocks softly
+    # into the hand.
     noise = Noise(0x33)
-    state = {"lp": 0.0}
-
-    def fn(t, u):
-        raw = noise.next() * 2 - 1
-        state["lp"] += (raw - state["lp"]) * 0.2
-        # Magazine release clack, then the slide of it coming out.
-        clack = math.sin(2 * math.pi * 900 * t) * math.exp(-t * 120) * 0.8
-        slide = state["lp"] * 0.35 * (1 if 0.08 < t < 0.28 else 0) * math.sin(math.pi * (t - 0.08) / 0.2)
-        return 0.8 * (clack + slide)
-
-    return synth(0.32, fn)
+    out = [0.0] * int(RATE * 0.32)
+    place(out, 0.0, impact(noise, 1.0, CATCH_MODES, (400, 1200), 8, 0.4), 0.6)
+    place(out, 0.03, rasp(noise, 0.19, 2200, 1400, 1.5, 400), 0.55)
+    place(out, 0.21, impact(noise, 3.0, SEAT_MODES, (120, 500), 30, 1.4), 0.5)
+    return normalize(lowpass2(saturate(out, 1.3), 8000), 0.8)
 
 
 def reload_end():
+    # Magazine in: the fresh one up the well, seating home with the
+    # receiver's weight behind it and the catch snapping over, then the
+    # slide let go -- steel forward on steel, and the round driven into the
+    # chamber behind it.
     noise = Noise(0x55)
-    state = {"lp": 0.0}
-
-    def fn(t, u):
-        raw = noise.next() * 2 - 1
-        state["lp"] += (raw - state["lp"]) * 0.25
-        # The magazine seating home: a slide, then a firm double clack.
-        slide = state["lp"] * 0.3 * (1 if t < 0.12 else 0) * math.sin(math.pi * t / 0.12)
-        c1 = math.sin(2 * math.pi * 700 * t) * math.exp(-(t - 0.13) * 150) * (1 if t >= 0.13 else 0)
-        c2 = math.sin(2 * math.pi * 1100 * t) * math.exp(-(t - 0.2) * 200) * (1 if t >= 0.2 else 0)
-        return 0.8 * (slide + 0.9 * c1 + 0.6 * c2)
-
-    return synth(0.3, fn)
+    out = [0.0] * int(RATE * 0.34)
+    place(out, 0.0, rasp(noise, 0.11, 1400, 2200, 1.5, 450), 0.5)
+    place(out, 0.11, impact(noise, 3.0, SEAT_MODES, (120, 500), 35, 1.6), 0.85)
+    place(out, 0.115, impact(noise, 0.8, CATCH_MODES, (400, 1200), 6, 0.3), 0.3)
+    place(out, 0.22, impact(noise, 2.0, RING_MODES, (200, 700), 30, 1.0), 1.0)
+    place(out, 0.235, impact(noise, 1.5, CLACK_MODES, (150, 600), 25, 1.0), 0.6)
+    return normalize(lowpass2(saturate(out, 1.3), 8000), 0.8)
 
 
 SOUNDS = {

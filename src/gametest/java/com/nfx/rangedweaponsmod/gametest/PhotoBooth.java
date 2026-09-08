@@ -184,17 +184,20 @@ public final class PhotoBooth {
             sp.setItemInHand(InteractionHand.MAIN_HAND, gun);
         })));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-burst-0")));
-        // The use key itself, pressed and held the way a mouse does it, so
-        // every step of the client's click path runs -- not our message.
+        // The attack key itself -- left click -- pressed and held the way a
+        // mouse does it, so every step of the client's click path runs, not
+        // our message. Held on a stone block in survival: were the click not
+        // taken, the block would be mined, and the cracks in the frames would
+        // be the pick's, not the bullets'.
         s.add(new Step(t[0] += 1, () -> {
-            KeyMapping.set(mc.options.keyUse.getKey(), true);
-            KeyMapping.click(mc.options.keyUse.getKey());
+            KeyMapping.set(mc.options.keyAttack.getKey(), true);
+            KeyMapping.click(mc.options.keyAttack.getKey());
         }));
         s.add(new Step(t[0] += 2, () -> shoot(mc, "booth-burst-1")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-2")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-3")));
         s.add(new Step(t[0] += 3, () -> shoot(mc, "booth-burst-4")));
-        s.add(new Step(t[0] += 1, () -> KeyMapping.set(mc.options.keyUse.getKey(), false)));
+        s.add(new Step(t[0] += 1, () -> KeyMapping.set(mc.options.keyAttack.getKey(), false)));
         s.add(new Step(t[0] += 10, () -> onServer(mc, sp -> {
             sp.setGameMode(GameType.CREATIVE);
             BlockPos ahead = BlockPos.containing(sp.getEyePosition().add(0.0, 0.0, 3.0));

@@ -48,15 +48,16 @@ Three source sets, one direction of dependency:
   its calibration items.
 
 Decisions: the protocol's fallback tier operates our guns (`D-0001`); the
-click is offered to the target with vanilla's own calls and then cancelled,
-because vanilla's item use drops the hand (`D-0006`, superseding `D-0005`); recoil is a camera
+trigger is the attack key, cancelled outright so nothing is mined or struck,
+and the use key is vanilla's (`D-0011`, superseding `D-0006`); recoil is a camera
 offset that recovers, never the player's rotation (`D-0003`); the art is
 generated and its display transforms and the kick's signs were calibrated by
 photograph (`D-0004`); a gun's class decides whether it fires once per
 pull or for as long as the trigger is held (`D-0007`); guns are assembled
 from parts described once, in the pure layer, and written out by data
 generation (`D-0008`); a one-handed gun is held out level by a pose added
-to the game's own enum (`D-0009`).
+to the game's own enum (`D-0009`); rounds of one family may differ and the
+gun loads one kind at a time (`D-0010`).
 
 ## How it is verified
 
@@ -80,6 +81,10 @@ Decided by Rusty on 2026-09-06, in this order:
    that the protocol's bullet bypasses the hurt cooldown (protocol 1.6);
    the shots re-synthesized from a blast pulse, spray, thump and tail,
    no tones.
+5. Done (1.4.0, asked 2026-09-07): fire on left click, the use key left to
+   vanilla for doors, chests and villagers, nothing mined with a gun in
+   hand; the action sounds (reloads, empty click, pump and bolt) rebuilt
+   as modal impacts and stick-slip slides, no tones.
 3. Done (1.2.0): crafting as assembly -- receivers of steel, a barrel, a
    stock, a scope, then the gun in a shape that follows its silhouette;
    the pistol cheapest, the machine gun the most involved.

@@ -16,19 +16,21 @@ Pillagers](../minecraft-armed-pillagers) does, subject to its own class policy
 
 ## What it does
 
-**Pull, or hold.** With a gun in the main hand, the use key first offers the
-click to whatever is under the crosshair, with vanilla's own calls and reach,
-so a door, a chest or a villager gets it. If nothing takes it, the client
-cancels vanilla's click and tells the server the trigger is down. The
+**Pull, or hold.** The trigger is the attack key -- left click. With a gun
+in the main hand the client cancels vanilla's attack outright, so there is
+no swing, no melee hit and no mining (a gun is not a pickaxe: nothing is
+mined while one is in hand), and tells the server the trigger is down. The
 machine gun, the one `automatic` gun, then fires a round every
 `fire_rate_ticks` until the client reports the key up; every other gun fires
 once per pull, and `fire_rate_ticks` is only how soon the next pull can fire:
-a pistol's quick reset, a shotgun's pump, a bolt worked. Vanilla's own item use never runs: it
-would drop the hand out of view on every press (its re-equip animation), the
-item is never "in use" and never on cooldown, so there is no hotbar strobe,
-no 0.2x movement slowdown, and the cadence is the server's, not the client's
-frame rate. Firing breaks a sprint, the way drawing a bow does. A gun in the
-off hand does nothing.
+a pistol's quick reset, a shotgun's pump, a bolt worked. The use key is left
+to vanilla: right-clicking a door, a chest or a villager with a gun in hand
+does what it does with anything else in hand, and the gun's own use passes.
+Vanilla's item-use path never runs for a gun: it would drop the hand out of
+view on every press (its re-equip animation), the item is never "in use" and
+never on cooldown, so there is no hotbar strobe, no 0.2x movement slowdown,
+and the cadence is the server's, not the client's frame rate. Firing breaks
+a sprint, the way drawing a bow does. A gun in the off hand does nothing.
 
 **Reload.** `R` reloads; so does pulling the trigger on an empty magazine when
 you carry ammunition the gun takes -- any round of its family, from any mod,
@@ -210,6 +212,12 @@ that were calibrated by photograph in the booth, never derived.
    pulse, a few milliseconds of turbulent spray, the ground's reflection, a
    band-limited low thump and a darkening outdoor tail with distant echoes;
    no sine anywhere, since a tone is what makes a shot sound like a game.
+   The action -- a pump racked, a bolt worked, a magazine out and in, the
+   hammer on an empty chamber -- is built the same way: each contact is a
+   burst of noise striking a bank of damped, inharmonic modes (steel
+   ringing, each partial dying at its own rate) over a knock of band-limited
+   noise for the receiver's weight, and each slide is stick-slip, hundreds
+   of small catches a second through a resonance that moves with the contact.
 4. Photograph it: `./gradlew runPhotoBooth` (below) and look at the pictures.
 5. A recipe: a `Blueprint` in `Blueprints` (with a unit test pinning where it
    sits in the tree), then `./gradlew runData`; and lang entries.
@@ -277,7 +285,7 @@ other two are for eyes and hands.
   world, poses the gun and takes pictures into `run/screenshots/booth-*.png`:
   first person, each term of the in-hand kick alone under a big kick, the
   shipped kick at a machine gun's plateau, a real five-round burst in
-  survival fired by pressing the use key itself into a stone block placed
+  survival fired by pressing the attack key itself into a stone block placed
   three blocks ahead (this is the frame that shows what a player sees --
   the hand, the impact, the cracks, the sparks; a synthetic kick, or even
   the trigger message sent directly, does not), third person from behind and in

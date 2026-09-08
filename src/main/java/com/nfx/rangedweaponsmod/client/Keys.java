@@ -21,7 +21,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import org.lwjgl.glfw.GLFW;
 
-/** The keys this mod adds. Firing is the vanilla use key; reload and aim are new. */
+/** The keys this mod adds. Firing is the vanilla attack key; reload and aim are new. */
 public final class Keys {
     private Keys() {}
 

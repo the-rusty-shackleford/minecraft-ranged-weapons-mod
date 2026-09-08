@@ -90,29 +90,19 @@ public final class GunItem extends Item {
     }
 
     /**
-     * The trigger pull, should vanilla's use path ever reach it. This mod's
-     * own client does not send it that way -- it offers the click to what
-     * is under the crosshair and then sends its own press, because a
-     * vanilla item use drops the hand out of view (see the client's
-     * {@code TriggerInput}) -- but another client, or a mod driving the
-     * vanilla path, gets a working trigger. Consumed without a swing and
-     * without starting a "use", so there is no arm wave and no movement
-     * slowdown. The release always comes from the client separately.
+     * The use key is not the trigger: the trigger is the attack key, taken
+     * by the client's {@code TriggerInput}, so that right-clicking a chest,
+     * a door or a villager with a gun in hand does what it does with
+     * anything else in hand. A gun's own use therefore passes, and passes
+     * without starting a "use" -- vanilla's item-use path drops the hand out
+     * of view and raises it again, which is the one thing that must never
+     * happen at a machine gun's cadence.
      *
-     * <p>effects: on the server, tells the gunnery the trigger is held (a
-     * repeat while already held changes nothing); returns consume for the
-     * main hand, pass for the off hand, which is not operated
+     * <p>effects: returns pass for either hand
      */
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        if (hand != InteractionHand.MAIN_HAND) {
-            return InteractionResultHolder.pass(stack);
-        }
-        if (!level.isClientSide) {
-            PlayerGunnery.onTrigger(player, true);
-        }
-        return InteractionResultHolder.consume(stack);
+        return InteractionResultHolder.pass(player.getItemInHand(hand));
     }
 
     /**
