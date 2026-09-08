@@ -25,6 +25,7 @@ import com.nfx.rangedweaponsmod.Reload;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -77,6 +78,16 @@ public final class GunHud {
         String text = unlimited ? "\u221e / " + capacity : rounds + " / " + capacity;
         int color = !unlimited && rounds * LOW_FRACTION <= capacity ? TEXT_LOW_COLOR : TEXT_COLOR;
         graphics.drawString(font, text, x, y, color, true);
+
+        // The round loaded, when it is not the gun's native one: a slug in
+        // the shotgun says so; buckshot needs no saying.
+        weapon.loadedAmmo(stack).ifPresent(round -> {
+            boolean nativeRound = weapon.profile().ammoItem()
+                    .map(id -> BuiltInRegistries.ITEM.getKey(round).equals(id)).orElse(false);
+            if (!nativeRound) {
+                graphics.drawString(font, round.getDescription(), x, y + font.lineHeight + 1, TEXT_COLOR, true);
+            }
+        });
 
         Reload reload = stack.get(ModData.RELOAD.get());
         if (reload != null && mc.level != null) {

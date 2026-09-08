@@ -25,3 +25,4 @@ thought and someone later would want to know *why*.
 | D-0007 | The automatic class holds; every other class fires once per pull; aiming is a stance |
 | D-0008 | Guns are assembled from parts described once, in the pure layer, and written out by data generation |
 | D-0009 | A one-handed gun is held out level, by an arm pose added to the game's enum |
+| D-0010 | Rounds of one family may differ; the gun loads one kind at a time; damage matches the mod the players compare to |

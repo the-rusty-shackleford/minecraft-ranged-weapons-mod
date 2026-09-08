@@ -26,6 +26,11 @@ import com.nfx.rangedweapons.api.WeaponProfile;
 import com.nfx.rangedweapons.api.WeaponStats;
 import com.nfx.rangedweaponsmod.domain.FireClock;
 import com.nfx.rangedweaponsmod.domain.ReloadPlan;
+import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
+import net.minecraft.core.registries.BuiltInRegistries;
+import com.nfx.rangedweaponsmod.domain.AmmoChoice;
 import com.nfx.rangedweaponsmod.domain.StanceSpread;
 import com.nfx.rangedweaponsmod.domain.StanceSpread.Stance;
 import com.nfx.rangedweaponsmod.domain.Trigger;
@@ -158,7 +163,7 @@ public final class PlayerGunnery {
         // gun is presented to the trigger as full and no shot spends a round.
         boolean unlimited = player.hasInfiniteMaterials();
         int rounds = unlimited ? capacity : weapon.rounds(stack);
-        boolean ammoAvailable = unlimited || countAmmo(player, weapon.profile()) > 0;
+        boolean ammoAvailable = unlimited || countAmmo(player, weapon, stack) > 0;
 
         // Only the automatic class fires for as long as the trigger is held;
         // every other gun fires once per pull, whatever its rate allows.
@@ -222,33 +227,63 @@ public final class PlayerGunnery {
                                      int rounds, int capacity) {
         stack.remove(ModData.RELOAD.get());
         boolean unlimited = player.hasInfiniteMaterials();
-        int available = unlimited ? capacity : countAmmo(player, weapon.profile());
+        Optional<Item> round = chooseAmmo(player, weapon, stack);
+        if (unlimited) {
+            // Creative loads its native round, or keeps the one it holds.
+            Item native_ = weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional).orElse(null);
+            Item chosen = round.orElse(weapon.loadedAmmo(stack).orElse(native_));
+            if (chosen != null) {
+                weapon.load(stack, capacity, chosen);
+            } else {
+                weapon.load(stack, capacity);
+            }
+            play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
+            return;
+        }
+        if (round.isEmpty()) {
+            return;
+        }
+        int available = countItem(player, round.get());
         int loaded = ReloadPlan.roundsToLoad(rounds, capacity, available);
         if (loaded == 0) {
             return;
         }
-        if (!unlimited) {
-            takeAmmo(player, weapon.profile(), loaded);
-        }
-        weapon.load(stack, rounds + loaded);
+        takeItem(player, round.get(), loaded);
+        weapon.load(stack, rounds + loaded, round.get());
         play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
     }
 
     /**
-     * effects: returns how many rounds the player carries that the profile
-     * accepts -- its family, or its native round without one -- zero if it
-     * accepts nothing
-     *
-     * @param player  the player
-     * @param profile the weapon's profile
-     * @return the count
+     * effects: returns the round a reload of {@code stack} would load, by
+     * {@link AmmoChoice}: what it holds while it holds any, else the first
+     * accepted round in the inventory, hotbar first
      */
-    public static int countAmmo(Player player, WeaponProfile profile) {
+    public static Optional<Item> chooseAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
+        List<Item> carried = new ArrayList<>();
+        Inventory inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack candidate = inventory.getItem(slot);
+            if (weapon.profile().acceptsAmmo(candidate) && !carried.contains(candidate.getItem())) {
+                carried.add(candidate.getItem());
+            }
+        }
+        return AmmoChoice.choose(weapon.loadedAmmo(stack), weapon.rounds(stack), carried);
+    }
+
+    /**
+     * effects: returns how many rounds a reload of {@code stack} could draw
+     * on: the count of the round {@link #chooseAmmo} picks, zero if none
+     */
+    public static int countAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
+        return chooseAmmo(player, weapon, stack).map(round -> countItem(player, round)).orElse(0);
+    }
+
+    private static int countItem(Player player, Item item) {
         int count = 0;
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (profile.acceptsAmmo(stack)) {
+            if (stack.is(item)) {
                 count += stack.getCount();
             }
         }
@@ -256,16 +291,15 @@ public final class PlayerGunnery {
     }
 
     /**
-     * requires: the player carries at least {@code count} accepted rounds<br>
-     * effects: removes that many, first slots first, whatever rounds of the
-     * family they are -- a loaded magazine is a count, not a list
+     * requires: the player carries at least {@code count} of {@code item}<br>
+     * effects: removes that many, first slots first
      */
-    private static void takeAmmo(Player player, WeaponProfile profile, int count) {
+    private static void takeItem(Player player, Item item, int count) {
         Inventory inventory = player.getInventory();
         int remaining = count;
         for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
             ItemStack stack = inventory.getItem(slot);
-            if (profile.acceptsAmmo(stack)) {
+            if (stack.is(item)) {
                 int taken = Math.min(remaining, stack.getCount());
                 stack.shrink(taken);
                 remaining -= taken;

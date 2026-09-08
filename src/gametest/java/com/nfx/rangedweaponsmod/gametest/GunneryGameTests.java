@@ -227,13 +227,13 @@ public final class GunneryGameTests {
 
     @GameTest(template = "arena")
     public void everyGunResolvesWithItsOwnNumbers(GameTestHelper helper) {
-        record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family) {}
+        record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family, float damage, float knockback) {}
         for (Expected e : List.of(
-                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 12, 5, 1, true, "small"),
-                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 13, 6, true, "shell"),
-                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 10, 6, 1, false, "medium"),
-                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 5, 10, 1, false, "medium"),
-                new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 50, 3, 1, false, "medium"))) {
+                new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 12, 5, 1, true, "small", 6.0f, 0.6f),
+                new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 13, 6, true, "shell", 4.0f, 3.0f),
+                new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 10, 6, 1, false, "medium", 12.0f, 1.0f),
+                new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 5, 10, 1, false, "medium", 16.0f, 1.5f),
+                new Expected(ModItems.MACHINE_GUN.get(), WeaponClass.AUTOMATIC, 50, 3, 1, false, "medium", 6.0f, 0.4f))) {
             ItemStack stack = new ItemStack(e.item());
             RangedWeapon weapon = RangedWeapons.resolve(stack);
             helper.assertTrue(weapon != null, e.item() + " resolves");
@@ -241,6 +241,8 @@ public final class GunneryGameTests {
             helper.assertValueEqual(weapon.capacity(stack), e.capacity(), e.item() + " capacity");
             helper.assertValueEqual(weapon.stats(stack).fireRateTicks(), e.rate(), e.item() + " fire rate");
             helper.assertValueEqual(weapon.stats(stack).projectilesPerShot(), e.pellets(), e.item() + " projectiles");
+            helper.assertValueEqual(weapon.stats(stack).damage(), e.damage(), e.item() + " damage");
+            helper.assertValueEqual(weapon.stats(stack).knockback(), e.knockback(), e.item() + " knockback");
             helper.assertValueEqual(weapon.profile().falloff().isPresent(), e.falloff(), e.item() + " falloff");
             helper.assertValueEqual(weapon.profile().ammoFamily().orElseThrow(), AmmoFamilies.family(e.family()), e.item() + " family");
             helper.assertTrue(weapon.profile().acceptsAmmo(new ItemStack(BuiltInRegistries.ITEM.get(weapon.profile().ammoItem().orElseThrow()))),
@@ -275,6 +277,44 @@ public final class GunneryGameTests {
             int pellets = helper.getLevel().getEntities(Fallback.BULLET.get(), helper.getBounds(), e -> true).size();
             helper.assertValueEqual(pellets, 6, "pellets in the air one tick after the shot");
             helper.assertValueEqual(g.weapon().rounds(g.gun()), 5, "one shell for all six");
+            helper.succeed();
+        });
+    }
+
+    // --- slugs -------------------------------------------------------------
+
+    @GameTest(template = "arena", timeoutTicks = 120)
+    public void anEmptyShotgunLoadsTheFirstShellOrSlugCarriedAndFiresAccordingly(GameTestHelper helper) {
+        Gunner g = gunner(helper, GameType.SURVIVAL, ModItems.SHOTGUN.get(), 0, 0);
+        // Slugs before shells in the hotbar: slugs it is.
+        g.player().getInventory().setItem(3, new ItemStack(ModItems.SLUG.get(), 4));
+        g.player().getInventory().setItem(4, new ItemStack(ModItems.SHELL.get(), 4));
+        helper.assertValueEqual(PlayerGunnery.chooseAmmo(g.player(), g.weapon(), g.gun()).orElseThrow(), ModItems.SLUG.get(), "the first round carried");
+        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 4, "only the slugs count toward this reload");
+        int reloadTicks = g.weapon().stats(g.gun()).fullReloadTicks();
+        PlayerGunnery.onTrigger(g.player(), true);          // empty gun, trigger pulled: a reload starts
+        driveTicks(helper, g, 1, reloadTicks + 1);
+        helper.runAtTickTime(reloadTicks + 2, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 4, "the four slugs loaded");
+            helper.assertValueEqual(g.weapon().loadedAmmo(g.gun()).orElseThrow(), ModItems.SLUG.get(), "the gun knows it holds slugs");
+            helper.assertValueEqual(g.player().getInventory().countItem(ModItems.SLUG.get()), 0, "all four slugs spent");
+            helper.assertValueEqual(g.player().getInventory().countItem(ModItems.SHELL.get()), 4, "the shells untouched");
+            helper.assertValueEqual(g.weapon().stats(g.gun()).projectilesPerShot(), 1, "a slug is one projectile");
+            helper.assertValueEqual(g.weapon().stats(g.gun()).damage(), 18.0f, "the slug's damage");
+            helper.assertValueEqual(g.weapon().stats(g.gun()).capacity(), 6, "the shotgun's own capacity");
+            // Holding slugs, a top-up takes shells for nothing: the shells stay.
+            helper.assertValueEqual(PlayerGunnery.chooseAmmo(g.player(), g.weapon(), g.gun()).orElseThrow(), ModItems.SLUG.get(), "still slugs while any remain");
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 0, "no slugs left to top up with");
+        });
+        helper.runAtTickTime(reloadTicks + 3, () -> {
+            PlayerGunnery.onTrigger(g.player(), false);
+            PlayerGunnery.onTrigger(g.player(), true);
+        });
+        driveTicks(helper, g, reloadTicks + 4, reloadTicks + 4);
+        helper.runAtTickTime(reloadTicks + 5, () -> {
+            int inFlight = helper.getLevel().getEntities(Fallback.BULLET.get(), helper.getBounds(), e -> true).size();
+            helper.assertValueEqual(inFlight, 1, "one slug in the air, not six pellets");
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 3, "one slug spent");
             helper.succeed();
         });
     }
@@ -351,7 +391,7 @@ public final class GunneryGameTests {
         // and a small round (gold nuggets) that must be left alone.
         g.player().getInventory().add(new ItemStack(Items.IRON_NUGGET, 10));
         g.player().getInventory().add(new ItemStack(Items.GOLD_NUGGET, 10));
-        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon().profile()), 10, "only the medium rounds count");
+        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 10, "only the medium rounds count");
         PlayerGunnery.onTrigger(g.player(), true);          // empty gun, trigger pulled: a reload starts
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
@@ -436,7 +476,7 @@ public final class GunneryGameTests {
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
             helper.assertTrue(g.gun().get(ModData.RELOAD.get()) == null, "the reload is over");
             helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY, "a full magazine");
-            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon().profile()), 64 - CAPACITY,
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 64 - CAPACITY,
                     "ammunition consumed");
             helper.succeed();
         });
@@ -461,7 +501,7 @@ public final class GunneryGameTests {
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
             helper.assertValueEqual(g.weapon().rounds(g.gun()), 15, "ten plus the five available");
-            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon().profile()), 0, "all five consumed");
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 0, "all five consumed");
             helper.succeed();
         });
     }
@@ -473,7 +513,7 @@ public final class GunneryGameTests {
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
             helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY, "topped up");
-            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon().profile()), 64 - 30,
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 64 - 30,
                     "thirty consumed");
             helper.succeed();
         });

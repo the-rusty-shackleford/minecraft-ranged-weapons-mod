@@ -229,6 +229,35 @@ def shell_icon():
     return px
 
 
+def slug_icon():
+    """A shotgun slug, 16x16, upright: a black hull with a rounded lead nose standing proud of it, over a brass head."""
+    hull, hull_l, hull_d = (44, 44, 48), (78, 78, 84), (24, 24, 28)
+    lead, lead_l, lead_d = (132, 132, 140), (176, 176, 184), (92, 92, 100)
+    brass, brass_l, brass_d = (176, 141, 60), (214, 180, 96), (128, 98, 38)
+    px = [[(0, 0, 0, 0) for _ in range(16)] for _ in range(16)]
+
+    def put(x, y, c):
+        if 0 <= x < 16 and 0 <= y < 16:
+            px[y][x] = (*c, 255)
+
+    for y in range(5, 11):                       # the hull
+        for x in range(5, 11):
+            put(x, y, hull_l if x == 5 else hull_d if x == 10 else hull)
+    for y in range(1, 5):                        # the slug's nose, rounded
+        left, right = (6, 10) if y >= 3 else (7, 9)
+        for x in range(left, right):
+            put(x, y, lead_l if x == left else lead_d if x == right - 1 else lead)
+    put(7, 0, lead_d), put(8, 0, lead_d)
+    for y in range(11, 15):                      # brass head
+        for x in range(5, 11):
+            put(x, y, brass_l if x == 5 else brass_d if x == 10 else brass)
+    for x in range(4, 12):
+        put(x, 14, brass_d)
+    put(7, 15, brass_d)
+    put(8, 15, (60, 60, 60))
+    return px
+
+
 def scope_mask(size=256, radius=0.46, edge=6):
     """The scope's mask: opaque black to the edges, clear through a circle,
     a soft rim between; a fine crosshair line is not drawn, the game's is."""
@@ -756,104 +785,139 @@ def mechanism(n, seed, events):
     return out
 
 
-def gunshot(seed, seconds, crack, body, sweep_hz, sub_hz, sub_decay, tail_hz, tail_decay, bolt,
-            band=(150, 1500), body_decay=35, sub_gain=0.8, slap=((58, 0.4), (131, 0.25), (227, 0.12)),
-            mech=(), drive=2.4, top_hz=7000):
-    """
-    A gunshot in five parts, mixed then saturated:
+def bandnoise(noise, n, lo_hz, hi_hz):
+    """White noise kept between lo_hz and hi_hz (second-order roll-offs)."""
+    raw = [noise.next() * 2 - 1 for _ in range(n)]
+    return highpass(lowpass2(raw, hi_hz), lo_hz)
 
-    crack  the first few milliseconds of full-band noise, the supersonic snap
-    body   noise in the band, decaying at body_decay, with a sine that
-           sweeps from sweep_hz down to sub_hz in the first tens of ms --
-           the muzzle blast, and where the "boom" lives
-    sub    a sine at sub_hz with a slow decay, the weight in the chest
-    tail   lowpassed noise decaying slowly with slapback (ms, gain) pairs,
-           the report rolling away
-    bolt   a metallic ring 30 ms in, the action cycling; and any further
-           mechanism events after it (see mechanism)
+
+def friedlander(n, peak, t_ms):
+    """The blast wave of a muzzle, as it is measured: an instant rise to
+    the peak, an exponential fall through zero into a shallower negative
+    phase, over a few milliseconds. No tone in it, only its length."""
+    tau = t_ms / 1000.0
+    out = []
+    for i in range(n):
+        t = i / RATE
+        out.append(peak * (1.0 - t / tau) * math.exp(-t / tau) if t < 6 * tau else 0.0)
+    return out
+
+
+def darkening_tail(noise, n, rt60, hz_start, hz_end, onset_ms):
+    """Diffuse outdoor decay: noise whose level falls to -60 dB in rt60 seconds
+    and whose brightness falls with it -- the treble is gone long before the
+    rumble is. Fades in over onset_ms, since the first reflections come from
+    the ground and the nearest walls, not everywhere at once."""
+    raw = [noise.next() * 2 - 1 for _ in range(n)]
+    out = [0.0] * n
+    lp = 0.0
+    for i, r in enumerate(raw):
+        t = i / RATE
+        cutoff = hz_end + (hz_start - hz_end) * math.exp(-t * (3.0 / rt60))
+        a = min(1.0, 2 * math.pi * cutoff / RATE)
+        lp += (r - lp) * a
+        env = math.exp(-6.9078 * t / rt60) * (1 - math.exp(-t / (onset_ms / 1000.0)))
+        out[i] = lp * env
+    return out
+
+
+def gunshot(seed, seconds, blast_ms, blast, spray_ms, spray, spray_band, thump, thump_decay, thump_band,
+            near=((2.8, 0.55), (6.5, 0.3), (11.0, 0.18)), tail=0.35, rt60=1.1, tail_hz=(1600, 180),
+            echoes=((85, 0.22), (190, 0.14), (340, 0.08)), mech=(), drive=1.6, top_hz=5500):
+    """
+    A gunshot as a microphone a few metres off hears one, in five parts:
+
+    blast   the Friedlander pulse of the muzzle, blast_ms long -- the whole
+            "crack"; a rifle's is short and hard, a shotgun's long and round
+    spray   the turbulent gas behind it: broadband noise in spray_band,
+            gone in spray_ms
+    near    the same pulse back off the ground and the nearest walls a few
+            milliseconds later, darker: (ms, gain) pairs
+    thump   the weight in the chest: noise between thump_band's edges (no
+            sine -- a tone is what makes a shot sound like a game), rising
+            in a few milliseconds and gone in thump_decay seconds
+    tail    the outdoors: a darkening diffuse decay of rt60 seconds under
+            discrete echoes off distant surfaces, (ms, gain) pairs
+    mech    the action after it (see mechanism)
+
+    Mixed, driven gently into saturation so the peak flattens the way a
+    recording of a shot clips, and the fizz above top_hz rolled off.
     """
     n = int(RATE * seconds)
     noise = Noise(seed)
-    raw = [noise.next() * 2 - 1 for _ in range(n)]
     ts = [i / RATE for i in range(n)]
 
-    crack_part = [r * math.exp(-t * 900) * crack for r, t in zip(raw, ts)]
+    blast_part = friedlander(n, blast, blast_ms)
+    spray_src = bandnoise(noise, n, *spray_band)
+    spray_part = [s * spray * math.exp(-t / (spray_ms / 1000.0)) for s, t in zip(spray_src, ts)]
+    front = [b + s for b, s in zip(blast_part, spray_part)]
+    near_part = slapback([f for f in front], [ms for ms, _ in near], [g for _, g in near])
+    near_part = lowpass2([np - f for np, f in zip(near_part, front)], 2200)
 
-    banded = highpass(lowpass2(raw, band[1]), band[0])
-    body_part = [b * math.exp(-t * body_decay) * body for b, t in zip(banded, ts)]
+    thump_src = bandnoise(noise, n, *thump_band)
+    thump_part = [s * thump * math.exp(-t / thump_decay) * (1 - math.exp(-t / 0.004)) for s, t in zip(thump_src, ts)]
 
-    phase, sweep_part = 0.0, []
-    for t in ts:
-        f = sub_hz + (sweep_hz - sub_hz) * math.exp(-t * 30)
-        phase += 2 * math.pi * f / RATE
-        sweep_part.append(math.sin(phase) * math.exp(-t * 28) * 0.9)
-
-    sub_part = [math.sin(2 * math.pi * sub_hz * t) * math.exp(-t * sub_decay) * (1 - math.exp(-t * 400)) * sub_gain
-                for t in ts]
-
-    tail_src = lowpass2(raw, tail_hz)
-    tail_part = [s * math.exp(-t * tail_decay) * (1 - math.exp(-t * 150)) * 0.7 for s, t in zip(tail_src, ts)]
-    tail_part = slapback(tail_part, [ms for ms, _ in slap], [g for _, g in slap])
-
-    bolt_part = [(math.sin(2 * math.pi * 2600 * (t - 0.03)) + 0.5 * math.sin(2 * math.pi * 4100 * (t - 0.03)))
-                 * math.exp(-(t - 0.03) * 350) * bolt if t >= 0.03 else 0.0 for t in ts]
+    tail_part = [s * tail for s in darkening_tail(noise, n, rt60, tail_hz[0], tail_hz[1], 12.0)]
+    echo_src = lowpass2(front, 900)
+    echo_part = slapback([0.0] * n, [ms for ms, _ in echoes], [g for _, g in echoes])
+    for ms, g in echoes:
+        d = int(RATE * ms / 1000)
+        for i in range(d, n):
+            echo_part[i] += echo_src[i - d] * g * math.exp(-(i - d) / RATE * 4.0)
 
     mech_part = mechanism(n, seed ^ 0x55AA, mech)
 
-    mix = [c + b + s + u + tl + bo + m for c, b, s, u, tl, bo, m in
-           zip(crack_part, body_part, sweep_part, sub_part, tail_part, bolt_part, mech_part)]
-    # The saturation grows harmonics without limit; roll off the fizz.
+    mix = [f + nr + th + tl + ec + m for f, nr, th, tl, ec, m in
+           zip(front, near_part, thump_part, tail_part, echo_part, mech_part)]
     return normalize(lowpass2(saturate(mix, drive), top_hz))
 
 
 def machine_gun_shot():
-    # Short and hard: the tail is cut so seven a second stay distinct.
-    return gunshot(seed=0xB4E7, seconds=0.42, crack=1.0, body=1.6, sweep_hz=190, sub_hz=52,
-                   sub_decay=22, tail_hz=1100, tail_decay=11, bolt=0.3)
+    # Short and hard, the tail cut short so seven a second stay distinct.
+    return gunshot(seed=0xB4E7, seconds=0.45, blast_ms=1.6, blast=1.0, spray_ms=6, spray=0.9, spray_band=(300, 3800),
+                   thump=0.7, thump_decay=0.12, thump_band=(40, 140), tail=0.22, rt60=0.7,
+                   echoes=((70, 0.15), (150, 0.08)), mech=(), drive=1.8, top_hz=5000)
 
 
 def pistol_shot():
-    # Snappy and bright, a short bark, the slide clacking home just after.
-    return gunshot(seed=0x51A7, seconds=0.36, crack=1.2, body=1.3, sweep_hz=300, sub_hz=80,
-                   sub_decay=30, tail_hz=1400, tail_decay=14, bolt=0.0,
-                   band=(200, 2200), body_decay=50, sub_gain=0.5,
-                   slap=((45, 0.3), (110, 0.15)), mech=((0.05, "ring", 0.45),))
+    # A short, bright bark: a small blast, a quick spray, little weight, the slide after.
+    return gunshot(seed=0x51A7, seconds=0.6, blast_ms=1.2, blast=1.0, spray_ms=4, spray=0.8, spray_band=(400, 4500),
+                   thump=0.5, thump_decay=0.09, thump_band=(60, 180), tail=0.3, rt60=0.9,
+                   echoes=((60, 0.18), (140, 0.1), (260, 0.05)), mech=((0.045, "ring", 0.25),), drive=1.6)
 
 
 def shotgun_shot():
-    # The boom: a hard front, a deep wide body that rolls, weight underneath,
-    # a long low tail with room in it -- and then the pump, racked: two clacks.
-    return gunshot(seed=0x5406, seconds=0.9, crack=1.1, body=3.2, sweep_hz=110, sub_hz=40,
-                   sub_decay=12, tail_hz=450, tail_decay=4.5, bolt=0.0,
-                   band=(90, 900), body_decay=22, sub_gain=0.7,
-                   slap=((70, 0.5), (160, 0.3), (300, 0.18)),
-                   mech=((0.42, "clack", 0.9), (0.58, "clack", 1.0)), drive=2.8, top_hz=6000)
+    # The boom: a long, round blast, heavy spray, real weight under it, a
+    # long tail with room in it -- and the pump racked after: two clacks.
+    return gunshot(seed=0x5406, seconds=1.4, blast_ms=4.0, blast=1.0, spray_ms=14, spray=1.1, spray_band=(150, 2800),
+                   thump=1.3, thump_decay=0.28, thump_band=(30, 110), tail=0.45, rt60=1.5, tail_hz=(1200, 140),
+                   echoes=((90, 0.25), (200, 0.16), (360, 0.1), (560, 0.05)),
+                   mech=((0.5, "clack", 0.6), (0.66, "clack", 0.7)), drive=1.5, top_hz=4500)
 
 
 def rifle_shot():
-    # A whip-crack: the snap dominates, the body is short and sharp, and the
-    # report echoes away across the valley in four diminishing returns.
-    return gunshot(seed=0x21F1, seconds=0.9, crack=1.7, body=1.4, sweep_hz=240, sub_hz=55,
-                   sub_decay=18, tail_hz=900, tail_decay=5, bolt=0.35,
-                   band=(250, 2500), body_decay=45, sub_gain=0.6,
-                   slap=((90, 0.45), (210, 0.3), (380, 0.2), (600, 0.1)), drive=2.6)
+    # A whip-crack: a very short blast, bright spray, a firm thump, and the
+    # report rolling away across the valley in diminishing returns.
+    return gunshot(seed=0x21F1, seconds=1.3, blast_ms=1.4, blast=1.0, spray_ms=5, spray=1.0, spray_band=(400, 5000),
+                   thump=0.8, thump_decay=0.16, thump_band=(45, 150), tail=0.4, rt60=1.4,
+                   echoes=((95, 0.24), (220, 0.16), (390, 0.1), (620, 0.05)), mech=((0.08, "ring", 0.2),), drive=1.7)
 
 
 def scoped_rifle_shot():
-    # Heavier still, the same echo, and the bolt worked after: open, close.
-    return gunshot(seed=0x5C0E, seconds=1.0, crack=1.8, body=1.6, sweep_hz=200, sub_hz=48,
-                   sub_decay=15, tail_hz=800, tail_decay=4.5, bolt=0.3,
-                   band=(220, 2400), body_decay=40, sub_gain=0.8,
-                   slap=((90, 0.45), (210, 0.3), (380, 0.2), (600, 0.1)),
-                   mech=((0.5, "ring", 0.7), (0.52, "clack", 0.6), (0.68, "clack", 0.7), (0.7, "ring", 0.5)), drive=2.6)
+    # Heavier still, the same valley, and the bolt worked after: open, close.
+    return gunshot(seed=0x5C0E, seconds=1.5, blast_ms=1.8, blast=1.0, spray_ms=6, spray=1.0, spray_band=(350, 4500),
+                   thump=1.0, thump_decay=0.2, thump_band=(40, 140), tail=0.42, rt60=1.5,
+                   echoes=((95, 0.24), (220, 0.16), (390, 0.1), (620, 0.05)),
+                   mech=((0.55, "ring", 0.45), (0.57, "clack", 0.45), (0.74, "clack", 0.5), (0.76, "ring", 0.35)), drive=1.7)
 
 
 def far_shot():
-    # The same shot a hundred blocks off: no crack, the body dulled, and a
-    # long low tail that is mostly reflections.
-    shot = gunshot(seed=0x7A5, seconds=1.1, crack=0.0, body=0.5, sweep_hz=120, sub_hz=48,
-                   sub_decay=7, tail_hz=350, tail_decay=4, bolt=0.0)
-    return normalize(lowpass(shot, 600), 0.85)
+    # The same shot a hundred blocks off: the blast dulled to a thud, no
+    # spray to speak of, and a tail that is mostly the land answering.
+    shot = gunshot(seed=0x7A5, seconds=1.4, blast_ms=6.0, blast=0.6, spray_ms=10, spray=0.2, spray_band=(150, 900),
+                   thump=0.9, thump_decay=0.3, thump_band=(30, 120), tail=0.6, rt60=1.6, tail_hz=(900, 150),
+                   echoes=((120, 0.3), (260, 0.2), (450, 0.12)), drive=1.3, top_hz=1200)
+    return normalize(lowpass(shot, 700), 0.85)
 
 
 def empty_click():
@@ -924,6 +988,7 @@ def main(argv) -> int:
         write_png(ASSETS / "textures/item/round.png", 16, 16, round_icon())
         write_png(ASSETS / "textures/item/small_round.png", 16, 16, small_round_icon())
         write_png(ASSETS / "textures/item/shell.png", 16, 16, shell_icon())
+        write_png(ASSETS / "textures/item/slug.png", 16, 16, slug_icon())
         write_png(ASSETS / "textures/gui/scope.png", 256, 256, scope_mask())
         for name, fn in PART_ICONS.items():
             write_png(ASSETS / f"textures/item/{name}.png", 16, 16, fn())
@@ -937,7 +1002,7 @@ def main(argv) -> int:
             model = build()
             (ASSETS / f"models/item/{name}.json").write_text(json.dumps(model, indent=2) + "\n")
             print(f"model: {name}.json ({len(model['elements'])} elements)")
-        for name in ("round", "small_round", "shell", *PART_ICONS):
+        for name in ("round", "small_round", "shell", "slug", *PART_ICONS):
             (ASSETS / f"models/item/{name}.json").write_text(json.dumps(
                 {"parent": "minecraft:item/generated", "textures": {"layer0": f"{MODID}:item/{name}"}}, indent=2) + "\n")
     if "booth" in want:

@@ -121,9 +121,30 @@ A gun with no `handling` entry gets a default for its profile's class.
 
 Ammunition: small rounds (an iron nugget over gunpowder over an iron nugget
 makes ten), medium rounds (an iron nugget over gunpowder over a copper ingot
-makes eight) and shells (paper over gunpowder over an iron nugget makes
-four). Each is tagged into the protocol's family of that name, and each gun
-takes its family, so another mod's rounds of the same family load too.
+makes eight), shells (paper over gunpowder over an iron nugget makes four)
+and slugs (paper over gunpowder over an iron ingot makes four). Each is
+tagged into the protocol's family of that name, and each gun takes its
+family, so another mod's rounds of the same family load too.
+
+The shotgun takes shells or slugs. A shell is buckshot: six pellets of 4,
+a spread of 0.07, falling off past five blocks. A slug is one round of 18
+with almost no spread and reach to thirty blocks, and the same push. The
+gun loads one kind at a time: while any rounds remain, a reload tops up
+with the kind loaded; once empty, it takes the first kind it finds in the
+inventory, hotbar first -- keep the round you want next nearest the front.
+The counter shows the round loaded when it is not the gun's own. What a
+round changes is the protocol's `rangedweapons:ammo` data map
+(`data/rangedweapons/data_maps/item/ammo.json`); the shotgun's profile is
+its buckshot.
+
+Every shot pushes. `knockback` in the profile is the push of a full hit
+in the game's own units (the bow's Punch I is one), shared out among the
+pellets: the shotgun's 3 lands whole when all six pellets do. Damage per
+projectile: pistol 6, shotgun 4 a pellet, rifle 12, scoped rifle 16,
+machine gun 6 -- the numbers of the gun mod the players compared these to.
+Every pellet and every round counts: the protocol's bullet bypasses the
+game's hurt cooldown, which had been turning six pellets into one pellet's
+worth of damage and swallowing two rounds in three of a burst.
 
 ### Crafting
 
@@ -185,6 +206,10 @@ that were calibrated by photograph in the booth, never derived.
    is wrong for it, a `handling.json` entry.
 3. A model, a texture, a shot sound and a far report: `devtools/art/build.py`
    is the generator for the ones shipped, run with `uv run devtools/art/build.py`.
+   A shot is synthesized as a microphone hears one -- the muzzle's blast
+   pulse, a few milliseconds of turbulent spray, the ground's reflection, a
+   band-limited low thump and a darkening outdoor tail with distant echoes;
+   no sine anywhere, since a tone is what makes a shot sound like a game.
 4. Photograph it: `./gradlew runPhotoBooth` (below) and look at the pictures.
 5. A recipe: a `Blueprint` in `Blueprints` (with a unit test pinning where it
    sits in the tree), then `./gradlew runData`; and lang entries.

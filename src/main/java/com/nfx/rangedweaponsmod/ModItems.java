@@ -65,9 +65,13 @@ public final class ModItems {
     public static final DeferredItem<Item> ROUND =
             ITEMS.registerItem("round", Item::new, new Item.Properties().stacksTo(64));
 
-    /** A shotgun shell. */
+    /** A shotgun shell: buckshot, six pellets. */
     public static final DeferredItem<Item> SHELL =
             ITEMS.registerItem("shell", Item::new, new Item.Properties().stacksTo(64));
+
+    /** A shotgun slug: one heavy round from the same gun, for reach and a single hard hit. */
+    public static final DeferredItem<Item> SLUG =
+            ITEMS.registerItem("slug", Item::new, new Item.Properties().stacksTo(64));
 
     // The parts. A gun is assembled from these (see the domain's Blueprints);
     // they are plain items, never GunItems, so nothing that treats a gun as
@@ -118,6 +122,7 @@ public final class ModItems {
             event.accept(SMALL_ROUND.get());
             event.accept(ROUND.get());
             event.accept(SHELL.get());
+            event.accept(SLUG.get());
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             parts().forEach(event::accept);

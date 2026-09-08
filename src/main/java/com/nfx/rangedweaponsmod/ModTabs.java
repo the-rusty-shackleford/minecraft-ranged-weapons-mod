@@ -57,6 +57,7 @@ public final class ModTabs {
         items.add(ModItems.SMALL_ROUND.get());
         items.add(ModItems.ROUND.get());
         items.add(ModItems.SHELL.get());
+        items.add(ModItems.SLUG.get());
         items.addAll(ModItems.parts());
         return items;
     }

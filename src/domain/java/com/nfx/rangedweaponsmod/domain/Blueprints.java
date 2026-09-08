@@ -82,6 +82,7 @@ public final class Blueprints {
     public static final String SMALL_ROUND = NS + ":small_round";
     public static final String ROUND = NS + ":round";
     public static final String SHELL = NS + ":shell";
+    public static final String SLUG = NS + ":slug";
 
     /** Three iron and a little carbon make three steel. */
     public static final Blueprint STEEL_INGOT_RECIPE = new Shapeless(STEEL_INGOT, Category.MISC, STEEL_INGOT, 3,
@@ -144,11 +145,15 @@ public final class Blueprints {
     public static final Blueprint SHELL_RECIPE = new Shaped(SHELL, Category.COMBAT, SHELL, 4,
             List.of("P", "G", "N"), Map.of('P', PAPER, 'G', GUNPOWDER, 'N', IRON_NUGGET), List.of(GUNPOWDER));
 
+    /** A shell with a whole ingot behind the powder: one heavy round, four to the ingot. */
+    public static final Blueprint SLUG_RECIPE = new Shaped(SLUG, Category.COMBAT, SLUG, 4,
+            List.of("P", "G", "I"), Map.of('P', PAPER, 'G', GUNPOWDER, 'I', IRON), List.of(GUNPOWDER, IRON));
+
     private static final List<Blueprint> ALL = List.of(
             STEEL_INGOT_RECIPE, LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
             STOCK_RECIPE, PUMP_RECIPE, SCOPE_RECIPE,
             PISTOL_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
-            SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE);
+            SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE);
 
     /** The tags this mod's own parts fill: a recipe taking the tag is, for the tally, taking the part. */
     private static final Map<String, String> FILLS = Map.of(STEEL, STEEL_INGOT);
@@ -164,6 +169,11 @@ public final class Blueprints {
     /** effects: returns the guns' item ids, cheapest first as intended */
     public static List<String> guns() {
         return GUNS;
+    }
+
+    /** effects: returns the ammunition's item ids, in the order the tab shows them */
+    public static List<String> ammunition() {
+        return List.of(SMALL_ROUND, ROUND, SHELL, SLUG);
     }
 
     /** effects: returns the parts' item ids */

@@ -60,7 +60,7 @@ to the game's own enum (`D-0009`).
 
 ## How it is verified
 
-`./gradlew check`: 85 plain-JUnit tests against `domain`, and thirty gametests
+`./gradlew check`: 89 plain-JUnit tests against `domain`, and thirty-one gametests
 on a headless server. `devtools/recipes/collisions.py` checks the recipes
 against the pack's jars. `./gradlew runPhotoBooth` photographs the art for
 review. The feel -- cadence, recoil, reload -- is judged by hand in a client
@@ -75,6 +75,11 @@ Decided by Rusty on 2026-09-06, in this order:
    (small), shotgun (shell), rifle and scoped rifle (medium), each with
    everything the machine gun got, the scoped rifle with a scope, not a
    spyglass. What remains is Rusty's feel test of each.
+4. Done (1.3.0): slugs for the shotgun, knockback on every gun, Another
+   Gun Mod's damage numbers, a tighter shotgun; every pellet counts now
+   that the protocol's bullet bypasses the hurt cooldown (protocol 1.6);
+   the shots re-synthesized from a blast pulse, spray, thump and tail,
+   no tones.
 3. Done (1.2.0): crafting as assembly -- receivers of steel, a barrel, a
    stock, a scope, then the gun in a shape that follows its silhouette;
    the pistol cheapest, the machine gun the most involved.

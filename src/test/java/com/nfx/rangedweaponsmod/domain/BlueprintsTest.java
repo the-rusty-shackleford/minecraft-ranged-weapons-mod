@@ -157,6 +157,9 @@ final class BlueprintsTest {
         assertEquals(10, Blueprints.byResult(Blueprints.SMALL_ROUND).orElseThrow().count());
         assertEquals(8, Blueprints.byResult(Blueprints.ROUND).orElseThrow().count());
         assertEquals(4, Blueprints.byResult(Blueprints.SHELL).orElseThrow().count());
+        assertEquals(4, Blueprints.byResult(Blueprints.SLUG).orElseThrow().count());
+        assertTrue(Blueprints.rawMaterials(Blueprints.SLUG).containsKey(IRON), "a slug takes a whole ingot");
+        assertEquals(List.of(Blueprints.SMALL_ROUND, Blueprints.ROUND, Blueprints.SHELL, Blueprints.SLUG), Blueprints.ammunition());
     }
 
     @Test
