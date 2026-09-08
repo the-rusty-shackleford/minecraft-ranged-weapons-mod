@@ -224,6 +224,15 @@ public final class PlayerGunnery {
             }
             case IDLE -> { }
         }
+        // The action worked after the shot -- the pump, the bolt -- on its
+        // own tick, whatever the trigger is doing by then.
+        if (after.cycleAt() > 0 && now >= after.cycleAt()) {
+            if (after.cycleSound() != null) {
+                BuiltInRegistries.SOUND_EVENT.getOptional(after.cycleSound())
+                        .ifPresent(sound -> play(level, player, sound, 0.9f, 1.0f));
+            }
+            after = after.cycled();
+        }
         if (after != gunnery) {
             player.setData(ModData.GUNNERY, after);
         }
@@ -258,7 +267,8 @@ public final class PlayerGunnery {
             float yawKick = handling.recoilYaw() * (player.getRandom().nextBoolean() ? 1.0f : -1.0f);
             PacketDistributor.sendToPlayer(serverPlayer, new ShotFiredPayload(handling.recoilPitch(), yawKick, handling.recovery()));
         }
-        return gunnery.firedUntil(FireClock.next(now, Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS)));
+        Gunnery fired = gunnery.firedUntil(FireClock.next(now, Math.min(stats.fireRateTicks(), FireClock.MAX_RATE_TICKS)));
+        return handling.cycleSound().map(sound -> fired.cycleDue(now + handling.cycleDelayTicks(), sound)).orElse(fired);
     }
 
     /**

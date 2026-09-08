@@ -47,5 +47,7 @@
   "screen.rangedweaponsmod.magazine.first": "Fires first →",
   "screen.rangedweaponsmod.magazine.next": "Next: %s",
   "screen.rangedweaponsmod.magazine.empty": "Empty",
-  "screen.rangedweaponsmod.magazine.fill.tooltip": "Fill from your inventory: the first kind of round you carry first, then the next, until the magazine is full"
+  "screen.rangedweaponsmod.magazine.fill.tooltip": "Fill from your inventory: the first kind of round you carry first, then the next, until the magazine is full",
+  "subtitles.rangedweaponsmod.shotgun_pump": "Shotgun racked",
+  "subtitles.rangedweaponsmod.bolt": "Bolt worked"
 }

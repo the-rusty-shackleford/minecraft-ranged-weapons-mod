@@ -11,10 +11,10 @@ into `src/main/resources/assets/rangedweaponsmod/sounds/` (see `RECORDINGS` ther
 |---|---|---|---|---|
 | `427592-9mm-pistol-shot.ogg` | 9mm pistol shot | michorvath | https://freesound.org/people/michorvath/sounds/427592/ | CC0 1.0 |
 | `427596-ar15-rifle-shot.ogg` | AR15 rifle shot | michorvath | https://freesound.org/people/michorvath/sounds/427596/ | CC0 1.0 |
-| `450852-lee-enfield-303-shot.ogg` | gun lee enfield 303 rifle fire shot loud badass crispy.wav | kyles | https://freesound.org/people/kyles/sounds/450852/ | CC0 1.0 |
 | `427595-20-gauge-shotgun-shot.ogg` | 20 gauge shotgun gunshot | michorvath | https://freesound.org/people/michorvath/sounds/427595/ | CC0 1.0 |
 | `159710-mossberg-500a-shot-and-pump.ogg` | Mossberg 500A - 1 shot and pump | AnthonyChan0 | https://freesound.org/people/AnthonyChan0/sounds/159710/ | CC0 1.0 |
-| `169261-springfield-1903-30-06-shot.ogg` | 1903 Springfield .30-06 Gun Shot Blast | tm1000 | https://freesound.org/people/tm1000/sounds/169261/ | CC0 1.0 |
+| `854641-m240-single-shot.ogg` | M240 Machine Gun Single Shot | qubodup (from U.S. Army V Corps B-roll, public domain) | https://freesound.org/people/qubodup/sounds/854641/ | CC0 1.0 |
+| `712577-hk-g3-shots.ogg` | Heckler & Koch G3 | areniporgen | https://freesound.org/people/areniporgen/sounds/712577/ | CC0 1.0 |
 | `802673-mauser-98k-bolt.ogg` | Mauser 98k - bolt-action mechanism sound | Walking.With.Microphones | https://freesound.org/people/Walking.With.Microphones/sounds/802673/ | CC0 1.0 |
 | `815476-m110-shot-echo.ogg` | Sniper Shot Echoey | qubodup | https://freesound.org/people/qubodup/sounds/815476/ | CC0 1.0 |
 | `725402-rifle-dry-fire.ogg` | A rifle being dry fired once | serøutōnin--deprivəd | https://freesound.org/people/ser%C3%B8ut%C5%8Dnin--depriv%C9%99d/sounds/725402/ | CC0 1.0 |

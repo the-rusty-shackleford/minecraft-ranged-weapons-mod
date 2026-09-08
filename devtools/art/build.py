@@ -911,36 +911,36 @@ RECORDINGS = {
     "pistol_shot": (0.95, [take("427592-9mm-pistol-shot", 0.12)]),
     # An AR-15, the same range, the same day.
     "rifle_shot": (0.95, [take("427596-ar15-rifle-shot", 0.06)]),
-    # A .303 Lee-Enfield: a short, hard report, already close to a machine
-    # gun's per-round length, faded a touch sooner so seven a second stack
-    # rather than smear.
-    "machine_gun_shot": (0.95, [take("450852-lee-enfield-303-shot", 0.21, fade_out=0.08)]),
-    # A 20-gauge on the same range as the pistol and the AR-15, whole, with
-    # a Mossberg 500's pump under its tail from another recording: the two
-    # strokes (back at 1.30 s, forward at 1.72 s in that take, where a
-    # limiter had squeezed the blast down to their level) at 0.29 s and
-    # 0.53 s, inside the 0.65 s the gun takes to fire again, and at a
-    # quarter gain, which puts a pump about ten decibels under a report.
-    "shotgun_shot": (0.95, [
-        take("427595-20-gauge-shotgun-shot", 0.05),
-        take("159710-mossberg-500a-shot-and-pump", 1.27, 1.68, at=0.26, gain=0.25, fade_in=0.008),
-        take("159710-mossberg-500a-shot-and-pump", 1.69, 2.5, at=0.50, gain=0.25, fade_in=0.008, fade_out=0.2),
-    ]),
-    # A 1903 Springfield in .30-06 -- a bolt-action's crack, sharper than the
-    # AR-15's report -- with a Mauser 98k's bolt worked over its tail: lifted
-    # and drawn at 0.22 s, driven home at 0.50 s (the gun fires again at
-    # 0.5 s). The bolt recording is hot and noisy next to the rifle's, so it
-    # sits at a quarter gain under the tail, a bolt's distance under a crack.
-    "scoped_rifle_shot": (0.95, [
-        take("169261-springfield-1903-30-06-shot", 0.58, 2.0, fade_out=0.3),
-        take("802673-mauser-98k-bolt", 0.20, 0.80, at=0.22, gain=0.25, fade_in=0.01, fade_out=0.06),
-        take("802673-mauser-98k-bolt", 1.20, 1.70, at=0.50, gain=0.25, fade_in=0.01, fade_out=0.08),
-    ]),
+    # An M240 -- a 7.62 general-purpose machine gun -- fired once, from
+    # U.S. Army footage: the heaviest report here, low and hard, gone fast
+    # enough that seven a second stack rather than smear.
+    "machine_gun_shot": (0.95, [take("854641-m240-single-shot", 0.05, fade_out=0.08)]),
+    # A 20-gauge on the same range as the pistol and the AR-15, whole. The
+    # pump is its own sound now (shotgun_pump, below), played after the
+    # shot by the gun's handling, so it is heard as a rack between shots
+    # rather than lost under the blast.
+    "shotgun_shot": (0.95, [take("427595-20-gauge-shotgun-shot", 0.05)]),
+    # A Heckler & Koch G3 in 7.62 NATO, recorded close outdoors: the first
+    # shot of the take, a loud battle rifle in the shooter's own hands, with
+    # its real tail, cut before the second shot at 1.5 s. The bolt is its own
+    # sound (bolt, below), played after the shot.
+    "scoped_rifle_shot": (0.95, [take("712577-hk-g3-shots", 0.0, 1.45, fade_out=0.25)]),
     # An M110 fired at a distance with the land answering: the report and its
     # echo, as heard a long way off.
     "far_shot": (0.85, [take("815476-m110-shot-echo", 0.25, fade_out=0.15)]),
     # A rifle dry-fired: the striker on an empty chamber.
     "empty_click": (0.7, [take("725402-rifle-dry-fire", 0.02)]),
+    # The shotgun's pump, both strokes of the Mossberg's, the wait between
+    # them shortened from 0.42 s to 0.28 s: a rack, heard on its own.
+    "shotgun_pump": (0.85, [
+        take("159710-mossberg-500a-shot-and-pump", 1.27, 1.68, fade_in=0.005),
+        take("159710-mossberg-500a-shot-and-pump", 1.69, 2.5, at=0.28, fade_in=0.005, fade_out=0.2),
+    ]),
+    # The Mauser 98k's bolt: lifted and drawn, then driven home 0.32 s later.
+    "bolt": (0.75, [
+        take("802673-mauser-98k-bolt", 0.20, 0.80, fade_in=0.01, fade_out=0.06),
+        take("802673-mauser-98k-bolt", 1.20, 1.70, at=0.32, fade_in=0.01, fade_out=0.08),
+    ]),
     # A 1911's magazine dropping out, in a dead room.
     "reload_start": (0.8, [take("104407-1911-magazine-out", 0.19)]),
     # The 9mm's magazine seated (0.56 s in the recording) and the slide run

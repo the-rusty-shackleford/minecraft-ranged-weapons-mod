@@ -22,6 +22,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweapons.api.WeaponClass;
 import com.nfx.rangedweaponsmod.domain.StanceSpread.Factors;
+import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -33,7 +35,8 @@ import net.minecraft.world.item.ItemStack;
  * default per weapon class for a gun no pack has described. Immutable.
  *
  * <p>RI: {@code recoilPitch, recoilYaw >= 0} and finite; {@code recovery}
- * in {@code (0, 1]}; {@code spread} not null; {@code magazineChangeTicks >= 1}.
+ * in {@code (0, 1]}; {@code spread} not null; {@code magazineChangeTicks >= 1};
+ * {@code cycleSound} not null; {@code cycleDelayTicks >= 0}.
  *
  * @param recoilPitch         degrees the view kicks up per shot
  * @param recoilYaw           degrees the view kicks sideways per shot, direction random
@@ -41,12 +44,22 @@ import net.minecraft.world.item.ItemStack;
  * @param spread              how stance scales the weapon's spread
  * @param magazineChangeTicks how long a detachable magazine takes to change, for a
  *                            magazine of the standard size; the same whatever it holds
+ * @param cycleSound          the sound of the action worked after a shot -- a pump
+ *                            racked, a bolt cycled -- played {@code cycleDelayTicks}
+ *                            after each shot; empty for a gun that cycles itself
+ * @param cycleDelayTicks     ticks after a shot the cycle sound plays
  */
-public record Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread, int magazineChangeTicks) {
+public record Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread, int magazineChangeTicks,
+                       Optional<ResourceLocation> cycleSound, int cycleDelayTicks) {
 
-    /** A handling with the class's magazine change time. */
+    /** A handling with the class's magazine change time and no cycle sound. */
     public Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread) {
         this(recoilPitch, recoilYaw, recovery, spread, 30);
+    }
+
+    /** A handling with no cycle sound. */
+    public Handling(float recoilPitch, float recoilYaw, float recovery, Factors spread, int magazineChangeTicks) {
+        this(recoilPitch, recoilYaw, recovery, spread, magazineChangeTicks, Optional.empty(), 5);
     }
 
     private static final Codec<Factors> FACTORS_CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -59,14 +72,17 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
 
     /**
      * The datapack shape: {@code recoil_pitch}, {@code recoil_yaw}, {@code recovery},
-     * optional {@code spread} factors, optional {@code magazine_change_ticks} (30).
+     * optional {@code spread} factors, optional {@code magazine_change_ticks} (30),
+     * optional {@code cycle_sound} (a sound event id) with {@code cycle_delay_ticks} (5).
      */
     public static final Codec<Handling> CODEC = RecordCodecBuilder.create(i -> i.group(
             Codec.floatRange(0.0f, Float.MAX_VALUE).fieldOf("recoil_pitch").forGetter(Handling::recoilPitch),
             Codec.floatRange(0.0f, Float.MAX_VALUE).fieldOf("recoil_yaw").forGetter(Handling::recoilYaw),
             Codec.floatRange(Float.MIN_VALUE, 1.0f).fieldOf("recovery").forGetter(Handling::recovery),
             FACTORS_CODEC.optionalFieldOf("spread", Factors.DEFAULT).forGetter(Handling::spread),
-            Codec.intRange(1, Integer.MAX_VALUE).optionalFieldOf("magazine_change_ticks", 30).forGetter(Handling::magazineChangeTicks)
+            Codec.intRange(1, Integer.MAX_VALUE).optionalFieldOf("magazine_change_ticks", 30).forGetter(Handling::magazineChangeTicks),
+            ResourceLocation.CODEC.optionalFieldOf("cycle_sound").forGetter(Handling::cycleSound),
+            Codec.intRange(0, Integer.MAX_VALUE).optionalFieldOf("cycle_delay_ticks", 5).forGetter(Handling::cycleDelayTicks)
     ).apply(i, Handling::new));
 
     /**
@@ -87,6 +103,12 @@ public record Handling(float recoilPitch, float recoilYaw, float recovery, Facto
         }
         if (magazineChangeTicks < 1) {
             throw new IllegalArgumentException("magazineChangeTicks must be >= 1, was " + magazineChangeTicks);
+        }
+        if (cycleSound == null) {
+            throw new IllegalArgumentException("cycleSound must not be null");
+        }
+        if (cycleDelayTicks < 0) {
+            throw new IllegalArgumentException("cycleDelayTicks must be >= 0, was " + cycleDelayTicks);
         }
     }
 

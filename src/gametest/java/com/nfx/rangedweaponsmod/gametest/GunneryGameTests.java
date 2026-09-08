@@ -27,6 +27,8 @@ import com.nfx.rangedweapons.fallback.Fallback;
 import com.nfx.rangedweaponsmod.Handling;
 import com.nfx.rangedweaponsmod.ModData;
 import com.nfx.rangedweaponsmod.ModItems;
+import net.minecraft.resources.ResourceLocation;
+import com.nfx.rangedweaponsmod.Gunnery;
 import com.nfx.rangedweaponsmod.GunItem;
 import com.nfx.rangedweaponsmod.MagazineFedWeapon;
 import net.minecraft.world.item.Item;
@@ -665,6 +667,33 @@ public final class GunneryGameTests {
         helper.assertValueEqual(Magazines.contents(player.getMainHandItem()).rounds(), 4, "the second run came out");
         helper.assertValueEqual(player.getInventory().countItem(ModItems.ROUND.get()), 64, "and is back in the inventory");
         helper.succeed();
+    }
+
+    // --- the action worked after a shot --------------------------------------
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void theShotgunRacksFiveTicksAfterEachShotAndTheBoltRifleWorksItsBolt(GameTestHelper helper) {
+        Gunner g = shotgunner(helper, 6, 0);
+        helper.assertValueEqual(Handling.of(g.gun()).cycleSound().orElseThrow(),
+                ResourceLocation.fromNamespaceAndPath("rangedweaponsmod", "shotgun_pump"), "the shotgun's cycle sound from the data map");
+        helper.assertValueEqual(Handling.of(new ItemStack(ModItems.SCOPED_RIFLE.get())).cycleSound().orElseThrow(),
+                ResourceLocation.fromNamespaceAndPath("rangedweaponsmod", "bolt"), "the scoped rifle's");
+        helper.assertTrue(Handling.of(new ItemStack(ModItems.RIFLE.get())).cycleSound().isEmpty(), "a self-loading rifle has none");
+        helper.assertTrue(BuiltInRegistries.SOUND_EVENT.containsKey(ResourceLocation.fromNamespaceAndPath("rangedweaponsmod", "shotgun_pump")),
+                "the pump is a registered sound");
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 8);                       // the shot at tick 1; the rack due at 6
+        helper.runAtTickTime(2, () -> {
+            Gunnery gunnery = g.player().getData(ModData.GUNNERY);
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 5, "one shot");
+            helper.assertValueEqual(gunnery.cycleAt(), helper.getLevel().getGameTime() + 4, "the rack is due five ticks after the shot");
+            helper.assertValueEqual(gunnery.cycleSound(), ResourceLocation.fromNamespaceAndPath("rangedweaponsmod", "shotgun_pump"), "and it is the pump");
+        });
+        helper.runAtTickTime(5, () -> helper.assertTrue(g.player().getData(ModData.GUNNERY).cycleAt() > 0, "not yet"));
+        helper.runAtTickTime(7, () -> {
+            helper.assertValueEqual(g.player().getData(ModData.GUNNERY).cycleAt(), 0L, "racked on its tick, once");
+            helper.succeed();
+        });
     }
 
     // --- reloading: a gun loaded directly (the shotgun) -----------------------

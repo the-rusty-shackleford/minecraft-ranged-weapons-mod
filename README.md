@@ -135,6 +135,7 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 | Spread | 0.03 | 0.11 | 0.012 | 0.006 | 0.05 |
 | Reach | 20 | 12 | 40 | 64 | 28 |
 | Magazine change | 24 ticks | 48 ticks (the tube, round by round) | 30 ticks | 30 ticks | 50 ticks |
+| After the shot | -- | racked, 5 ticks on | -- | bolt worked, 5 ticks on | -- |
 | Kick | 1.6 up | 4.5 up | 2.2 up | 3.0 up | 0.55 up |
 | Aiming spread | 0.5 | 0.7 | 0.35 | 0.15 | 0.35 |
 | Held | one hand | two | two | two | two |

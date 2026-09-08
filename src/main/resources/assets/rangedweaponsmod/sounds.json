@@ -41,6 +41,18 @@
       "rangedweaponsmod:empty_click"
     ]
   },
+  "shotgun_pump": {
+    "subtitle": "subtitles.rangedweaponsmod.shotgun_pump",
+    "sounds": [
+      "rangedweaponsmod:shotgun_pump"
+    ]
+  },
+  "bolt": {
+    "subtitle": "subtitles.rangedweaponsmod.bolt",
+    "sounds": [
+      "rangedweaponsmod:bolt"
+    ]
+  },
   "reload_start": {
     "subtitle": "subtitles.rangedweaponsmod.reload_start",
     "sounds": [

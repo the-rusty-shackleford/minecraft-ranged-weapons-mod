@@ -27,8 +27,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 /**
  * The sounds. A gun's own shot and far report are named in its profile and
  * played by the protocol's {@code ShotReport}; the handling sounds -- the dry
- * click, the reload -- are this mod's and played by {@link PlayerGunnery}.
- * Variable range so a loud report carries.
+ * click, the reload, the pump and the bolt worked after a shot -- are this
+ * mod's and played by {@link PlayerGunnery}. Variable range so a loud
+ * report carries.
  */
 public final class ModSounds {
     private ModSounds() {}
@@ -45,6 +46,10 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> EMPTY_CLICK = sound("empty_click");
     public static final DeferredHolder<SoundEvent, SoundEvent> RELOAD_START = sound("reload_start");
     public static final DeferredHolder<SoundEvent, SoundEvent> RELOAD_END = sound("reload_end");
+    /** The shotgun racked after a shot: named in its handling as the cycle sound. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_PUMP = sound("shotgun_pump");
+    /** A bolt worked after a shot: the scoped rifle's cycle sound. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> BOLT = sound("bolt");
 
     private static DeferredHolder<SoundEvent, SoundEvent> sound(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(

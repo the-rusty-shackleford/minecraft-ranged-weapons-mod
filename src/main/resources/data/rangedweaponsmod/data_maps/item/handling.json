@@ -23,7 +23,9 @@
         "sprinting": 1.6,
         "airborne": 1.5,
         "aiming": 0.7
-      }
+      },
+      "cycle_sound": "rangedweaponsmod:shotgun_pump",
+      "cycle_delay_ticks": 5
     },
     "rangedweaponsmod:rifle": {
       "recoil_pitch": 2.2,
@@ -49,7 +51,9 @@
         "airborne": 3.0,
         "aiming": 0.15
       },
-      "magazine_change_ticks": 30
+      "magazine_change_ticks": 30,
+      "cycle_sound": "rangedweaponsmod:bolt",
+      "cycle_delay_ticks": 5
     },
     "rangedweaponsmod:machine_gun": {
       "recoil_pitch": 0.55,
