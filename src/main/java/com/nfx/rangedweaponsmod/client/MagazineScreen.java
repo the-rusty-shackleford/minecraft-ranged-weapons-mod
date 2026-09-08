@@ -68,7 +68,9 @@ public final class MagazineScreen extends AbstractContainerScreen<MagazineMenu> 
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        // The overload that takes the texture's own size: the short one assumes
+        // 256 by 256 and stretched this 176 by 166 panel over the slots.
+        graphics.blit(BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
     }
 
     @Override
