@@ -57,7 +57,8 @@ pull or for as long as the trigger is held (`D-0007`); guns are assembled
 from parts described once, in the pure layer, and written out by data
 generation (`D-0008`); a one-handed gun is held out level by a pose added
 to the game's own enum (`D-0009`); rounds of one family may differ and the
-gun loads one kind at a time (`D-0010`).
+gun loads one kind at a time (`D-0010`); steel is Metals and Materials',
+nested here, with our old id aliased to its ingot (`D-0014`).
 
 ## How it is verified
 
@@ -110,7 +111,9 @@ Decided by Rusty on 2026-09-06, in this order:
 
 ## Depends on
 
-- `minecraft-ranged-weapons` 1.5.0 or later within 1.x (nested Jar-in-Jar;
+- `minecraft-metals-and-materials` 1.0.0 or later within 1.x (nested
+  Jar-in-Jar; built to Maven Local first): steel, since 2.3.0.
+- `minecraft-ranged-weapons` 1.6.0 or later within 1.x (nested Jar-in-Jar;
   built to Maven Local first). Needs 1.5 for damage falloff; 1.4 for
   ammunition families; 1.3 for
   the block impact and the Hold My Items hook; 1.2 for the synced data map, the muzzle origin in

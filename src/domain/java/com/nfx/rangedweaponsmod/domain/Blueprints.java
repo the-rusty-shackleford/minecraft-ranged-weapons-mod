@@ -60,11 +60,12 @@ public final class Blueprints {
     public static final String IRON_NUGGET = "#c:nuggets/iron";
     public static final String GUNPOWDER = "#c:gunpowders";
     public static final String PAPER = "minecraft:paper";
-    /** Steel by its common tag: ours, or any other mod's. */
+    /** Steel by its common tag: Metals and Materials' -- or any other mod's. */
     public static final String STEEL = "#c:ingots/steel";
+    /** The ingot that fills the tag in the pack: Metals and Materials', not ours since 2.3.0. */
+    public static final String STEEL_INGOT = "metalsandmaterials:steel_ingot";
 
     // Parts, by item id.
-    public static final String STEEL_INGOT = NS + ":steel_ingot";
     public static final String LOWER_RECEIVER = NS + ":lower_receiver";
     public static final String UPPER_RECEIVER = NS + ":upper_receiver";
     public static final String BARREL = NS + ":barrel";
@@ -84,7 +85,12 @@ public final class Blueprints {
     public static final String SHELL = NS + ":shell";
     public static final String SLUG = NS + ":slug";
 
-    /** Three iron and a little carbon make three steel. */
+    /**
+     * Three iron and a little carbon make three steel -- Metals and Materials'
+     * recipe, known here so the tally can count steel as the iron it was made
+     * from. Not one of ours: never generated, never expected on the server
+     * under our id.
+     */
     public static final Blueprint STEEL_INGOT_RECIPE = new Shapeless(STEEL_INGOT, Category.MISC, STEEL_INGOT, 3,
             List.of(IRON, IRON, IRON, COAL), List.of(IRON, COAL));
 
@@ -165,21 +171,37 @@ public final class Blueprints {
             List.of("TT"), Map.of('T', STEEL), List.of(STEEL));
 
     private static final List<Blueprint> ALL = List.of(
-            STEEL_INGOT_RECIPE, LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
+            LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
             STOCK_RECIPE, PUMP_RECIPE, SCOPE_RECIPE,
             PISTOL_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
             SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE,
             PISTOL_MAGAZINE_RECIPE, RIFLE_MAGAZINE_RECIPE, MACHINE_GUN_BOX_RECIPE);
 
-    /** The tags this mod's own parts fill: a recipe taking the tag is, for the tally, taking the part. */
+    /** Recipes another mod makes that the tally counts through: steel's. */
+    private static final List<Blueprint> EXTERNAL = List.of(STEEL_INGOT_RECIPE);
+    /** Ours and the known external ones: what a tally walks. */
+    private static final List<Blueprint> KNOWN = concat(ALL, EXTERNAL);
+
+    /** The tags a known part fills: a recipe taking the tag is, for the tally, taking the part. */
     private static final Map<String, String> FILLS = Map.of(STEEL, STEEL_INGOT);
 
     private static final List<String> GUNS = List.of(PISTOL, SHOTGUN, RIFLE, SCOPED_RIFLE, MACHINE_GUN);
-    private static final List<String> PARTS = List.of(STEEL_INGOT, LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
+    private static final List<String> PARTS = List.of(LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
 
-    /** effects: returns every recipe, parts first, then guns, then ammunition */
+    private static List<Blueprint> concat(List<Blueprint> a, List<Blueprint> b) {
+        List<Blueprint> both = new ArrayList<>(a);
+        both.addAll(b);
+        return List.copyOf(both);
+    }
+
+    /** effects: returns every recipe of ours, parts first, then guns, then ammunition */
     public static List<Blueprint> all() {
         return ALL;
+    }
+
+    /** effects: returns the recipes of other mods this catalogue counts through (steel's) */
+    public static List<Blueprint> external() {
+        return EXTERNAL;
     }
 
     /** effects: returns the guns' item ids, cheapest first as intended */
@@ -197,7 +219,7 @@ public final class Blueprints {
         return List.of(PISTOL_MAGAZINE, RIFLE_MAGAZINE, MACHINE_GUN_BOX);
     }
 
-    /** effects: returns the parts' item ids */
+    /** effects: returns the parts' item ids: the ones this mod makes, so not steel */
     public static List<String> parts() {
         return PARTS;
     }
@@ -208,12 +230,12 @@ public final class Blueprints {
     }
 
     /**
-     * effects: returns the recipe that makes {@code ingredient}: by result
-     * for an item, and for a tag, the recipe of the part of ours that fills
-     * it; empty if nothing here makes it
+     * effects: returns the recipe that makes {@code ingredient}, ours or a
+     * known external one: by result for an item, and for a tag, the recipe
+     * of the part that fills it; empty if nothing known makes it
      */
     public static Optional<Blueprint> maker(String ingredient) {
-        return makerIn(ALL, ingredient);
+        return makerIn(KNOWN, ingredient);
     }
 
     /**
@@ -225,7 +247,7 @@ public final class Blueprints {
      * parts, an ingredient of itself
      */
     public static Map<String, Integer> rawMaterials(String itemId) {
-        return rawMaterialsOf(ALL, itemId);
+        return rawMaterialsOf(KNOWN, itemId);
     }
 
     /** effects: as {@link #rawMaterials}, over {@code catalogue} instead of this mod's recipes */

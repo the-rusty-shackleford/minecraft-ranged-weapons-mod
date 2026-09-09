@@ -309,20 +309,6 @@ def _tube(put, x0, y0, x1, y1, thick, body, light, dark):
                 put(x, y, c)
 
 
-def steel_ingot_icon():
-    """An ingot in steel: cooler and darker than iron, lit along the top face."""
-    light, mid, dark = (150, 158, 170), (104, 112, 124), (58, 64, 74)
-    px, put = _canvas()
-    for y in range(5, 12):
-        for x in range(2, 14):
-            slant = (11 - y) // 2
-            xx = x + slant
-            put(xx, y, light if y == 5 else dark if y == 11 or xx >= 13 + slant - 1 else mid)
-    for x in range(3, 15):
-        put(x, 5, light)
-    return px
-
-
 def lower_receiver_icon():
     """A lower receiver side-on: the frame, a grip sloping down at the back,
     a trigger guard below and a brass trigger inside it."""
@@ -556,7 +542,6 @@ def magazine_gui():
 
 
 PART_ICONS = {
-    "steel_ingot": steel_ingot_icon,
     "lower_receiver": lower_receiver_icon,
     "upper_receiver": upper_receiver_icon,
     "barrel": barrel_icon,

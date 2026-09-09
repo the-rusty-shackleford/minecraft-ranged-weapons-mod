@@ -64,7 +64,10 @@ var prepareBoothWorld = tasks.register("prepareBoothWorld", Copy) {
 // Datagen only rewrites what it generates; a renamed recipe would leave its
 // old file behind. Every run starts from nothing.
 var cleanGeneratedResources = tasks.register("cleanGeneratedResources", Delete) {
-    delete "src/generated/resources"
+    // The directory is a resource root of `main`, and processResources refuses
+    // a root that does not exist -- so its contents go, not the directory.
+    // (Resolved now: the configuration cache forbids the action touching the project.)
+    delete fileTree("src/generated/resources")
 }
 
 neoForge {
@@ -170,6 +173,13 @@ dependencies {
         version {
             strictly "[1.6,2.0)"
             prefer "1.6.0"
+        }
+    }
+    // Steel: Metals and Materials', nested the same way, since 2.3.0.
+    jarJar(implementation("com.chunkworks.metalsandmaterials:metalsandmaterials")) {
+        version {
+            strictly "[1.0,2.0)"
+            prefer "1.0.0"
         }
     }
 

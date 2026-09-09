@@ -186,11 +186,14 @@ worth of damage and swallowing two rounds in three of a burst.
 ### Crafting
 
 A gun is assembled from parts made separately. Materials are taken by their
-common tags, so any mod's iron, coal, planks or glass panes serve.
+common tags, so any mod's iron, planks or glass panes serve. Steel is
+`#c:ingots/steel`: in the pack that is Metals and Materials' ingot (three
+iron and a coal make three), nested in this jar since 2.3.0; the steel this
+mod used to make itself is that ingot now, and any saved under the old id
+loads as it.
 
 | Part | Recipe |
 |---|---|
-| **Steel Ingot** ×3 | three iron ingots and a coal, anywhere in the grid: iron with a little carbon |
 | **Lower Receiver** | three steel across the top, a redstone under the middle: the body over the trigger group |
 | **Upper Receiver** | four steel in a square |
 | **Gun Barrel** | three iron ingots in a row |

@@ -40,6 +40,15 @@ protocol - Armed Pillagers, for one - can use them too.
 [[dependencies.${mod_id}]]
     modId="rangedweapons"
     type="required"
-    versionRange="[1.5,2.0)"
+    versionRange="[1.6,2.0)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Steel. Nested in this jar too; AFTER so its ingot exists when our alias
+# to it and our recipes resolve.
+[[dependencies.${mod_id}]]
+    modId="metalsandmaterials"
+    type="required"
+    versionRange="[1.0,2.0)"
     ordering="AFTER"
     side="BOTH"

@@ -17,10 +17,12 @@
  */
 package com.nfx.rangedweaponsmod;
 
-import net.minecraft.world.item.CreativeModeTabs;
 import com.nfx.rangedweapons.api.AmmoFamilies;
 import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweaponsmod.domain.Blueprints;
+import net.minecraft.world.item.CreativeModeTabs;
 import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
@@ -112,8 +114,13 @@ public final class ModItems {
     // they are plain items, never GunItems, so nothing that treats a gun as
     // a gun -- the carry pose, the Hold My Items exclusion -- sees them.
 
-    /** Iron with a little coal: what receivers are made of. */
-    public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerItem("steel_ingot", Item::new, new Item.Properties());
+    // Steel is Metals and Materials' since 2.3.0. The old id is aliased to
+    // its ingot so a stack saved as ours before the move loads as theirs.
+    static {
+        ITEMS.addAlias(ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "steel_ingot"),
+                ResourceLocation.parse(Blueprints.STEEL_INGOT));
+    }
+
     /** The body over the trigger group. */
     public static final DeferredItem<Item> LOWER_RECEIVER = ITEMS.registerItem("lower_receiver", Item::new, new Item.Properties());
     /** The block that houses the action. */
@@ -130,7 +137,7 @@ public final class ModItems {
     public static final DeferredItem<Item> SCOPE = ITEMS.registerItem("scope", Item::new, new Item.Properties());
 
     private static final List<DeferredItem<Item>> PARTS = List.of(
-            STEEL_INGOT, LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
+            LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
 
     /** effects: returns every part a gun is assembled from, in the order the tab shows them */
     public static List<Item> parts() {

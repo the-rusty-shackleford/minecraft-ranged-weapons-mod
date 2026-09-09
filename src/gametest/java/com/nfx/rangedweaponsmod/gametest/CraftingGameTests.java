@@ -61,9 +61,11 @@ import java.util.Set;
  * result; nothing else of ours is on the server; every unlock exists,
  * rewards its recipe, and accepts the ingredient it names; every ingredient
  * exists and every tag has something in it; a player who picks up iron
- * finds the barrel in the recipe book; and the creative tab, built the way
+ * finds the barrel in the recipe book; the creative tab, built the way
  * the creative screen builds it, shows every gun, round and part of ours
- * in the order of the tree and nothing else.
+ * in the order of the tree and nothing else; and steel, which was ours
+ * before 2.3.0, is Metals and Materials': the tag has their ingot in it, the
+ * old id is not an item, and a stack saved under the old id loads as theirs.
  *
  * <p>A grid is filled from a tag by the <em>last</em> item in it, so a tag
  * is proven honoured rather than matched by its usual item (charcoal for
@@ -231,5 +233,25 @@ public final class CraftingGameTests {
             return new ItemStack(last.value());
         }
         return new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(ingredient)));
+    }
+
+    @GameTest(template = "arena")
+    public void steelIsMetalsAndMaterialsAndOurOldIdLoadsAsTheirs(GameTestHelper helper) {
+        ResourceLocation theirs = ResourceLocation.parse(Blueprints.STEEL_INGOT);
+        ResourceLocation ours = ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "steel_ingot");
+        helper.assertTrue(BuiltInRegistries.ITEM.containsKey(theirs), "Metals and Materials' ingot is registered");
+        Item ingot = BuiltInRegistries.ITEM.get(theirs);
+        helper.assertTrue(new ItemStack(ingot).is(ItemTags.create(ResourceLocation.parse("c:ingots/steel"))), "it fills c:ingots/steel");
+        helper.assertFalse(BuiltInRegistries.ITEM.getOptional(ours).map(i -> BuiltInRegistries.ITEM.getKey(i).equals(ours)).orElse(false),
+                "no item of ours is registered under the old id");
+        // A stack a player saved before the move: the id is ours, the item must be theirs.
+        net.minecraft.nbt.CompoundTag saved = new net.minecraft.nbt.CompoundTag();
+        saved.putString("id", ours.toString());
+        saved.putInt("count", 5);
+        Optional<ItemStack> loaded = ItemStack.parse(helper.getLevel().registryAccess(), saved);
+        helper.assertTrue(loaded.isPresent() && loaded.get().is(ingot) && loaded.get().getCount() == 5,
+                "the old stack loads as five of their ingots, loaded " + loaded);
+        helper.assertTrue(BuiltInRegistries.ITEM.get(ours) == ingot, "the registry answers the old id with their ingot");
+        helper.succeed();
     }
 }
