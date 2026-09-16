@@ -18,6 +18,11 @@
 package com.nfx.rangedweaponsmod.gametest;
 
 import com.nfx.rangedweaponsmod.ModItems;
+import com.nfx.rangedweaponsmod.domain.HoldOut;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
@@ -54,6 +59,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.minecraft.client.model.HumanoidModel;
@@ -65,6 +71,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Eyes for the art: in the {@code photoBooth} dev run, once the world is
@@ -76,6 +83,11 @@ import java.util.List;
  * then each calibration item in first person and third person from the
  * front. Client only, active only under the
  * {@code rangedweaponsmod.photobooth} system property.
+ *
+ * <p>Beside the pictures, verdicts: at each gun's third-person frames the
+ * trigger arm is read off the model the frame was posed on and judged
+ * against the crossbow's trigger arm ({@link HoldOut}), the numbers logged
+ * beside the verdict. A {@code booth: FAIL} line fails the Gradle task.
  */
 // The subscriber is registered by the mod whose file it lives in: the
 // gametest mod, not the main one.
@@ -294,7 +306,10 @@ public final class PhotoBooth {
             }));
             s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-first")));
             s.add(new Step(t[0] += 1, thirdFront));
-            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third")));
+            s.add(new Step(t[0] += SETTLE, () -> {
+                shoot(mc, label + "-third");
+                armVerdict(mc, label + "-third");
+            }));
             s.add(new Step(t[0] += 1, thirdBack));
             s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third-back")));
             // From the right side: the head turns west and the front camera
@@ -307,7 +322,10 @@ public final class PhotoBooth {
                 player.setYHeadRot(-90.0f);
                 player.setYBodyRot(-40.0f);
             }));
-            s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third-side")));
+            s.add(new Step(t[0] += SETTLE, () -> {
+                shoot(mc, label + "-third-side");
+                armVerdict(mc, label + "-third-side");
+            }));
             s.add(new Step(t[0] += 1, () -> {
                 player.setYRot(0.0f);
                 player.setYHeadRot(0.0f);
@@ -366,8 +384,76 @@ public final class PhotoBooth {
             s.add(new Step(t[0] += SETTLE, () -> shoot(mc, label + "-third")));
             name++;
         }
-        s.add(new Step(t[0] += 20, mc::stop));
+        s.add(new Step(t[0] += 20, () -> {
+            RangedWeaponsMod.LOGGER.info("booth: PASS all checks ran");
+            mc.stop();
+        }));
         return s;
+    }
+
+    /** The player's render model, with the angles the last frame posed it in. */
+    private static PlayerModel<?> model(Minecraft mc) {
+        return ((PlayerRenderer) mc.getEntityRenderDispatcher().getRenderer(mc.player)).getModel();
+    }
+
+    /** The renderer's degrees to the model's radians, the game's own constant. */
+    private static final float DEG = (float) (Math.PI / 180.0);
+
+    /**
+     * The trigger arm, read off the model the last frame posed, judged
+     * against the crossbow's trigger arm that animation packs recognise
+     * ({@link HoldOut}). The head angles it is judged against are the ones
+     * the renderer hands the model -- the player's pitch, and its head yaw
+     * less its body yaw, wrapped -- not the model's head part, which an
+     * animation pack may have swung on its own; the player stands still,
+     * so no partial tick enters. The angles are logged beside the verdict,
+     * so a frame that looks wrong has its numbers next to it.
+     */
+    private static void armVerdict(Minecraft mc, String frame) {
+        PlayerModel<?> model = model(mc);
+        LocalPlayer player = mc.player;
+        boolean right = player == null || player.getMainArm() == HumanoidArm.RIGHT;
+        var limb = right ? model.rightArm : model.leftArm;
+        HoldOut.Arm arm = new HoldOut.Arm(limb.xRot, limb.yRot, limb.zRot);
+        float headPitch = (player == null ? 0.0f : player.getXRot()) * DEG;
+        float headYaw = (player == null ? 0.0f : Mth.wrapDegrees(player.yHeadRot - player.yBodyRot)) * DEG;
+        HoldOut.Arm want = HoldOut.triggerArm(headPitch, headYaw, right);
+        RangedWeaponsMod.LOGGER.info("photo booth: {} trigger arm pitch {} yaw {} roll {}; head pitch {} yaw {} (the model's head {} {}); the crossbow's pitch {} yaw {}",
+                frame, arm.pitch(), arm.yaw(), arm.roll(), headPitch, headYaw, model.head.xRot, model.head.yRot, want.pitch(), want.yaw());
+        if (ModList.get().isLoaded("entity_model_features")) {
+            // The arm read here is the pack's rendering, vanilla's arm passed
+            // through its smoothing, not vanilla's arm itself; the question is
+            // whether it was passed through at all (a pose it did not
+            // recognise reads as its own hang, a radian away).
+            verdict(frame + ": the player pack passes the trigger arm through, held out",
+                    () -> Math.abs(arm.pitch() - want.pitch()) <= PASSED_THROUGH_PITCH && Math.abs(arm.yaw() - want.yaw()) <= PASSED_THROUGH_YAW ? null
+                            : "pitch " + arm.pitch() + " (want " + want.pitch() + " within " + PASSED_THROUGH_PITCH
+                            + "), yaw " + arm.yaw() + " (want " + want.yaw() + " within " + PASSED_THROUGH_YAW + ")");
+        } else {
+            verdict(frame + ": the trigger arm is the crossbow's, as animation packs recognise it",
+                    () -> HoldOut.recognised(arm, headPitch, headYaw, right) ? null
+                            : "pitch " + arm.pitch() + " (want " + want.pitch() + " within " + HoldOut.PITCH_SLACK
+                            + "), yaw " + arm.yaw() + " (want " + want.yaw() + " within " + HoldOut.YAW_SLACK + ")");
+        }
+    }
+
+    /** Room for a player pack's smoothing and idle on an arm it passed through: the game's bob, and a little. */
+    private static final float PASSED_THROUGH_PITCH = 0.06f;
+    private static final float PASSED_THROUGH_YAW = 0.02f;
+
+    /** Logs {@code booth: PASS what}, or {@code booth: FAIL what -- detail} when the check returns a detail. */
+    private static void verdict(String what, Supplier<String> check) {
+        String detail;
+        try {
+            detail = check.get();
+        } catch (RuntimeException e) {
+            detail = e.toString();
+        }
+        if (detail == null) {
+            RangedWeaponsMod.LOGGER.info("booth: PASS {}", what);
+        } else {
+            RangedWeaponsMod.LOGGER.error("booth: FAIL {} -- {}", what, detail);
+        }
     }
 
     /** The config's own defaults: what ships. */

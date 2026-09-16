@@ -232,11 +232,21 @@ at random), and is run against the pack this mod ships in.
 ### The hold
 
 Others see a two-handed gun carried like a crossbow, and a one-handed gun
-held out level, aiming where the head looks, one arm -- a pose of this
-mod's own, added to the game's list of arm poses (`client/ArmPoses`,
-declared in `META-INF/enumextensions.json`). The pistol sits upright on
-top of the fist with its grip in the hand; the display transforms behind
-that were calibrated by photograph in the booth, never derived.
+held out along the look by one arm -- a pose of this mod's own, added to
+the game's list of arm poses (`client/ArmPoses`, declared in
+`META-INF/enumextensions.json`), whose arm is the crossbow's trigger arm
+number for number (`domain/HoldOut`). That identity is what animation
+packs need. They cannot see a mod's pose, only the vanilla model's arm
+angles, and Fresh Animations: Player Extension recognises the crossbow
+hold by matching those (yaw within 1e-4 of the head's less 0.3, pitch
+within 0.05 of the head's less a right angle plus 0.1); an arm matching
+none of its fingerprints is a plain held item to it and hangs at the hip,
+which is how the pistol looked under that pack before 2.3.1. Not Enough
+Animations leaves both poses alone. The pistol sits upright on top of the
+fist with its grip in the hand; the display transforms behind that were
+calibrated by photograph in the booth, never derived. The booth reads the
+trigger arm off the rendered model at every gun's third-person frames and
+fails on a mismatch, whatever animation mods are in its `mods/` folder.
 
 ## Adding a gun
 
@@ -349,8 +359,15 @@ other two are for eyes and hands.
   booth runs in its own game directory, `run/booth`; jars dropped into its
   `mods/` load with it, which is how the pack's Not Enough Animations is
   put in the picture, since a photo of a pose without the mods that re-pose
-  the player answers the wrong question. It quits when done. Leave it alone while it runs: any input
-  becomes part of the photos. This is how the display transforms and the
+  the player answers the wrong question -- and Entity Model Features with
+  Entity Texture Features the same way, with a player pack such as Fresh
+  Animations: Player Extension in `run/booth/resourcepacks/` and named in
+  its `options.txt` (`resourcePacks:["vanilla","file/<zip>"]`). At each
+  gun's third-person frames the booth logs the trigger arm's angles off
+  the rendered model and passes or fails them against the crossbow's
+  (`booth: PASS` / `booth: FAIL` lines; a FAIL fails the task). It quits
+  when done. Leave it alone while it runs: any input becomes part of the
+  photos. This is how the display transforms and the
   kick's signs were found; none of them are what one would derive.
 - A feel test in `./gradlew runClient`: `/give @s rangedweaponsmod:machine_gun`
   and a stack of rounds. Cadence, recoil and reload are judged by hand; the

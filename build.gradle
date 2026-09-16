@@ -235,6 +235,27 @@ if (!project.hasProperty('skipGameTests')) {
     }
 }
 
+// The booth's verdicts (PhotoBooth.armVerdict and friends) are lines in its
+// log: a `booth: FAIL` fails the task, and a log with no verdict at all
+// means the script never ran. The pictures are still there to look at.
+tasks.named('runPhotoBooth') { task ->
+    def logFile = layout.projectDirectory.file('run/booth/logs/latest.log').asFile
+    task.doLast {
+        def text = logFile.exists() ? logFile.text : ''
+        if (text =~ /Missing or unsupported mandatory|Mod loading has failed/) {
+            throw new GradleException("booth: the loader refused a mod; see ${logFile}")
+        }
+        def failures = text.readLines().findAll { it.contains('booth: FAIL') }
+        if (!failures.isEmpty()) {
+            throw new GradleException("booth: ${failures.size()} failed check(s):\n" + failures.join('\n'))
+        }
+        if (!(text =~ /booth: PASS/)) {
+            throw new GradleException("booth: no verdict in ${logFile} -- the booth never ran")
+        }
+        task.logger.lifecycle("booth: " + (text =~ /booth: PASS all checks ran/)[0])
+    }
+}
+
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,

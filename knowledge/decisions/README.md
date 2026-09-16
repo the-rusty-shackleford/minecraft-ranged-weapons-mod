@@ -30,3 +30,4 @@ thought and someone later would want to know *why*.
 | D-0012 | Every sound is a cut of a CC0 field recording; synthesis is retired |
 | D-0013 | Magazines are ordered loads on the gun's stack; the gun's capacity is the magazine's; the protocol is untouched |
 | D-0014 | Steel is Metals and Materials'; our old id is an alias of its ingot |
+| D-0015 | The one-handed arm is the crossbow's trigger arm, number for number, so animation packs recognise it |

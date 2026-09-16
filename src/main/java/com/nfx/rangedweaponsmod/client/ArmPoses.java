@@ -17,6 +17,7 @@
  */
 package com.nfx.rangedweaponsmod.client;
 
+import com.nfx.rangedweaponsmod.domain.HoldOut;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.world.entity.HumanoidArm;
@@ -28,23 +29,27 @@ import net.neoforged.neoforge.client.IArmPoseTransformer;
  * How a body holds a gun, seen by others.
  *
  * <p>The game has no pose for a pistol: an item in hand hangs at the side.
- * A pistol is held out, level with the eyes, and follows the look, as in
- * every shooter -- and as the bow's pose does, one arm of it. The pose is
- * a value added to the game's own enum, declared in
+ * A pistol is held out and follows the look, as in every shooter -- one
+ * arm, the crossbow's trigger arm number for number ({@link HoldOut}), so
+ * that animation packs, which recognise the game's poses by their numbers
+ * and know nothing of a mod's, show it held out too. The pose is a value
+ * added to the game's own enum, declared in
  * {@code META-INF/enumextensions.json}, and this class is where it is
- * read from; the two-handed guns use the game's crossbow hold.
+ * read from; the two-handed guns use the game's crossbow hold itself.
  */
 public final class ArmPoses {
     private ArmPoses() {}
 
-    /** A single arm out level, aiming where the head looks. */
+    /** A single arm out along the look: the crossbow's trigger arm, alone. */
     public static final EnumProxy<HumanoidModel.ArmPose> PISTOL =
             new EnumProxy<>(HumanoidModel.ArmPose.class, false, (IArmPoseTransformer) ArmPoses::aim);
 
     private static void aim(HumanoidModel<?> model, LivingEntity entity, HumanoidArm arm) {
-        ModelPart limb = arm == HumanoidArm.RIGHT ? model.rightArm : model.leftArm;
-        limb.xRot = -(float) (Math.PI / 2) + model.head.xRot;
-        limb.yRot = (arm == HumanoidArm.RIGHT ? -0.1f : 0.1f) + model.head.yRot;
-        limb.zRot = 0.0f;
+        boolean right = arm == HumanoidArm.RIGHT;
+        ModelPart limb = right ? model.rightArm : model.leftArm;
+        HoldOut.Arm hold = HoldOut.triggerArm(model.head.xRot, model.head.yRot, right);
+        limb.xRot = hold.pitch();
+        limb.yRot = hold.yaw();
+        limb.zRot = hold.roll();
     }
 }

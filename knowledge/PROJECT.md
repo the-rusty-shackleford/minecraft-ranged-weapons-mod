@@ -55,18 +55,24 @@ generated and its display transforms and the kick's signs were calibrated by
 photograph (`D-0004`); a gun's class decides whether it fires once per
 pull or for as long as the trigger is held (`D-0007`); guns are assembled
 from parts described once, in the pure layer, and written out by data
-generation (`D-0008`); a one-handed gun is held out level by a pose added
-to the game's own enum (`D-0009`); rounds of one family may differ and the
+generation (`D-0008`); a one-handed gun is held out by a pose added to the
+game's own enum (`D-0009`) whose arm is the crossbow's trigger arm number
+for number, the one pose animation packs recognise without vanilla's
+use state (`D-0015`); rounds of one family may differ and the
 gun loads one kind at a time (`D-0010`); steel is Metals and Materials',
 nested here, with our old id aliased to its ingot (`D-0014`).
 
 ## How it is verified
 
-`./gradlew check`: 113 plain-JUnit tests against `domain`, and thirty-eight gametests
+`./gradlew check`: 120 plain-JUnit tests against `domain`, and forty-one gametests
 on a headless server. `devtools/recipes/collisions.py` checks the recipes
 against the pack's jars. `./gradlew runPhotoBooth` photographs the art for
-review. The feel -- cadence, recoil, reload -- is judged by hand in a client
-and on the shared server.
+review and judges the trigger arm's angles off the rendered model at every
+gun's third-person frames, with whatever animation mods and player packs
+are dropped into `run/booth` (the pack's Not Enough Animations; Entity
+Model Features with Fresh Animations: Player Extension, which is what
+Rusty's own client runs). The feel -- cadence, recoil, reload -- is judged
+by hand in a client and on the shared server.
 
 ## Next
 
