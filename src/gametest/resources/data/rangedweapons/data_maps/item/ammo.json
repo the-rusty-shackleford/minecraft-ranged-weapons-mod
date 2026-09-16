@@ -2,6 +2,9 @@
   "values": {
     "minecraft:iron_nugget": {
       "damage": 9.0
+    },
+    "rangedweaponsmod_gametest:long_round": {
+      "damage": 9.0
     }
   }
 }

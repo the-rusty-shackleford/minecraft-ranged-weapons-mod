@@ -37,6 +37,9 @@ public final class BoothMod {
 
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
 
+    /** A real registered addon round for long-label UI and Fill-button verification. Never shipped. */
+    public static final DeferredItem<Item> LONG_ROUND = ITEMS.registerSimpleItem("long_round");
+
     /** One item per candidate, named a..f as in the generator. */
     public static final List<DeferredItem<Item>> BOOTH_ITEMS = List.of(
             ITEMS.registerItem("booth_a", Item::new, new Item.Properties()),

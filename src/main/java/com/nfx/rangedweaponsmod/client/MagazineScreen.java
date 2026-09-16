@@ -24,8 +24,11 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 
@@ -64,6 +67,12 @@ public final class MagazineScreen extends AbstractContainerScreen<MagazineMenu> 
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+        int x = mouseX - leftPos, y = mouseY - topPos;
+        if (x >= 8 && x < 168 && y >= titleLabelY && y < titleLabelY + font.lineHeight && font.width(title) > 160) {
+            graphics.renderTooltip(font, font.split(title, Math.min(240, width - 16)), mouseX, mouseY);
+        } else if (x >= 8 && x < 100 && y >= 59 && y < 59 + font.lineHeight && font.width(nextRound()) > 92) {
+            graphics.renderTooltip(font, font.split(nextRound(), Math.min(240, width - 16)), mouseX, mouseY);
+        }
     }
 
     @Override
@@ -75,14 +84,26 @@ public final class MagazineScreen extends AbstractContainerScreen<MagazineMenu> 
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderLabels(graphics, mouseX, mouseY);
+        graphics.drawString(font, fitted(title, 160), titleLabelX, titleLabelY, TEXT, false);
+        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, TEXT, false);
         Magazine<Item> magazine = menu.contents();
         graphics.drawString(font, Component.translatable("screen.rangedweaponsmod.magazine.first"), 8, 26, TEXT, false);
         String count = magazine.rounds() + " / " + magazine.capacity();
         graphics.drawString(font, count, imageWidth - 8 - font.width(count), 26, TEXT, false);
-        Component next = magazine.next()
+        graphics.drawString(font, fitted(nextRound(), 92), 8, 59, TEXT, false);
+    }
+
+    /** effects: returns the complete next-round description from the current server-synced contents. */
+    private Component nextRound() {
+        return menu.contents().next()
                 .map(round -> Component.translatable("screen.rangedweaponsmod.magazine.next", round.getDescription()))
                 .orElseGet(() -> Component.translatable("screen.rangedweaponsmod.magazine.empty"));
-        graphics.drawString(font, next, 8, 59, TEXT, false);
+    }
+
+    /** requires: width fits the ellipsis. effects: fits styled text without drawing over adjacent controls. */
+    private FormattedCharSequence fitted(Component text, int width) {
+        if (font.width(text) <= width) return text.getVisualOrderText();
+        return Language.getInstance().getVisualOrder(FormattedText.composite(
+                font.substrByWidth(text, width - font.width("…")), Component.literal("…")));
     }
 }

@@ -22,3 +22,6 @@ src/generated/resources/.cache/
 .vscode/
 .DS_Store
 *.swp
+
+# Local caches from deterministic art generators.
+__pycache__/

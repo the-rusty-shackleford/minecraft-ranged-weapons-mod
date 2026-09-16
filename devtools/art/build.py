@@ -21,6 +21,8 @@ import subprocess
 import sys
 import zlib
 from pathlib import Path
+from material_bevel import bevel
+from sound_export import write_ogg
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "src/main/resources/assets/rangedweaponsmod"
@@ -887,17 +889,6 @@ def normalize(samples, peak=0.95):
     return [x * peak / top for x in samples]
 
 
-def write_ogg(path: Path, samples) -> None:
-    """Writes 16-bit mono PCM through ffmpeg into Ogg Vorbis. Bit-exact, so
-    the same samples give the same bytes and an unchanged sound is an
-    unchanged file in the diff."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    pcm = b"".join(struct.pack("<h", int(max(-1.0, min(1.0, s)) * 32767)) for s in samples)
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "s16le", "-ar", str(RATE), "-ac", "1",
-                    "-i", "pipe:0", "-c:a", "libvorbis", "-q:a", "5", "-fflags", "+bitexact", "-flags", "+bitexact", str(path)],
-                   input=pcm, check=True)
-
-
 # The shipped sounds: which recording, which seconds of it, placed where.
 # Times are in seconds. A shot's take starts about 20 ms before the report so
 # the attack is the recording's own; a tail is cut where it has fallen 40 dB
@@ -973,10 +964,10 @@ def main(argv) -> int:
         write_png(ASSETS / "textures/item/slug.png", 16, 16, slug_icon())
         write_png(ASSETS / "textures/gui/scope.png", 256, 256, scope_mask())
         for name, fn in PART_ICONS.items():
-            write_png(ASSETS / f"textures/item/{name}.png", 16, 16, fn())
+            write_png(ASSETS / f"textures/item/{name}.png", 16, 16, bevel(fn(), "wood" if name in {"stock", "pump"} else "steel"))
         for name, fn in MAGAZINE_ICONS.items():
             body, band = fn()
-            write_png(ASSETS / f"textures/item/{name}.png", 16, 16, body)
+            write_png(ASSETS / f"textures/item/{name}.png", 16, 16, bevel(body))
             write_png(ASSETS / f"textures/item/{name}_band.png", 16, 16, band)
         write_png(ASSETS / "textures/gui/magazine.png", 176, 166, magazine_gui())
         stale = ASSETS / "textures/item/machine_gun.png"

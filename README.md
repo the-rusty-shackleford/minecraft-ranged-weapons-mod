@@ -292,6 +292,17 @@ recordist under Creative Commons Zero on freesound.org. Attribution is not
 required by that dedication; the recordists are named there because they
 should be. The code and the art stay under this repository's own license.
 
+Long magazine titles and next-round names stay inside their panel, ending in an
+ellipsis when needed. Hover over shortened text to read its full name. The Fill button
+and the order of rounds work as before. Parts and magazines use bevelled shading at
+their original pixel size; dye bands remain independently tintable.
+
+Sound exports are checked **after Vorbis decoding** for headroom, correcting codec
+overshoot that can clip even when the source PCM was normalized. Rebuild with
+`uv run --no-project python devtools/art/build.py sounds`; the exporter fails if it
+cannot keep every decoded sample at or below .98. Recordings and action timing remain
+as credited in the sound sources. See D-0017 for the reproduced UI/audio defects.
+
 ## Client config
 
 `config/rangedweaponsmod-client.toml`:

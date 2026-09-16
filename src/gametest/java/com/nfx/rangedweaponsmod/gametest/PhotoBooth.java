@@ -243,9 +243,21 @@ public final class PhotoBooth {
             for (var part : ModItems.parts()) {
                 sp.getInventory().setItem(slot++, new ItemStack(part));
             }
+            sp.getInventory().setItem(25, new ItemStack(BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.parse("metalsandmaterials:steel_ingot"))));
+            sp.getInventory().setItem(26, new ItemStack(BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.parse("metalsandmaterials:steel_nugget"))));
+            // This scene opens InventoryScreen on the client, so synchronize the
+            // real inventory explicitly before photographing it.
+            sp.inventoryMenu.sendAllDataToRemote();
+            RangedWeaponsMod.LOGGER.info("booth: server part {} steel {}", sp.getInventory().getItem(9), sp.getInventory().getItem(25));
         })));
         s.add(new Step(t[0] += 5, () -> mc.setScreen(new InventoryScreen(player))));
-        s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-parts-inventory")));
+        s.add(new Step(t[0] += SETTLE, () -> {
+            shoot(mc, "booth-parts-inventory");
+            verdict("the inventory comparison contains synced parts and steel", () -> mc.player != null
+                    && mc.player.getInventory().getItem(9).is(ModItems.parts().getFirst())
+                    && mc.player.getInventory().getItem(25).is(BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.parse("metalsandmaterials:steel_ingot")))
+                    ? null : "client inventory did not receive the fixture");
+        }));
         s.add(new Step(t[0] += 1, () -> mc.setScreen(null)));
 
         // Magazines: the HUD with a labelled, dyed magazine in the pistol,
@@ -274,6 +286,35 @@ public final class PhotoBooth {
             MagazineMenu.open(sp, InteractionHand.MAIN_HAND);
         })));
         s.add(new Step(t[0] += SETTLE, () -> shoot(mc, "booth-magazine-screen")));
+        s.add(new Step(t[0] += 1, () -> onServer(mc, sp -> {
+            sp.closeContainer();
+            sp.getInventory().clearContent();
+            ItemStack named = new ItemStack(ModItems.RIFLE_MAGAZINE.get());
+            named.set(DataComponents.CUSTOM_NAME, Component.literal("Expedition reserve ammunition magazine"));
+            sp.setItemInHand(InteractionHand.MAIN_HAND, named);
+            sp.getInventory().setItem(9, new ItemStack(BoothMod.LONG_ROUND.get(), 12));
+            MagazineMenu.open(sp, InteractionHand.MAIN_HAND);
+        })));
+        s.add(new Step(t[0] += 20, () -> {
+            if (mc.player != null && mc.gameMode != null && mc.player.containerMenu instanceof MagazineMenu menu)
+                mc.gameMode.handleInventoryButtonClick(menu.containerId, MagazineMenu.FILL_BUTTON);
+        }));
+        s.add(new Step(t[0] += SETTLE, () -> {
+            shoot(mc, "booth-magazine-long-title");
+            verdict("the real Fill button loads the addon round with a long translated name", () ->
+                    mc.player != null && mc.player.containerMenu instanceof MagazineMenu menu
+                    && menu.contents().rounds() == 12 && menu.contents().next().orElse(null) == BoothMod.LONG_ROUND.get()
+                    ? null : "rounds did not arrive through the menu button");
+        }));
+        s.add(new Step(t[0] += 2, () -> {
+            int gx = (mc.getWindow().getGuiScaledWidth() - 176) / 2 + 50;
+            int gy = (mc.getWindow().getGuiScaledHeight() - 166) / 2 + 62;
+            pointAt(mc, gx, gy);
+        }));
+        s.add(new Step(t[0] += 12, () -> {
+            shoot(mc, "booth-magazine-full-name");
+            RangedWeaponsMod.LOGGER.info("booth: pointer {}, {}", mc.mouseHandler.xpos(), mc.mouseHandler.ypos());
+        }));
         s.add(new Step(t[0] += 1, () -> {
             if (mc.player != null) {
                 mc.player.closeContainer();
@@ -505,6 +546,22 @@ public final class PhotoBooth {
 
     private static void hold(LocalPlayer player, Item item) {
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(item));
+    }
+
+    /** effects: delivers a pointer move through Minecraft's real mouse callback in GUI coordinates. */
+    private static void pointAt(Minecraft mc, int x, int y) {
+        // Native cursor warping did not deliver callbacks in the nested booth.
+        // This invokes exactly the callback installed by MouseHandler, preserving
+        // normal screen hit testing and tooltip rendering instead of drawing a fake tooltip.
+        try {
+            var move = net.minecraft.client.MouseHandler.class.getDeclaredMethod("onMove", long.class, double.class, double.class);
+            move.setAccessible(true);
+            move.invoke(mc.mouseHandler, mc.getWindow().getWindow(),
+                    (double) x * mc.getWindow().getScreenWidth() / mc.getWindow().getGuiScaledWidth(),
+                    (double) y * mc.getWindow().getScreenHeight() / mc.getWindow().getGuiScaledHeight());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Cannot deliver booth pointer input", e);
+        }
     }
 
     private static void shoot(Minecraft mc, String name) {

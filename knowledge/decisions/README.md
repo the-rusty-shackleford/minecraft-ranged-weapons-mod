@@ -32,3 +32,4 @@ thought and someone later would want to know *why*.
 | D-0014 | Steel is Metals and Materials'; our old id is an alias of its ingot |
 | D-0015 | The one-handed arm is the crossbow's trigger arm, number for number, so animation packs recognise it |
 | D-0016 | Shared grip is read at pose time; accepted aim is a synced attachment, reload keeps its existing component |
+| D-0017 | Bounded magazine text, readable parts and decoded audio headroom |
