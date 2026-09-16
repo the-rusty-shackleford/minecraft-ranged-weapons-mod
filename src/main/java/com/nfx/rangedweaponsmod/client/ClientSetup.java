@@ -20,6 +20,9 @@ package com.nfx.rangedweaponsmod.client;
 import com.nfx.rangedweaponsmod.RangedWeaponsMod;
 import com.nfx.rangedweaponsmod.GunItem;
 import com.nfx.rangedweaponsmod.ModItems;
+import com.nfx.rangedweapons.api.Grip;
+import com.nfx.rangedweapons.api.RangedWeapon;
+import com.nfx.rangedweapons.api.RangedWeapons;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.minecraft.world.item.component.DyedItemColor;
@@ -49,19 +52,15 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 public final class ClientSetup {
     private ClientSetup() {}
 
-    /** Both hands on the gun in third person, the way a crossbow is carried; a pistol keeps the plain one-handed pose. */
-    private static final IClientItemExtensions TWO_HANDED = new IClientItemExtensions() {
+    /** Reads the resolved profile at use, so a datapack reload also changes the hold. */
+    private static final IClientItemExtensions GUN = new IClientItemExtensions() {
         @Override
         public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
-            return HumanoidModel.ArmPose.CROSSBOW_HOLD;
-        }
-    };
-
-    /** A one-handed gun is held out, level, aiming where the head looks. */
-    private static final IClientItemExtensions ONE_HANDED = new IClientItemExtensions() {
-        @Override
-        public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
-            return ArmPoses.PISTOL.getValue();
+            RangedWeapon weapon = RangedWeapons.resolve(stack);
+            Grip legacy = ((GunItem) stack.getItem()).grip() == GunItem.Grip.ONE_HANDED
+                    ? Grip.ONE_HANDED : Grip.TWO_HANDED;
+            Grip grip = weapon == null ? legacy : weapon.profile().grip().orElse(legacy);
+            return grip == Grip.ONE_HANDED ? ArmPoses.PISTOL.getValue() : HumanoidModel.ArmPose.CROSSBOW_HOLD;
         }
     };
 
@@ -95,13 +94,6 @@ public final class ClientSetup {
 
     @SubscribeEvent
     public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
-        Item[] twoHanded = ModItems.guns().stream()
-                .filter(item -> ((GunItem) item).grip() == GunItem.Grip.TWO_HANDED)
-                .toArray(Item[]::new);
-        event.registerItem(TWO_HANDED, twoHanded);
-        Item[] oneHanded = ModItems.guns().stream()
-                .filter(item -> ((GunItem) item).grip() == GunItem.Grip.ONE_HANDED)
-                .toArray(Item[]::new);
-        event.registerItem(ONE_HANDED, oneHanded);
+        event.registerItem(GUN, ModItems.guns().toArray(Item[]::new));
     }
 }

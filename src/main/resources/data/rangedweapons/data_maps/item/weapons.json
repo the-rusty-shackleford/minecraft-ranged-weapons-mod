@@ -1,6 +1,7 @@
 {
   "values": {
     "rangedweaponsmod:pistol": {
+      "grip": "one_handed",
       "class": "sidearm",
       "capacity": 15,
       "reload_ticks_per_round": 2,
@@ -23,6 +24,7 @@
       "knockback": 0.6
     },
     "rangedweaponsmod:shotgun": {
+      "grip": "two_handed",
       "class": "shotgun",
       "capacity": 6,
       "reload_ticks_per_round": 8,
@@ -45,6 +47,7 @@
       "knockback": 3.0
     },
     "rangedweaponsmod:rifle": {
+      "grip": "two_handed",
       "class": "rifle",
       "capacity": 30,
       "reload_ticks_per_round": 1,
@@ -62,6 +65,7 @@
       "knockback": 1.0
     },
     "rangedweaponsmod:scoped_rifle": {
+      "grip": "two_handed",
       "class": "rifle",
       "capacity": 30,
       "reload_ticks_per_round": 1,
@@ -79,6 +83,7 @@
       "knockback": 1.5
     },
     "rangedweaponsmod:machine_gun": {
+      "grip": "two_handed",
       "class": "automatic",
       "capacity": 75,
       "reload_ticks_per_round": 1,

@@ -76,6 +76,14 @@ by hand in a client and on the shared server.
 
 ## Next
 
+2.4.0 is local and unreleased (2026-09-16), incorporating the held 2.3.1 pistol
+fix plus shared grip and observer aim/reload state (D-0016). No tag, push, or pack
+update is authorized. The observer booth passes with NEA alone and with EMF 3.2.4,
+ETF 7.1, Fresh Animations 1.10.4 and Player Extension 1.1. The standard Player
+Extension is confirmed enabled in the local Prism instance's options, replacing
+the handover's unresolved variant. This verifies one observer and a server actor,
+not two independently connected interactive clients.
+
 Decided by Rusty on 2026-09-06, in this order:
 
 1. Done (protocol 1.4, this mod's round is medium): ammo families.
@@ -119,7 +127,7 @@ Decided by Rusty on 2026-09-06, in this order:
 
 - `minecraft-metals-and-materials` 1.0.0 or later within 1.x (nested
   Jar-in-Jar; built to Maven Local first): steel, since 2.3.0.
-- `minecraft-ranged-weapons` 1.6.0 or later within 1.x (nested Jar-in-Jar;
+- `minecraft-ranged-weapons` 1.7.0 or later within 1.x (nested Jar-in-Jar;
   built to Maven Local first). Needs 1.5 for damage falloff; 1.4 for
   ammunition families; 1.3 for
   the block impact and the Hold My Items hook; 1.2 for the synced data map, the muzzle origin in

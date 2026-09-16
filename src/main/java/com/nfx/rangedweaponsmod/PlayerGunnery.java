@@ -125,16 +125,23 @@ public final class PlayerGunnery {
     }
 
     /**
-     * effects: records whether {@code player} is aiming down the sights,
-     * which tightens spread by the gun's handling
+     * requires: player is non-null and belongs to the logical server.
+     * effects: accepts aim only for a living, non-spectator holder of a resolved
+     * gun; records it for spread and synchronizes a changed public aim flag.
+     * throws: none for valid arguments.
      *
      * @param player the player
      * @param aiming whether the sights are up
      */
     public static void onAim(Player player, boolean aiming) {
+        aiming = aiming && player.isAlive() && !player.isSpectator()
+                && GunItem.isGun(player.getMainHandItem()) && RangedWeapons.isWeapon(player.getMainHandItem());
         Gunnery gunnery = player.getData(ModData.GUNNERY);
         if (gunnery.aiming() != aiming) {
             player.setData(ModData.GUNNERY, gunnery.aiming(aiming));
+        }
+        if (player.getData(ModData.AIMING) != aiming) {
+            player.setData(ModData.AIMING, aiming);
         }
     }
 
@@ -156,11 +163,15 @@ public final class PlayerGunnery {
      */
     public static void tick(Player player, ServerLevel level) {
         ItemStack stack = player.getMainHandItem();
-        if (!GunItem.isGun(stack)) {
+        if (!player.isAlive() || player.isSpectator() || !GunItem.isGun(stack)) {
+            onAim(player, false);
+            onTrigger(player, false);
             return;
         }
         RangedWeapon weapon = RangedWeapons.resolve(stack);
         if (weapon == null) {
+            onAim(player, false);
+            onTrigger(player, false);
             return;
         }
         Gunnery gunnery = player.getData(ModData.GUNNERY);

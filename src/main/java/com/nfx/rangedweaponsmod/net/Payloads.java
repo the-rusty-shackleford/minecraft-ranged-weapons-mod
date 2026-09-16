@@ -25,7 +25,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
- * The three payloads, registered under one protocol version. Handlers run
+ * The four payloads, registered under one protocol version. Handlers run
  * on the main thread of their side, which the registrar arranges by
  * default.
  */

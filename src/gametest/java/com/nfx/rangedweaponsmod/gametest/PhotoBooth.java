@@ -95,7 +95,8 @@ import java.util.function.Supplier;
 public final class PhotoBooth {
     private PhotoBooth() {}
 
-    private static final boolean ACTIVE = Boolean.getBoolean("rangedweaponsmod.photobooth");
+    private static final boolean ACTIVE = Boolean.getBoolean("rangedweaponsmod.photobooth")
+            && !Boolean.getBoolean("rangedweaponsmod.observers");
     /** Ticks between a pose change and its photo: chunks lit, camera settled. */
     private static final int SETTLE = 30;
 

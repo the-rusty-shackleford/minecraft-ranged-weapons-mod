@@ -39,14 +39,14 @@ import java.util.List;
  * <em>fired by a player</em> lives in {@link PlayerGunnery}. This class
  * marks an item as one the trigger works on and shows the load on hover.
  *
- * <p>None of vanilla's use-item machinery is involved: right-click is taken
+ * <p>None of vanilla's use-item machinery is involved: the attack key is taken
  * over on the client and turned into trigger state, because vanilla repeats
  * a use at most every four ticks and slows a player using an item to a
  * fifth of their speed, neither of which is a gun.
  */
 public final class GunItem extends Item {
 
-    /** How the gun is carried in third person. */
+    /** Legacy hold fallback for a profile without the protocol's grip declaration. */
     public enum Grip {
         /** One hand, the way any item is held. */
         ONE_HANDED,
@@ -80,7 +80,7 @@ public final class GunItem extends Item {
         this.feed = feed;
     }
 
-    /** How this gun is carried in third person. */
+    /** Legacy hold fallback; a declared protocol profile grip takes precedence. */
     public Grip grip() {
         return grip;
     }

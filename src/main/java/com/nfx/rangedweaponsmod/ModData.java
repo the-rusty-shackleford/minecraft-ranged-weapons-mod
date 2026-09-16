@@ -20,6 +20,7 @@ package com.nfx.rangedweaponsmod;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -79,6 +80,15 @@ public final class ModData {
      */
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Gunnery>> GUNNERY =
             ATTACHMENTS.register("gunnery", () -> AttachmentType.builder(() -> Gunnery.RELEASED).build());
+
+    /**
+     * The server-accepted aim, sent to the holder and every tracking client by
+     * NeoForge, including a client's first view of the entity. Transient: neither
+     * a saved player nor a respawn inherits a held key. Firing clocks stay private.
+     */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> AIMING =
+            ATTACHMENTS.register("aiming", () -> AttachmentType.builder(() -> false)
+                    .sync(ByteBufCodecs.BOOL).build());
 
     /**
      * Item to {@link Handling}: how a gun feels in a player's hands. Any

@@ -105,6 +105,7 @@ neoForge {
             sourceSet = sourceSets.gametest
             gameDirectory = file('run/booth')
             systemProperty 'rangedweaponsmod.photobooth', 'true'
+            systemProperty 'rangedweaponsmod.observers', project.hasProperty('boothObservers') ? 'true' : 'false'
             // -PboothPose=one photographs the calibration items in the
             // one-handed pose, for a pistol's frame; two-handed otherwise.
             systemProperty 'rangedweaponsmod.booth.pose', project.findProperty('boothPose') ?: 'two'
@@ -171,8 +172,8 @@ dependencies {
     // across every mod that carries it.
     jarJar(implementation("com.nfx.rangedweapons:rangedweapons")) {
         version {
-            strictly "[1.6,2.0)"
-            prefer "1.6.0"
+            strictly "[1.7,2.0)"
+            prefer "1.7.0"
         }
     }
     // Steel: Metals and Materials', nested the same way, since 2.3.0.

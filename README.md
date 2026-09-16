@@ -231,6 +231,18 @@ at random), and is run against the pack this mod ships in.
 
 ### The hold
 
+Since 2.4, each gun declares `grip` in its shared Ranged Weapons profile:
+`one_handed` for the pistol, `two_handed` for the long guns. The client reads
+the resolved profile while posing, including after datapack reloads. An older
+profile without the field retains the item's previous hold.
+
+The server-accepted aim flag is available on every observing client through
+`ModData.AIMING`, a transient synchronized NeoForge attachment. It is sent on
+first tracking and on changes; switching away or dying clears it. Reload timing
+already travels on the equipped stack's `ModData.RELOAD` component, including
+its start and duration, so it needs no second packet or duplicate clock. These
+are observable state; the hold below retains its animation-pack fingerprint.
+
 Others see a two-handed gun carried like a crossbow, and a one-handed gun
 held out along the look by one arm -- a pose of this mod's own, added to
 the game's list of arm poses (`client/ArmPoses`, declared in
@@ -252,7 +264,7 @@ fails on a mismatch, whatever animation mods are in its `mods/` folder.
 
 1. Register an item with `GunItem` in `ModItems` (durability is the shot count).
 2. Give it a profile in `weapons.json` -- its `ammo_family` and its native
-   `ammo` round, which you tag into the family -- and, if the class default
+   `ammo` round, which you tag into the family, and its `grip` -- and, if the class default
    is wrong for it, a `handling.json` entry.
 3. A model and a texture: `devtools/art/build.py` is the generator for the
    ones shipped, run with `uv run devtools/art/build.py`. A shot sound and
@@ -333,7 +345,7 @@ other two are for eyes and hands.
   a magazine of another mod's medium round goes in and a small one does
   not; a round
   goes where the crosshair points and not parallel to it; the
-  gun's use is the press, consumed without a swing, a repeat is not a new
+  use key passes to vanilla, the trigger is driven separately, a repeat is not a new
   pull, and the off hand is not operated; creative fires an empty gun for
   free; the real `PlayerTickEvent` path drives a placed player; every gun
   resolves with its own numbers; a semi-automatic fires once however long
@@ -372,3 +384,12 @@ other two are for eyes and hands.
 - A feel test in `./gradlew runClient`: `/give @s rangedweaponsmod:machine_gun`
   and a stack of rounds. Cadence, recoil and reload are judged by hand; the
   numbers to tune are in the data files above.
+
+`./gradlew runPhotoBooth -PboothObservers` runs a shorter network regression.
+Put the current Armed Pillagers jar in `run/booth/mods` for the pillager check.
+One real client observes a server-controlled player actor: initial aim/reload,
+changed aim, reload start/completion, weapon removal, and both declared grips.
+The observer receives ordinary tracker/equipment/attachment packets; its state
+is never set directly by the harness. The local aim key is exercised separately
+through its real input and server acknowledgement. This is not a claim that two
+interactive clients were tested. Frames are in `run/booth/screenshots/observer-*.png`.

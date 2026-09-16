@@ -79,6 +79,8 @@ import java.util.List;
  * restarts; Shift+R unloads and loads the next kind, or nothing with
  * nothing to change to. Data: profile and handling read back from the data
  * maps.
+ * Aim lifecycle: armed press/release, unarmed request, switching to an empty hand,
+ * death, and no persistent held key.
  *
  * <p>The class has a public no-argument constructor and instance test
  * methods because the gametest registry instantiates the holder class
@@ -155,6 +157,43 @@ public final class GunneryGameTests {
     public void modAndProtocolAreLoaded(GameTestHelper helper) {
         helper.assertTrue(ModList.get().isLoaded(RangedWeaponsMod.MOD_ID), "this mod is loaded");
         helper.assertTrue(ModList.get().isLoaded("rangedweapons"), "the nested protocol is loaded");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public void switchingAwayClearsAimEvenWithoutAReleasePacket(GameTestHelper helper) {
+        Gunner g = gunner(helper, 1, 0);
+        PlayerGunnery.onAim(g.player(), true);
+        helper.assertTrue(g.player().getData(ModData.GUNNERY).aiming(), "armed aim is accepted");
+        helper.assertTrue(g.player().getData(ModData.AIMING), "accepted aim is public");
+        g.player().setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        PlayerGunnery.tick(g.player(), helper.getLevel());
+        helper.assertFalse(g.player().getData(ModData.GUNNERY).aiming(), "the server clears stale aim when the gun leaves");
+        helper.assertFalse(g.player().getData(ModData.AIMING), "observers also get the cleared aim");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public void anUnarmedAimRequestCannotSetTheServerStance(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        PlayerGunnery.onAim(player, true);
+        helper.assertFalse(player.getData(ModData.GUNNERY).aiming(), "no held gun means no aimed stance");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public void aimIsTransientAndDeathClearsIt(GameTestHelper helper) {
+        Gunner g = gunner(helper, 1, 0);
+        PlayerGunnery.onAim(g.player(), true);
+        var saved = g.player().serializeAttachments(helper.getLevel().registryAccess());
+        helper.assertTrue(saved == null || !saved.contains("rangedweaponsmod:aiming"), "a held key is never saved");
+        PlayerGunnery.onAim(g.player(), false);
+        helper.assertFalse(g.player().getData(ModData.AIMING), "release clears the public stance");
+        PlayerGunnery.onAim(g.player(), true);
+        g.player().setHealth(0);
+        PlayerGunnery.tick(g.player(), helper.getLevel());
+        helper.assertFalse(g.player().getData(ModData.AIMING), "death clears the public stance");
+        helper.assertFalse(g.player().getData(ModData.GUNNERY).aiming(), "death clears the private stance too");
         helper.succeed();
     }
 
