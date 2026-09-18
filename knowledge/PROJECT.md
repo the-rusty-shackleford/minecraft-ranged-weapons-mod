@@ -79,8 +79,8 @@ by hand in a client and on the shared server.
 
 2.5.0 is local and unreleased (2026-09-18), adding the approved revolver
 (D-0019) and retaining the held separate-materials packaging change (D-0018).
-The 2.4.0 publication is recorded below. No release action is authorized for
-the new version. Its client gate uses one observer and a server actor, with
+Rusty authorized its release with the shotgun-pump recipe fix (D-0020)
+on 2026-09-18. Release verification is in progress. Its client gate uses one observer and a server actor, with
 Rusty's shader and player-animation setup; it does not claim two independently
 connected interactive clients.
 
@@ -172,3 +172,11 @@ cylinder, and animated cylinder, hammer and reload crane. It includes the held
 does not authorize this version; no tag, push or pack update is authorized.
 
 Validation and visual evidence are recorded in `devtools/verification/revolver.md`.
+
+
+## Release authorization — 2026-09-18
+
+Rusty requested the shotgun recipe fix with creative license, followed by release
+of the revolver and fix together. This supersedes the 2.5.0 release holds above.
+The pump now uses a vertical plank-stick-plank column (D-0020); ingredient cost,
+the assembled shotgun recipe and existing items are unchanged.

@@ -10,7 +10,9 @@
     }
   },
   "pattern": [
-    "PSP"
+    "P",
+    "S",
+    "P"
   ],
   "result": {
     "count": 1,

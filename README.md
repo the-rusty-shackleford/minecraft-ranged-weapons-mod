@@ -203,7 +203,7 @@ loads as it.
 | **Gun Barrel** | three iron ingots in a row |
 | **Heavy Barrel** | a barrel and two steel, anywhere in the grid |
 | **Gun Stock** | two planks over a plank and a stick |
-| **Shotgun Pump** | a plank, a stick, a plank in a row |
+| **Shotgun Pump** | a plank above a stick above a plank, in one column |
 | **Rifle Scope** | a glass pane, an iron ingot, a glass pane in a row |
 
 | Gun | Assembly (as laid out in the grid) |
@@ -422,3 +422,12 @@ The observer receives ordinary tracker/equipment/attachment packets; its state
 is never set directly by the harness. The local aim key is exercised separately
 through its real input and server acknowledgement. This is not a claim that two
 interactive clients were tested. Frames are in `run/booth/screenshots/observer-*.png`.
+
+
+## 2.5.0 release checks
+
+The clean build passes 124 JUnit tests and 50 server GameTests. The shader client
+gate verifies six real trigger pulls, R loading loose medium rounds, and the
+observer's cylinder/hammer and reload state. The vertical shotgun-pump recipe
+avoids the Macaw's Roofs conflict, with no collisions found in the current pack
+scan. See [the release verification](devtools/verification/release-2.5.0.md).

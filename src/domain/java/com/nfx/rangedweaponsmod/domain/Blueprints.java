@@ -117,7 +117,7 @@ public final class Blueprints {
 
     /** The shotgun's forend: wood around a rod. */
     public static final Blueprint PUMP_RECIPE = new Shaped(PUMP, Category.MISC, PUMP, 1,
-            List.of("PSP"), Map.of('P', PLANKS, 'S', STICK), List.of(PLANKS, STICK));
+            List.of("P", "S", "P"), Map.of('P', PLANKS, 'S', STICK), List.of(PLANKS, STICK));
 
     /** A lens, a tube, a lens. */
     public static final Blueprint SCOPE_RECIPE = new Shaped(SCOPE, Category.MISC, SCOPE, 1,

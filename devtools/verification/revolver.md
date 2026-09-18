@@ -1,7 +1,8 @@
 # Revolver verification — 2026-09-18
 
-Local, unreleased 2.5.0 implementing D-0019. Rusty approved the built-in
-cylinder design; publication, deployment and normal Prism installation remain held.
+Initial local verification of D-0019 before release authorization. Rusty later
+authorized the recipe fix and release; see [release gates](release-2.5.0.md).
+The artifact hash below identifies the earlier revolver-only build.
 
 ## Checks run in this session
 
