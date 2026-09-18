@@ -50,6 +50,7 @@ public final class RangedWeaponsMod {
         ModRecipes.register(modBus);
         modBus.addListener(Payloads::register);
         modBus.addListener(MagazineFedWeapon::registerCapabilities);
+        modBus.addListener(RevolverWeapon::registerCapabilities);
         // A client config is only ever loaded on a client; registering it on a
         // dedicated server is a no-op, and the class holds no client types.
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);

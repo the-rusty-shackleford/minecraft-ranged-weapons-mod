@@ -35,3 +35,5 @@ thought and someone later would want to know *why*.
 | D-0017 | Bounded magazine text, readable parts and decoded audio headroom |
 
 - [D-0018](D-0018.md): Require separately installed Metals and Materials.
+
+- [D-0019](D-0019.md): Six-shot revolver, built-in medium-ammo cylinder and articulated action.

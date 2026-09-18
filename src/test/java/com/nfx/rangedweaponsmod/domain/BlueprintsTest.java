@@ -83,8 +83,9 @@ final class BlueprintsTest {
     }
 
     @Test
-    void everyLongGunHasOneStockAndThePistolNone() {
+    void everyLongGunHasOneStockAndTheSidearmsNone() {
         assertFalse(Blueprints.partsOf(PISTOL).containsKey(STOCK));
+        assertFalse(Blueprints.partsOf(Blueprints.REVOLVER).containsKey(STOCK));
         for (String gun : List.of(SHOTGUN, RIFLE, SCOPED_RIFLE, MACHINE_GUN)) {
             assertEquals(1, Blueprints.partsOf(gun).get(STOCK), gun);
         }

@@ -3,7 +3,7 @@
 Guns for players, on the [Ranged Weapons](../minecraft-ranged-weapons)
 protocol. NeoForge 1.21.1.
 
-Five guns: a pistol, a shotgun, a rifle, a scoped rifle and a machine gun.
+Six guns: a pistol, a revolver, a shotgun, a rifle, a scoped rifle and a machine gun.
 The mod is the part of a gun that is about the player holding it: a trigger
 you pull or hold, a fire clock that is not the item cooldown, a reload from
 your inventory, recoil that settles instead of fighting your mouse, sights to
@@ -32,10 +32,10 @@ never on cooldown, so there is no hotbar strobe, no 0.2x movement slowdown,
 and the cadence is the server's, not the client's frame rate. Firing breaks
 a sprint, the way drawing a bow does. A gun in the off hand does nothing.
 
-**Magazines.** Every gun but the shotgun is fed from a detachable magazine:
+**Magazines.** The pistol, rifles and machine gun take detachable magazines:
 a pistol magazine (15 small rounds), a rifle magazine (30 medium, the rifle
 and the scoped rifle share it) or a machine gun box (75 medium), each two
-steel. A gun holds nothing without one. A magazine is an ordered load: the
+steel. Those guns hold nothing without one. A magazine is an ordered load: the
 rounds go in as runs of one kind, the first run fires first, and a mixed
 magazine -- twelve shells' worth of one kind then three of another -- is the
 point, not an accident. Which magazines a gun takes is a tag, not the
@@ -58,7 +58,10 @@ magazine is kept, never lost. Pulling the trigger on an empty gun does the
 same when you carry a loaded magazine (with none, the gun clicks once per
 pull; an empty magazine does not count). `Shift+R` swaps: the next loaded
 magazine after the one the last swap took, in inventory order, wrapping
-round, so pressing again walks through everything you carry. The shotgun's
+round, so pressing again walks through everything you carry. The revolver has a
+built-in six-round cylinder: `R` tops it up from loose medium rounds in your
+inventory, taking 48 ticks (2.4 seconds); `Shift+R` unloads it and selects the
+next compatible kind. Its cylinder swings out on a hinged crane during reload. The shotgun's
 tube is loaded directly, as it always was: `R` tops it up from the shells
 or slugs you carry, and `Shift+R` unloads it back into your inventory and
 loads the next kind you carry. A change or a swap takes the gun's magazine
@@ -66,7 +69,7 @@ change time from its handling (`magazine_change_ticks`: pistol 24, rifles
 30, machine gun 50) whatever the magazine holds -- pulling a magazine and
 seating another is the same pair of movements full or empty -- and a
 quarter longer per doubling of the standard capacity for a larger magazine,
-heavier and clumsier in the hand; the tube's reload takes the profile's
+heavier and clumsier in the hand; an internal tube or cylinder takes the profile's
 full reload time. The gun is unusable meanwhile, and the reload is a
 property of the gun (a data component), so a gun dropped mid-reload is still mid-reload
 when picked up; if the clock it was started on is gone (another world), the
@@ -112,7 +115,7 @@ out of the way. Both zooms are client config.
 **The counter.** Beside the hotbar while a gun is held: the round that fires
 next as its own icon, rounds over capacity beside it, red at a fifth of a
 magazine, and under them the magazine's name in its dye colour (or *No
-magazine* in red; for the shotgun, the kind of round loaded), with a
+magazine* in red; for the shotgun and revolver, the kind of round loaded), with a
 progress bar during a reload. Hidden with the rest of the HUD (`F1`).
 
 **Where a round goes.** It leaves the muzzle -- forward, to the main-hand
@@ -129,21 +132,21 @@ its far report, and a puff of smoke marks the muzzle for onlookers.
 
 ## The lineup
 
-| | Pistol | Shotgun | Rifle | Scoped rifle | Machine gun |
-|---|---|---|---|---|---|
-| Class | sidearm | shotgun | rifle | rifle | automatic |
-| Fire | one per pull, 5 ticks | one per pull, 15 ticks (the pump) | one per pull, 6 ticks | one per pull, 20 ticks (the bolt) | held, every 3 ticks |
-| Magazine | pistol magazine, 15 small rounds | tube of 6 shells | rifle magazine, 30 medium rounds | rifle magazine, 30 medium rounds | box, 75 medium rounds |
-| Damage | 4 | 6 pellets of 3.5 | 9 | 14 | 5.5 |
-| Falls off | to half past 28 blocks, from 10 | to a fifth past 18 blocks, from 5 | no | no | no |
-| Spread | 0.03 | 0.11 | 0.012 | 0.006 | 0.05 |
-| Reach | 20 | 12 | 40 | 64 | 28 |
-| Magazine change | 24 ticks | 48 ticks (the tube, round by round) | 30 ticks | 30 ticks | 50 ticks |
-| After the shot | -- | racked, 5 ticks on | -- | bolt worked, 5 ticks on | -- |
-| Kick | 1.6 up | 4.5 up | 2.2 up | 3.0 up | 0.55 up |
-| Aiming spread | 0.5 | 0.7 | 0.35 | 0.15 | 0.35 |
-| Held | one hand | two | two | two | two |
-| Wear | 800 shots | 500 | 700 | 600 | 1200 |
+| | Pistol | Revolver | Shotgun | Rifle | Scoped rifle | Machine gun |
+|---|---|---|---|---|---|---|
+| Class | sidearm | sidearm | shotgun | rifle | rifle | automatic |
+| Fire | one per pull, 5 ticks | one per pull, 12 ticks | one per pull, 15 ticks | one per pull, 6 ticks | one per pull, 20 ticks | held, every 3 ticks |
+| Feed | magazine, 15 small | cylinder, 6 medium | tube, 6 shells | magazine, 30 medium | magazine, 30 medium | box, 75 medium |
+| Damage | 6 | 10 | 6 pellets of 4 | 12 | 16 | 6 |
+| Falls off | half past 28 blocks, from 10 | half past 36 blocks, from 14 | fifth past 18 blocks, from 5 | no | no | no |
+| Spread | 0.03 | 0.025 | 0.07 | 0.012 | 0.006 | 0.05 |
+| Reach | 20 | 28 | 12 | 40 | 64 | 28 |
+| Reload | 24 ticks | 48 ticks | 48 ticks | 30 ticks | 30 ticks | 50 ticks |
+| After the shot | -- | cylinder indexes, hammer strikes and recocks | racked, 5 ticks on | -- | bolt worked, 5 ticks on | -- |
+| Kick | 1.6 up | 3.0 up | 4.5 up | 2.2 up | 3.0 up | 0.55 up |
+| Aiming spread | 0.5 | 0.45 | 0.7 | 0.35 | 0.15 | 0.35 |
+| Held | one hand | one hand | two | two | two | two |
+| Wear | 800 shots | 700 | 500 | 700 | 600 | 1200 |
 
 Reach is the profile's engagement range, what a mob armed with it closes to;
 rounds fly farther. Kick is degrees of camera per shot, before the in-hand
@@ -177,7 +180,7 @@ its buckshot.
 Every shot pushes. `knockback` in the profile is the push of a full hit
 in the game's own units (the bow's Punch I is one), shared out among the
 pellets: the shotgun's 3 lands whole when all six pellets do. Damage per
-projectile: pistol 6, shotgun 4 a pellet, rifle 12, scoped rifle 16,
+projectile: pistol 6, revolver 10, shotgun 4 a pellet, rifle 12, scoped rifle 16,
 machine gun 6 -- the numbers of the gun mod the players compared these to.
 Every pellet and every round counts: the protocol's bullet bypasses the
 game's hurt cooldown, which had been turning six pellets into one pellet's
@@ -206,13 +209,14 @@ loads as it.
 | Gun | Assembly (as laid out in the grid) |
 |---|---|
 | **Pistol** | lower receiver, barrel -- in a row |
+| **Revolver** | upper receiver beside barrel, lower receiver below the upper |
 | **Shotgun** | stock, lower receiver, barrel across; the pump under the barrel |
 | **Rifle** | the upper receiver over the lower; stock to its left, barrel to its right |
 | **Scoped Rifle** | a scope over a rifle |
 | **Machine Gun** | as the rifle, with a heavy barrel |
 
 By iron, counting steel as the iron it came from: pistol 6, shotgun 6 and
-some wood, rifle 10, scoped rifle 11 and two panes, machine gun 12. Every
+some wood, revolver 10, rifle 10, scoped rifle 11 and two panes, machine gun 12. Every
 recipe unlocks in the recipe book the moment a player holds one of its
 ingredients. In creative, the **Ranged Weapons** tab holds everything of
 this mod's in the order of the tree -- guns, ammunition, parts; the parts
@@ -233,7 +237,7 @@ at random), and is run against the pack this mod ships in.
 ### The hold
 
 Since 2.4, each gun declares `grip` in its shared Ranged Weapons profile:
-`one_handed` for the pistol, `two_handed` for the long guns. The client reads
+`one_handed` for the pistol and revolver, `two_handed` for the long guns. The client reads
 the resolved profile while posing, including after datapack reloads. An older
 profile without the field retains the item's previous hold.
 
@@ -331,7 +335,20 @@ inside (Jar-in-Jar). Metals and Materials must be installed separately. The prot
 Local: build [minecraft-ranged-weapons](../minecraft-ranged-weapons) with
 `./gradlew publishToMavenLocal` first.
 
+The revolver uses four baked model parts: frame, cylinder, hammer and crane.
+Each accepted shot records its chamber and world tick on that gun's saved,
+synchronized stack. Its cylinder indexes 60 degrees and the hammer strikes and
+recocks over eight ticks; dry pulls and cooldown rejections do not animate a shot.
+The same action is visible in either hand, to observers and in item displays.
+Its shot sound reuses the credited rifle recording at 0.85 pitch.
+
 ## Testing
+
+`./gradlew runPhotoBooth -PboothRevolver` exercises six real attack-key pulls
+and an R reload, then checks the action and reload on a tracked remote player.
+It captures both first-person hands, third-person, inventory and moving parts
+under the booth's shader and animation packs. Only one rendering client is needed;
+the remote actor is server controlled. The booth is test code and is not shipped.
 
 Four tiers. The first two run under `./gradlew check` (and so `build`); the
 other two are for eyes and hands.

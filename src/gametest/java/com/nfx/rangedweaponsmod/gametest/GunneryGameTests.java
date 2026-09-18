@@ -289,6 +289,7 @@ public final class GunneryGameTests {
         record Expected(net.minecraft.world.item.Item item, WeaponClass cls, int capacity, int rate, int pellets, boolean falloff, String family, float damage, float knockback) {}
         for (Expected e : List.of(
                 new Expected(ModItems.PISTOL.get(), WeaponClass.SIDEARM, 15, 5, 1, true, "small", 6.0f, 0.6f),
+                new Expected(ModItems.REVOLVER.get(), WeaponClass.SIDEARM, 6, 12, 1, true, "medium", 10.0f, 1.0f),
                 new Expected(ModItems.SHOTGUN.get(), WeaponClass.SHOTGUN, 6, 15, 6, true, "shell", 4.0f, 3.0f),
                 new Expected(ModItems.RIFLE.get(), WeaponClass.RIFLE, 30, 6, 1, false, "medium", 12.0f, 1.0f),
                 new Expected(ModItems.SCOPED_RIFLE.get(), WeaponClass.RIFLE, 30, 20, 1, false, "medium", 16.0f, 1.5f),
@@ -297,7 +298,7 @@ public final class GunneryGameTests {
             RangedWeapon weapon = RangedWeapons.resolve(stack);
             helper.assertTrue(weapon != null, e.item() + " resolves");
             helper.assertValueEqual(weapon instanceof MagazineFedWeapon, GunItem.isMagazineFed(stack),
-                    e.item() + " is on the native tier exactly when it is magazine-fed");
+                    e.item() + " uses the magazine adapter exactly when it is magazine-fed");
             helper.assertValueEqual(weapon.profile().weaponClass(), e.cls(), e.item() + " class");
             helper.assertValueEqual(weapon.capacity(stack), e.capacity(), e.item() + " capacity (with no magazine, the profile's)");
             helper.assertValueEqual(weapon.stats(stack).capacity(), weapon.capacity(stack), e.item() + " stats agree on the capacity");
@@ -869,6 +870,115 @@ public final class GunneryGameTests {
         }
         helper.runAtTickTime(14, () -> {
             helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY - 5, "rounds after 13 ticks through the event");
+            helper.succeed();
+        });
+    }
+
+    // Revolver partitions: six accepted pulls / cooldown rejection / held trigger /
+    // dry cylinder; full and partial loose-medium reloads; creative; persisted
+    // independent stack state; actual close-range projectile damage.
+    @GameTest(template="arena", timeoutTicks=110)
+    public void revolverCyclesOnlyOnSixAcceptedShots(GameTestHelper helper) {
+        Gunner g=gunner(helper,GameType.SURVIVAL,ModItems.REVOLVER.get(),6,0);
+        for (int n=0;n<6;n++) {
+            final int shot=n+1;
+            helper.runAtTickTime(1+n*12,()->{
+                PlayerGunnery.onTrigger(g.player(),false);
+                PlayerGunnery.onTrigger(g.player(),true);
+                PlayerGunnery.tick(g.player(),helper.getLevel());
+                helper.assertValueEqual(g.weapon().rounds(g.gun()),6-shot,"one round per accepted pull");
+                helper.assertValueEqual(g.gun().get(ModData.REVOLVER_CYCLE).chamber(),shot%6,"cylinder indexes and wraps");
+            });
+        }
+        helper.runAtTickTime(2,()->{
+            var cycle=g.gun().get(ModData.REVOLVER_CYCLE);
+            PlayerGunnery.onTrigger(g.player(),false);
+            PlayerGunnery.onTrigger(g.player(),true);
+            PlayerGunnery.tick(g.player(),helper.getLevel());
+            helper.assertValueEqual(g.gun().get(ModData.REVOLVER_CYCLE),cycle,"cooldown rejects a rapid second pull");
+        });
+        helper.runAtTickTime(74,()->{
+            var cycle=g.gun().get(ModData.REVOLVER_CYCLE);
+            PlayerGunnery.tick(g.player(),helper.getLevel());
+            helper.assertValueEqual(g.gun().get(ModData.REVOLVER_CYCLE),cycle,"holding does not fire twice");
+            PlayerGunnery.onTrigger(g.player(),false);
+            PlayerGunnery.onTrigger(g.player(),true);
+            PlayerGunnery.tick(g.player(),helper.getLevel());
+            helper.assertValueEqual(g.gun().get(ModData.REVOLVER_CYCLE),cycle,"dry trigger does not index");
+            helper.assertFalse(g.gun().has(ModData.RELOAD),"no ammo means no reload");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template="arena", timeoutTicks=80)
+    public void revolverRLoadsLooseMediumRoundsIntoItsCylinder(GameTestHelper helper) {
+        Gunner g=gunner(helper,GameType.SURVIVAL,ModItems.REVOLVER.get(),0,20);
+        g.player().getInventory().add(new ItemStack(ModItems.SMALL_ROUND.get(),12));
+        g.player().getInventory().add(new ItemStack(ModItems.SHELL.get(),12));
+        helper.assertFalse(GunItem.isMagazineFed(g.gun()),"cylinder is built in");
+        helper.assertFalse(g.weapon().profile().acceptsAmmo(new ItemStack(ModItems.SMALL_ROUND.get())),"small rounds rejected");
+        helper.assertFalse(g.weapon().profile().acceptsAmmo(new ItemStack(ModItems.SHELL.get())),"shells rejected");
+        PlayerGunnery.onReloadKey(g.player(),false);
+        driveTicks(helper,g,1,50);
+        helper.runAtTickTime(2,()->helper.assertValueEqual(g.gun().get(ModData.RELOAD).durationTicks(),48,"48 tick reload"));
+        helper.runAtTickTime(52,()->{
+            helper.assertValueEqual(g.weapon().rounds(g.gun()),6,"six rounds loaded");
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(),g.weapon(),g.gun()),14,"exactly six medium rounds spent");
+            helper.assertValueEqual(g.player().getInventory().countItem(ModItems.SMALL_ROUND.get()),12,"small rounds retained");
+            helper.assertValueEqual(g.player().getInventory().countItem(ModItems.SHELL.get()),12,"shells retained");
+            helper.assertFalse(g.gun().has(ModData.RELOAD),"reload completed");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template="arena", timeoutTicks=80)
+    public void revolverTopsUpOnlyTheLooseRoundsAvailable(GameTestHelper helper) {
+        Gunner g=gunner(helper,GameType.SURVIVAL,ModItems.REVOLVER.get(),2,3);
+        PlayerGunnery.onReloadKey(g.player(),false);
+        driveTicks(helper,g,1,50);
+        helper.runAtTickTime(52,()->{
+            helper.assertValueEqual(g.weapon().rounds(g.gun()),5,"partial cylinder topped up");
+            helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(),g.weapon(),g.gun()),0,"three rounds spent");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template="arena")
+    public void creativeRevolverNeedsAndSpendsNothing(GameTestHelper helper) {
+        Gunner g=gunner(helper,GameType.CREATIVE,ModItems.REVOLVER.get(),0,0);
+        PlayerGunnery.onTrigger(g.player(),true);
+        PlayerGunnery.tick(g.player(),helper.getLevel());
+        helper.assertValueEqual(g.gun().get(ModData.REVOLVER_CYCLE).chamber(),1,"empty creative shot animates");
+        helper.assertValueEqual(g.weapon().rounds(g.gun()),0,"no rounds needed or spent");
+        helper.assertValueEqual(g.gun().getDamageValue(),0,"no durability spent");
+        helper.assertFalse(g.gun().has(ModData.RELOAD),"no reload required");
+        helper.succeed();
+    }
+
+    @GameTest(template="arena")
+    public void revolverCycleSurvivesSavingAndStaysWithItsStack(GameTestHelper helper) {
+        Gunner g=gunner(helper,GameType.SURVIVAL,ModItems.REVOLVER.get(),6,0);
+        PlayerGunnery.onTrigger(g.player(),true);
+        PlayerGunnery.tick(g.player(),helper.getLevel());
+        var saved=g.gun().save(helper.getLevel().registryAccess());
+        var loaded=ItemStack.parse(helper.getLevel().registryAccess(),saved).orElseThrow();
+        helper.assertValueEqual(loaded.get(ModData.REVOLVER_CYCLE),g.gun().get(ModData.REVOLVER_CYCLE),"saved action restored");
+        helper.assertValueEqual(RangedWeapons.resolve(loaded).rounds(loaded),5,"saved remaining ammunition restored");
+        helper.assertFalse(new ItemStack(ModItems.REVOLVER.get()).has(ModData.REVOLVER_CYCLE),"another gun has no shared action");
+        helper.succeed();
+    }
+
+    @GameTest(template="arena", timeoutTicks=30)
+    public void revolverBulletDealsTenDamageUpClose(GameTestHelper helper) {
+        Gunner g=gunner(helper,GameType.SURVIVAL,ModItems.REVOLVER.get(),6,0);
+        var target=helper.spawn(net.minecraft.world.entity.EntityType.HUSK,new Vec3(6.5,1,4.5));
+        target.setNoAi(true);
+        target.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR).setBaseValue(0);
+        target.setHealth(20);
+        PlayerGunnery.onTrigger(g.player(),true);
+        PlayerGunnery.tick(g.player(),helper.getLevel());
+        helper.runAtTickTime(8,()->{
+            helper.assertValueEqual(target.getHealth(),10.0f,"real projectile deals ten damage at close range");
             helper.succeed();
         });
     }

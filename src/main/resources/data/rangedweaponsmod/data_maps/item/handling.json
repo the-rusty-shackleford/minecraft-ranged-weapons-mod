@@ -70,6 +70,18 @@
       },
       "magazine_change_ticks": 50,
       "magazines": "rangedweaponsmod:magazines/machine_gun"
+    },
+    "rangedweaponsmod:revolver": {
+      "recoil_pitch": 3.0,
+      "recoil_yaw": 0.7,
+      "recovery": 0.32,
+      "spread": {
+        "crouching": 0.7,
+        "moving": 1.4,
+        "sprinting": 2.0,
+        "airborne": 1.8,
+        "aiming": 0.45
+      }
     }
   }
 }

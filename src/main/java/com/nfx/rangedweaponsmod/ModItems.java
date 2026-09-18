@@ -47,6 +47,10 @@ public final class ModItems {
     public static final DeferredItem<GunItem> PISTOL =
             ITEMS.registerItem("pistol", p -> new GunItem(p, GunItem.Grip.ONE_HANDED, false, GunItem.Feed.MAGAZINE), new Item.Properties().durability(800));
 
+    /** A six-shot medium-ammo revolver: one hand, an internal cylinder, one shot per pull. */
+    public static final DeferredItem<GunItem> REVOLVER =
+            ITEMS.registerItem("revolver", p -> new GunItem(p, GunItem.Grip.ONE_HANDED, false, GunItem.Feed.INTERNAL), new Item.Properties().durability(700));
+
     /** A pump shotgun: shells, a spread of pellets, brutal close and a sting at range. */
     public static final DeferredItem<GunItem> SHOTGUN =
             ITEMS.registerItem("shotgun", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false, GunItem.Feed.INTERNAL), new Item.Properties().durability(500));
@@ -67,7 +71,7 @@ public final class ModItems {
     public static final DeferredItem<Item> SMALL_ROUND =
             ITEMS.registerItem("small_round", Item::new, new Item.Properties().stacksTo(64));
 
-    /** A medium round: the rifles' and the machine gun's. */
+    /** A medium round: the revolver's, rifles' and machine gun's. */
     public static final DeferredItem<Item> ROUND =
             ITEMS.registerItem("round", Item::new, new Item.Properties().stacksTo(64));
 

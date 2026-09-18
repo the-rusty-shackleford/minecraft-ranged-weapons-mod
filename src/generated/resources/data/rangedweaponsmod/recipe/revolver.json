@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "B": {
+      "item": "rangedweaponsmod:barrel"
+    },
+    "L": {
+      "item": "rangedweaponsmod:lower_receiver"
+    },
+    "U": {
+      "item": "rangedweaponsmod:upper_receiver"
+    }
+  },
+  "pattern": [
+    "UB",
+    "L "
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:revolver"
+  }
+}

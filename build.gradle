@@ -105,6 +105,7 @@ neoForge {
             sourceSet = sourceSets.gametest
             gameDirectory = file('run/booth')
             systemProperty 'rangedweaponsmod.photobooth', 'true'
+            systemProperty 'rangedweaponsmod.revolver', project.hasProperty('boothRevolver') ? 'true' : 'false'
             systemProperty 'rangedweaponsmod.observers', project.hasProperty('boothObservers') ? 'true' : 'false'
             // -PboothPose=one photographs the calibration items in the
             // one-handed pose, for a pistol's frame; two-handed otherwise.

@@ -64,6 +64,19 @@ public final class ClientSetup {
         }
     };
 
+    /** The revolver alone supplies articulated geometry; its grip follows the same profile. */
+    private static final IClientItemExtensions REVOLVER = new IClientItemExtensions() {
+        @Override
+        public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+            return RevolverRenderer.instance();
+        }
+
+        @Override
+        public HumanoidModel.ArmPose getArmPose(LivingEntity entity, InteractionHand hand, ItemStack stack) {
+            return GUN.getArmPose(entity, hand, stack);
+        }
+    };
+
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(Keys.RELOAD);
@@ -94,6 +107,7 @@ public final class ClientSetup {
 
     @SubscribeEvent
     public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
-        event.registerItem(GUN, ModItems.guns().toArray(Item[]::new));
+        event.registerItem(GUN, ModItems.guns().stream().filter(item -> item != ModItems.REVOLVER.get()).toArray(Item[]::new));
+        event.registerItem(REVOLVER, ModItems.REVOLVER.get());
     }
 }

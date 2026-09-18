@@ -1,0 +1,17 @@
+[18Sep2026 19:27:22.295] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS six rounds arrive from the server
+[18Sep2026 19:27:23.062] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS local accepted shot 1
+[18Sep2026 19:27:24.331] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS local accepted shot 2
+[18Sep2026 19:27:25.675] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS local accepted shot 3
+[18Sep2026 19:27:26.957] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS local accepted shot 4
+[18Sep2026 19:27:28.262] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS local accepted shot 5
+[18Sep2026 19:27:29.573] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS local accepted shot 6
+[18Sep2026 19:27:32.301] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS six real key pulls empty six chambers
+[18Sep2026 19:27:32.302] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS empty cylinder has no automatic reload without loose ammo
+[18Sep2026 19:27:33.754] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS R starts the cylinder reload
+[18Sep2026 19:27:36.352] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS R reloads six medium rounds
+[18Sep2026 19:27:36.352] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS R spends exactly six loose medium rounds
+[18Sep2026 19:27:46.817] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS observer receives a remote revolver
+[18Sep2026 19:27:48.253] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS observer receives accepted cylinder and hammer cycle
+[18Sep2026 19:27:50.316] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS observer receives cylinder reload
+[18Sep2026 19:27:53.792] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS observer receives reload completion
+[18Sep2026 19:27:54.781] [Render thread/INFO] [com.nfx.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS all checks ran

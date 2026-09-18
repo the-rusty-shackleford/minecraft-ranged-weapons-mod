@@ -12,7 +12,7 @@ tags: [overview]
 A NeoForge 1.21.1 mod: guns for players, built on the Ranged Weapons
 protocol. The player half of the contract the protocol already fulfils for
 mobs -- a trigger, a fire clock, a reload, recoil, sights, a counter -- with
-the gun itself as data. Five guns: pistol, shotgun, rifle, scoped rifle,
+the gun itself as data. Six guns: pistol, revolver, shotgun, rifle, scoped rifle,
 machine gun. AGPL-3.0-or-later,
 authored by Rusty Shackleford, to the MIT 6.031 bar: specs, rep invariants, a
 pure layer with tests, a gametest gate on a real server.
@@ -65,7 +65,7 @@ only the packaging choice in `D-0014`).
 
 ## How it is verified
 
-`./gradlew check`: 120 plain-JUnit tests against `domain`, and forty-one gametests
+`./gradlew check`: 124 plain-JUnit tests against `domain`, and fifty gametests
 on a headless server. `devtools/recipes/collisions.py` checks the recipes
 against the pack's jars. `./gradlew runPhotoBooth` photographs the art for
 review and judges the trigger arm's angles off the rendered model at every
@@ -77,13 +77,12 @@ by hand in a client and on the shared server.
 
 ## Next
 
-2.4.0 is local and unreleased (2026-09-16), incorporating the held 2.3.1 pistol
-fix plus shared grip and observer aim/reload state (D-0016). No tag, push, or pack
-update is authorized. The observer booth passes with NEA alone and with EMF 3.2.4,
-ETF 7.1, Fresh Animations 1.10.4 and Player Extension 1.1. The standard Player
-Extension is confirmed enabled in the local Prism instance's options, replacing
-the handover's unresolved variant. This verifies one observer and a server actor,
-not two independently connected interactive clients.
+2.5.0 is local and unreleased (2026-09-18), adding the approved revolver
+(D-0019) and retaining the held separate-materials packaging change (D-0018).
+The 2.4.0 publication is recorded below. No release action is authorized for
+the new version. Its client gate uses one observer and a server actor, with
+Rusty's shader and player-animation setup; it does not claim two independently
+connected interactive clients.
 
 Decided by Rusty on 2026-09-06, in this order:
 
@@ -162,3 +161,14 @@ steel aliases and gameplay are unchanged. Unit/server checks, recursive jar/payl
 
 Validation: see Metals and Materials `devtools/verification/separate-dependency.md`;
 all six packaging builds and the complete-pack client/server check passed.
+
+
+## Revolver — 2026-09-18, unreleased
+
+Version 2.5.0 adds [D-0019](decisions/D-0019.md): six medium rounds, 10 damage,
+one shot per pull every 12 ticks, R loading loose rounds into its built-in
+cylinder, and animated cylinder, hammer and reload crane. It includes the held
+2.4.1 separate-materials packaging change. The earlier 2.4.0 release approval
+does not authorize this version; no tag, push or pack update is authorized.
+
+Validation and visual evidence are recorded in `devtools/verification/revolver.md`.

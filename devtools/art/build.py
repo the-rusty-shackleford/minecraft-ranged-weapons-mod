@@ -745,7 +745,76 @@ def machine_gun_model():
     return gun_model(elements, TWO_HANDED_DISPLAY)
 
 
+def revolver_parts():
+    """Original six-shooter, along +X. Separate cylinder and hammer keep their pivots."""
+    body = [
+        box("backstrap", [3.4, 4.8, 7.05], [4.65, 9.65, 8.95], ALL("metal_mid")),
+        box("topstrap", [4.4, 9.6, 7.15], [9.3, 10.15, 8.85], ALL("metal_light")),
+        box("frame_bottom", [4.0, 4.9, 7.1], [9.3, 5.4, 8.9], ALL("metal_mid")),
+        box("barrel", [9, 8.25, 7.25], [15.7, 9.75, 8.75], ALL("metal_mid")),
+        box("underlug", [9, 7.35, 7.4], [14.8, 8.25, 8.6], ALL("metal_dark")),
+        box("muzzle_rim", [15.6, 8.15, 7.15], [16.0, 9.85, 8.85], ALL("metal_light")),
+        box("bore", [16, 8.65, 7.65], [16.02, 9.35, 8.35], ALL("barrel")),
+        box("front_sight", [14.3, 9.75, 7.75], [15.1, 10.5, 8.25], ALL("metal_dark")),
+        box("rear_sight", [4.5, 10.15, 7.3], [5.1, 10.5, 7.65], ALL("metal_dark")),
+        box("rear_sight_far", [4.5, 10.15, 8.35], [5.1, 10.5, 8.7], ALL("metal_dark")),
+        box("grip_frame", [3, 0.4, 7.05], [6, 5.2, 8.95], ALL("metal_mid"),
+            {"origin": [4.5, 5, 8], "axis": "z", "angle": -22.5}),
+        box("wood_grip", [3.2, 0.7, 6.9], [5.8, 4.8, 9.1], ALL("wood"),
+            {"origin": [4.5, 5, 8], "axis": "z", "angle": -22.5}),
+        box("grip_screw", [4.25, 2.5, 6.84], [4.75, 3, 9.16], ALL("metal_light"),
+            {"origin": [4.5, 5, 8], "axis": "z", "angle": -22.5}),
+        box("trigger_guard_bottom", [6, 3.4, 7.55], [9.1, 3.85, 8.45], ALL("metal_mid")),
+        box("trigger_guard_front", [8.65, 3.85, 7.55], [9.1, 5.1, 8.45], ALL("metal_mid")),
+        box("trigger", [6.6, 4, 7.75], [7.2, 5, 8.25], ALL("metal_light")),
+        box("cylinder_latch", [3.7, 7.0, 6.85], [4.55, 7.7, 7.08], ALL("metal_light")),
+    ]
+    cylinder = []
+    # Fine voxel bands approximate a round cylinder in every indexed position.
+    # Their corners remain within radius 2.1, clear of the top and bottom frame.
+    radius = 1.95
+    for row in range(16):
+        bottom = 7.5 - radius + row * (2 * radius / 16)
+        top = bottom + 2 * radius / 16
+        width = math.sqrt(radius * radius - ((bottom + top) / 2 - 7.5) ** 2)
+        cylinder.append(box(f"cylinder_ring_{row}",[4.75,bottom,8-width],[8.75,top,8+width],ALL("metal_mid")))
+    for chamber in range(6):
+        angle=chamber*math.tau/6
+        y,z=7.5+math.cos(angle)*1.3,8+math.sin(angle)*1.3
+        cylinder.append(box(f"chamber_{chamber}",[8.75,y-.34,z-.34],[8.78,y+.34,z+.34],ALL("barrel")))
+        cylinder.append(box(f"case_{chamber}",[4.72,y-.34,z-.34],[4.75,y+.34,z+.34],ALL("brass")))
+        y,z=7.5+math.cos(angle)*1.85,8+math.sin(angle)*1.85
+        cylinder.append(box(f"flute_{chamber}",[5.4,y-.16,z-.16],[8.1,y+.16,z+.16],ALL("metal_dark")))
+    crane = [
+        box("hinge",[8.25,5.35,6.45],[8.9,5.85,6.95],ALL("metal_mid")),
+        box("crane_arm",[8.35,5.6,6.55],[8.65,7.65,8.05],ALL("metal_mid")),
+        box("axle",[4.55,7.2,7.7],[8.85,7.8,8.3],ALL("metal_light")),
+    ]
+    hammer = [
+        box("hammer",[3.35,8.1,7.55],[4.15,10.2,8.45],ALL("metal_mid")),
+        box("thumb_spur",[2.3,9.8,7.4],[3.65,10.5,8.6],ALL("metal_light")),
+        box("spur_checkering",[2.35,10.5,7.45],[3.6,10.58,8.55],ALL("vent")),
+    ]
+    return body,cylinder,hammer,crane
+
+
+def revolver_model():
+    result=gun_model([],dict(PISTOL_DISPLAY))
+    result["parent"]="minecraft:builtin/entity"
+    result["gui_light"]="side"
+    result["display"]["gui"]={"rotation":[0,0,0],"translation":[-1,-.1,0],"scale":[.66,.66,.66]}
+    # Explicit left-hand transforms preserve the same complete-gun orientation.
+    result["display"]["firstperson_lefthand"]={"rotation":[0,-92,0],"translation":[.5,2.5,-1.2],"scale":[.5,.5,.5]}
+    result["display"]["thirdperson_lefthand"]={"rotation":[90,-90,90],"translation":[0,2,-1],"scale":[.5,.5,.5]}
+    return result
+
+
 GUN_MODELS = {
+    "revolver": revolver_model,
+    "revolver_body": lambda: gun_model(revolver_parts()[0], {}),
+    "revolver_cylinder": lambda: gun_model(revolver_parts()[1], {}),
+    "revolver_hammer": lambda: gun_model(revolver_parts()[2], {}),
+    "revolver_crane": lambda: gun_model(revolver_parts()[3], {}),
     "pistol": pistol_model,
     "shotgun": shotgun_model,
     "rifle": rifle_model,
@@ -949,7 +1018,11 @@ SOUNDS = {name: (lambda spec=spec: assemble(spec[1], spec[0], spec[2] if len(spe
 
 
 def sounds_json():
-    return {name: {"subtitle": f"subtitles.{MODID}.{name}", "sounds": [f"{MODID}:{name}"]} for name in SOUNDS}
+    sounds = {name: {"subtitle": f"subtitles.{MODID}.{name}", "sounds": [f"{MODID}:{name}"]} for name in SOUNDS}
+    # Reuse the credited CC0 rifle recording at a lower pitch; no new recording is claimed.
+    sounds["revolver_shot"] = {"subtitle": f"subtitles.{MODID}.revolver_shot",
+                               "sounds": [{"name": f"{MODID}:rifle_shot", "pitch": 0.85}]}
+    return sounds
 
 
 # ---------------------------------------------------------------------- main

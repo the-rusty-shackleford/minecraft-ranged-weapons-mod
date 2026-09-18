@@ -50,6 +50,7 @@ public final class ModTabs {
     public static List<Item> contents() {
         List<Item> items = new ArrayList<>();
         items.add(ModItems.PISTOL.get());
+        items.add(ModItems.REVOLVER.get());
         items.add(ModItems.SHOTGUN.get());
         items.add(ModItems.RIFLE.get());
         items.add(ModItems.SCOPED_RIFLE.get());

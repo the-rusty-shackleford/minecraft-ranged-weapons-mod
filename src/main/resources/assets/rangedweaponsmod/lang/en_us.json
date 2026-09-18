@@ -43,7 +43,7 @@
   "item.rangedweaponsmod.gun.takes_magazines": "Takes %s",
   "hud.rangedweaponsmod.no_magazine": "No magazine",
   "screen.rangedweaponsmod.magazine.fill": "Fill",
-  "screen.rangedweaponsmod.magazine.first": "Fires first →",
+  "screen.rangedweaponsmod.magazine.first": "Fires first \u2192",
   "screen.rangedweaponsmod.magazine.next": "Next: %s",
   "screen.rangedweaponsmod.magazine.empty": "Empty",
   "screen.rangedweaponsmod.magazine.fill.tooltip": "Fill from your inventory: the first kind of round you carry first, then the next, until the magazine is full",
@@ -52,5 +52,7 @@
   "item.rangedweaponsmod.gun.takes_magazines_of": "Takes any magazine of %s",
   "tag.item.rangedweaponsmod.magazines.pistol": "pistol magazines",
   "tag.item.rangedweaponsmod.magazines.rifle": "rifle magazines",
-  "tag.item.rangedweaponsmod.magazines.machine_gun": "machine gun boxes"
+  "tag.item.rangedweaponsmod.magazines.machine_gun": "machine gun boxes",
+  "item.rangedweaponsmod.revolver": "Revolver",
+  "subtitles.rangedweaponsmod.revolver_shot": "Revolver fires"
 }

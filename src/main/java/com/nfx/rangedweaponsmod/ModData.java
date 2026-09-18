@@ -47,6 +47,11 @@ public final class ModData {
     private static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, RangedWeaponsMod.MOD_ID);
 
+    /** The revolver's last accepted shot; stack sync also reaches observers and saved items. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<RevolverCycle>> REVOLVER_CYCLE =
+            COMPONENTS.registerComponentType("revolver_cycle", builder -> builder
+                    .persistent(RevolverCycle.CODEC).networkSynchronized(RevolverCycle.STREAM_CODEC));
+
     /** The reload in progress on a gun, if any. Persistent and synced. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Reload>> RELOAD =
             COMPONENTS.registerComponentType("reload", builder -> builder

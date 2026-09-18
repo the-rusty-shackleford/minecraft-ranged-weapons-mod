@@ -76,6 +76,7 @@ public final class Blueprints {
 
     // Guns and ammunition, by item id.
     public static final String PISTOL = NS + ":pistol";
+    public static final String REVOLVER = NS + ":revolver";
     public static final String SHOTGUN = NS + ":shotgun";
     public static final String RIFLE = NS + ":rifle";
     public static final String SCOPED_RIFLE = NS + ":scoped_rifle";
@@ -126,6 +127,10 @@ public final class Blueprints {
     public static final Blueprint PISTOL_RECIPE = new Shaped(PISTOL, Category.COMBAT, PISTOL, 1,
             List.of("LB"), Map.of('L', LOWER_RECEIVER, 'B', BARREL), List.of(LOWER_RECEIVER, BARREL));
 
+    /** A receiver for the cylinder over the grip, beside a short barrel. */
+    public static final Blueprint REVOLVER_RECIPE = new Shaped(REVOLVER, Category.COMBAT, REVOLVER, 1,
+            List.of("UB", "L "), Map.of('U', UPPER_RECEIVER, 'B', BARREL, 'L', LOWER_RECEIVER), List.of(UPPER_RECEIVER, LOWER_RECEIVER));
+
     /** Stock, receiver, barrel, and the pump under the barrel. */
     public static final Blueprint SHOTGUN_RECIPE = new Shaped(SHOTGUN, Category.COMBAT, SHOTGUN, 1,
             List.of("KLB", "  M"), Map.of('K', STOCK, 'L', LOWER_RECEIVER, 'B', BARREL, 'M', PUMP), List.of(LOWER_RECEIVER, PUMP));
@@ -173,7 +178,7 @@ public final class Blueprints {
     private static final List<Blueprint> ALL = List.of(
             LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
             STOCK_RECIPE, PUMP_RECIPE, SCOPE_RECIPE,
-            PISTOL_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
+            PISTOL_RECIPE, REVOLVER_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
             SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE,
             PISTOL_MAGAZINE_RECIPE, RIFLE_MAGAZINE_RECIPE, MACHINE_GUN_BOX_RECIPE);
 
@@ -185,7 +190,7 @@ public final class Blueprints {
     /** The tags a known part fills: a recipe taking the tag is, for the tally, taking the part. */
     private static final Map<String, String> FILLS = Map.of(STEEL, STEEL_INGOT);
 
-    private static final List<String> GUNS = List.of(PISTOL, SHOTGUN, RIFLE, SCOPED_RIFLE, MACHINE_GUN);
+    private static final List<String> GUNS = List.of(PISTOL, REVOLVER, SHOTGUN, RIFLE, SCOPED_RIFLE, MACHINE_GUN);
     private static final List<String> PARTS = List.of(LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
 
     private static List<Blueprint> concat(List<Blueprint> a, List<Blueprint> b) {
@@ -204,7 +209,7 @@ public final class Blueprints {
         return EXTERNAL;
     }
 
-    /** effects: returns the guns' item ids, cheapest first as intended */
+    /** effects: returns the guns' item ids, in creative-tab order */
     public static List<String> guns() {
         return GUNS;
     }

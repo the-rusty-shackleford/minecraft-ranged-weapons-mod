@@ -64,5 +64,14 @@
     "sounds": [
       "rangedweaponsmod:reload_end"
     ]
+  },
+  "revolver_shot": {
+    "subtitle": "subtitles.rangedweaponsmod.revolver_shot",
+    "sounds": [
+      {
+        "name": "rangedweaponsmod:rifle_shot",
+        "pitch": 0.85
+      }
+    ]
   }
 }

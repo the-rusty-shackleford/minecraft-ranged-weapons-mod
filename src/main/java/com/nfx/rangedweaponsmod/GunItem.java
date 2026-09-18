@@ -58,7 +58,7 @@ public final class GunItem extends Item {
     public enum Feed {
         /** A detachable magazine, loaded whole; the gun holds nothing without one. */
         MAGAZINE,
-        /** An internal magazine -- a shotgun's tube -- loaded round by round from the inventory. */
+        /** An internal store -- a shotgun tube or revolver cylinder -- loaded from loose rounds. */
         INTERNAL
     }
 
