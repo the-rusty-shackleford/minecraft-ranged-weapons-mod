@@ -426,6 +426,10 @@ interactive clients were tested. Frames are in `run/booth/screenshots/observer-*
 
 ## 2.5.0 release checks
 
+[2.5.0 is released](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.5.0)
+and deployed in pack 1.42.0. Update the client pack through Mod Hub; both sides
+need the new version. Server jar hashes and pack parity were verified at 20 TPS.
+
 The clean build passes 124 JUnit tests and 50 server GameTests. The shader client
 gate verifies six real trigger pulls, R loading loose medium rounds, and the
 observer's cylinder/hammer and reload state. The vertical shotgun-pump recipe

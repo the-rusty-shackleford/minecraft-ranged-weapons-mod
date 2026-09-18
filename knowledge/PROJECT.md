@@ -77,10 +77,10 @@ by hand in a client and on the shared server.
 
 ## Next
 
-2.5.0 is local and unreleased (2026-09-18), adding the approved revolver
-(D-0019) and retaining the held separate-materials packaging change (D-0018).
-Rusty authorized its release with the shotgun-pump recipe fix (D-0020)
-on 2026-09-18. Release verification is in progress. Its client gate uses one observer and a server actor, with
+2.5.0 was published and deployed in pack 1.42.0 on 2026-09-18, with the
+revolver (D-0019), vertical shotgun-pump recipe (D-0020), and separate-materials
+packaging (D-0018). The published jar matches the installed server jar and
+Mod Hub reports parity. Rusty updates Prism through the published pack. Its client gate uses one observer and a server actor, with
 Rusty's shader and player-animation setup; it does not claim two independently
 connected interactive clients.
 
@@ -180,3 +180,23 @@ Rusty requested the shotgun recipe fix with creative license, followed by releas
 of the revolver and fix together. This supersedes the 2.5.0 release holds above.
 The pump now uses a vertical plank-stick-plank column (D-0020); ingredient cost,
 the assembled shotgun recipe and existing items are unchanged.
+
+
+## Verified 2.5.0 deployment — 2026-09-18
+
+Release commit `993e831b4d3c2185ca6114153eb77f065b471a36` is tagged `v2.5.0`.
+The [public release](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.5.0)
+is included in pack **1.42.0**, replacing 2.4.0 on both sides. The published
+download matches the clean, tested jar; SHA-1 `b3f3e3f6b7c4a60a52e0e63be36601d658fe2ad0`.
+
+The server was empty immediately before restart. Fresh startup explicitly
+loaded 2.5.0 and reached ready at 23:40:15 UTC. The installed hash matches,
+the old jar is absent, and Mod Hub reports no differences. Overall performance
+sampled at 20 TPS. World selection, seed, operators and Distant Horizons
+configuration were preserved. The same 36 third-party startup errors remain,
+with none naming Ranged Weapons Mod. The public player download serves
+`minecraft-client-v1.42.0.mrpack` with the verified staged hash.
+
+Rusty's personal Prism installation was not changed. The other repositories'
+separate-materials packaging updates still await their own release go. This
+record supersedes the historical 2.4.1/2.5.0 release holds above. Issue #1 is closed.
