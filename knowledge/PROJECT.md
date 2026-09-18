@@ -60,7 +60,8 @@ game's own enum (`D-0009`) whose arm is the crossbow's trigger arm number
 for number, the one pose animation packs recognise without vanilla's
 use state (`D-0015`); rounds of one family may differ and the
 gun loads one kind at a time (`D-0010`); steel is Metals and Materials',
-nested here, with our old id aliased to its ingot (`D-0014`).
+installed separately, with our old id aliased to its ingot (`D-0018`, superseding
+only the packaging choice in `D-0014`).
 
 ## How it is verified
 
@@ -125,8 +126,8 @@ Decided by Rusty on 2026-09-06, in this order:
 
 ## Depends on
 
-- `minecraft-metals-and-materials` 1.0.0 or later within 1.x (nested
-  Jar-in-Jar; built to Maven Local first): steel, since 2.3.0.
+- `minecraft-metals-and-materials` 1.0.0 or later within 1.x (installed separately;
+  built to Maven Local first): steel, since 2.3.0.
 - `minecraft-ranged-weapons` 1.7.0 or later within 1.x (nested Jar-in-Jar;
   built to Maven Local first). Needs 1.5 for damage falloff; 1.4 for
   ammunition families; 1.3 for
@@ -152,3 +153,12 @@ Version 2.4.0 was published on 2026-09-16 and deployed in pack 1.35.1
 after the clean release build and asset verification. The deployed server matched
 the published pack and ran at 20 TPS. This supersedes the earlier release holds
 and pending presentation/listening review recorded above.
+
+## Shared materials dependency — 2026-09-18, unreleased
+
+Version 2.4.1 implements [D-0018](decisions/D-0018.md): Metals and Materials
+is required and installed separately, with no embedded copy. Items, recipes,
+steel aliases and gameplay are unchanged. Unit/server checks, recursive jar/payload audits and complete-pack startup passed; release is held.
+
+Validation: see Metals and Materials `devtools/verification/separate-dependency.md`;
+all six packaging builds and the complete-pack client/server check passed.

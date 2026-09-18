@@ -188,7 +188,8 @@ worth of damage and swallowing two rounds in three of a burst.
 A gun is assembled from parts made separately. Materials are taken by their
 common tags, so any mod's iron, planks or glass panes serve. Steel is
 `#c:ingots/steel`: in the pack that is Metals and Materials' ingot (three
-iron and a coal make three), nested in this jar since 2.3.0; the steel this
+iron and a coal make three). Install Metals and Materials separately on both
+client and server; the steel this
 mod used to make itself is that ingot now, and any saved under the old id
 loads as it.
 
@@ -326,7 +327,7 @@ as credited in the sound sources. See D-0017 for the reproduced UI/audio defects
 ```
 
 produces `build/libs/rangedweaponsmod-<version>.jar` with the protocol nested
-inside (Jar-in-Jar), so it installs alone. The protocol is resolved from Maven
+inside (Jar-in-Jar). Metals and Materials must be installed separately. The protocol is resolved from Maven
 Local: build [minecraft-ranged-weapons](../minecraft-ranged-weapons) with
 `./gradlew publishToMavenLocal` first.
 
