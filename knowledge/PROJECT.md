@@ -218,3 +218,15 @@ readable and clear of gear controls; long labels intentionally end in an ellipsi
 The test harness is excluded from the jar. The complete standard shader client booth also passed with both optional mods
 removed, confirming the client loads and operates without them. Deployment with Aberrant Mobs 1.3.1
 in pack 1.48.0 is authorized after the requested world reset.
+
+## Published and deployed — 2026-09-19
+
+Version 2.5.1 is published on GitHub and installed in pack 1.48.0. The
+published download and server jar match the tested artifact byte for byte.
+The old active world was deleted while the server was stopped after a fresh
+zero-player check; a new random world started with the updated pack. RCON
+confirmed 20 TPS and Mod Hub confirmed client/server parity on NeoForge 21.1.248.
+The requested Chunky hexagon is running in the new Overworld at X/Z 0, 0 with a
+15,000-block radius. The client pack applies 125% entity distance through Pack
+Keeper; Rusty imports it in Prism. This completes the release authorization
+recorded above, superseding any earlier local-candidate wording.
