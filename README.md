@@ -7,12 +7,17 @@ Six guns: a pistol, a revolver, a shotgun, a rifle, a scoped rifle and a machine
 The mod is the part of a gun that is about the player holding it: a trigger
 you pull or hold, a fire clock that is not the item cooldown, a reload from
 your inventory, recoil that settles instead of fighting your mouse, sights to
-aim down, and an ammo counter beside the hotbar. What each gun *is*
+aim down, and an ammo counter in the lower right. What each gun *is*
 -- how much it holds, how fast it fires, how hard it hits -- is data in the
 protocol's `rangedweapons:weapons` map, so a datapack can retune it, and any
 mob that arms itself through the protocol can carry it. [Armed
 Pillagers](../minecraft-armed-pillagers) does, subject to its own class policy
 (automatic weapons are denied by default, so no pillager is issued this one).
+
+The ammo panel sits above Quick Slot and below Backpacks+' compact gear row.
+While browsing a full-width backpack gear row, it rises above the expanded controls.
+It stays on the right at different GUI scales, shortens long magazine names
+with an ellipsis, and keeps the count and reload bar inside the screen.
 
 ## What it does
 

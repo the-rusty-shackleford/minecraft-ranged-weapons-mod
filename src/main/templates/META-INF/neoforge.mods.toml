@@ -13,7 +13,7 @@ description='''
 Guns for players, on the Ranged Weapons protocol.
 
 Hold to fire, reload from your inventory, recoil that settles instead of
-fighting your mouse, an ammo counter beside the hotbar. Every gun is data: a
+fighting your mouse, an ammo counter in the lower right. Every gun is data: a
 profile in the rangedweapons:weapons data map says what it holds, how fast it
 fires and how hard it hits, so a datapack can retune it or add another.
 
@@ -44,11 +44,18 @@ protocol - Armed Pillagers, for one - can use them too.
     ordering="AFTER"
     side="BOTH"
 
-# Steel. Nested in this jar too; AFTER so its ingot exists when our alias
-# to it and our recipes resolve.
+# Steel is installed separately; AFTER so its ingot exists when our alias
+# and our recipes resolve.
 [[dependencies.${mod_id}]]
     modId="metalsandmaterials"
     type="required"
     versionRange="[1.0,2.0)"
     ordering="AFTER"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="backpacksplus"
+type="optional"
+versionRange="[0.2.1,)"
+ordering="AFTER"
+side="CLIENT"

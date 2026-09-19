@@ -18,6 +18,12 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 // lives on Central; the protocol, until it has a real repository, on Local.
 repositories {
     mavenCentral()
+    ivy {
+        url = 'https://github.com/the-rusty-shackleford/minecraft-backpacks-plus/releases/download'
+        patternLayout { artifact('v[revision]/[artifact]-[revision].[ext]') }
+        metadataSources { artifact() }
+        content { includeGroup('com.chunkworks.backpacksplus') }
+    }
     mavenLocal()
 }
 
@@ -105,6 +111,7 @@ neoForge {
             sourceSet = sourceSets.gametest
             gameDirectory = file('run/booth')
             systemProperty 'rangedweaponsmod.photobooth', 'true'
+            systemProperty 'rangedweaponsmod.hud', project.hasProperty('boothHud').toString()
             systemProperty 'rangedweaponsmod.revolver', project.hasProperty('boothRevolver') ? 'true' : 'false'
             systemProperty 'rangedweaponsmod.observers', project.hasProperty('boothObservers') ? 'true' : 'false'
             // -PboothPose=one photographs the calibration items in the
@@ -184,6 +191,9 @@ dependencies {
             prefer "1.0.3"
         }
     }
+
+    // Optional client layout adapter; never bundled or required at runtime.
+    compileOnly 'com.chunkworks.backpacksplus:backpacksplus:0.2.1'
 
     implementation sourceSets.domain.output
 

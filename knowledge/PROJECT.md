@@ -200,3 +200,21 @@ with none naming Ranged Weapons Mod. The public player download serves
 Rusty's personal Prism installation was not changed. The other repositories'
 separate-materials packaging updates still await their own release go. This
 record supersedes the historical 2.4.1/2.5.0 release holds above. Issue #1 is closed.
+
+## Lower-right ammo HUD — 2.5.1 (2026-09-19)
+
+Rusty requested a repair for ammo text overlapping Backpacks+ and Quick Slot,
+retaining the lower-right location. D-0021 records the layout and optional client
+adapter. The panel clears bottom quickslots and the compact backpack row, rises
+above expanded bottom-row gear controls while browsing, and bounds renamed
+magazine text, count and reload bar. Backpacks+ remains optional and unbundled.
+
+Session validation: 124 domain tests and all 50 real-server GameTests passed;
+the shader client reproduced the old overlap, then captured normal (640x480 GUI)
+and minimum (320x240 GUI) widths, right/left main hand, gear browsing and reload
+with the actual Backpacks+ 0.2.1 and Quick Slot 0.1.1 jars. Cropped before/after
+comparisons were visually inspected. Count, label, icon and reload bar remain
+readable and clear of gear controls; long labels intentionally end in an ellipsis.
+The test harness is excluded from the jar. The complete standard shader client booth also passed with both optional mods
+removed, confirming the client loads and operates without them. Deployment with Aberrant Mobs 1.3.1
+in pack 1.48.0 is authorized after the requested world reset.

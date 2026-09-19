@@ -23,6 +23,9 @@ import com.nfx.rangedweaponsmod.GunItem;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.locale.Language;
+import net.minecraft.util.FormattedCharSequence;
 import java.util.Optional;
 import com.nfx.rangedweaponsmod.Magazines;
 import com.nfx.rangedweaponsmod.ModData;
@@ -36,7 +39,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * The ammo counter to the right of the hotbar: the round that fires next as
+ * The ammo panel above the lower-right quick slots: the round that fires next as
  * its item's icon, {@code rounds / capacity} beside it, the magazine's label
  * under it in the magazine's colour (or the round's name, for a gun loaded
  * directly), and a bar that fills while a reload runs. Drawn only while a
@@ -51,7 +54,8 @@ public final class GunHud {
     private static final int TEXT_LOW_COLOR = 0xFFFF6E6E;
     private static final int BAR_BACK = 0xA0000000;
     private static final int BAR_FILL = 0xFFE0C060;
-    private static final int BAR_WIDTH = 40;
+    private static final int MAX_WIDTH = 144;
+    private static final int RIGHT_INSET = 8;
     private static final int BAR_HEIGHT = 3;
     /** Rounds at or below which the counter turns red: a fifth of the magazine. */
     private static final int LOW_FRACTION = 5;
@@ -80,9 +84,6 @@ public final class GunHud {
         Font font = mc.font;
         int screenWidth = graphics.guiWidth();
         int screenHeight = graphics.guiHeight();
-        // Just right of the hotbar, which is 182 wide and centred.
-        int x = screenWidth / 2 + 91 + 6;
-        int y = screenHeight - 22;
 
         boolean unlimited = mc.player.hasInfiniteMaterials();
         boolean magazineFed = GunItem.isMagazineFed(stack);
@@ -97,13 +98,6 @@ public final class GunHud {
         // slug. Beside it the count; under both, what is loaded.
         Optional<Item> next = weapon.loadedAmmo(stack)
                 .or(() -> weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional));
-        int iconY = y - 6;
-        if (next.isPresent() && (rounds > 0 || unlimited || !magazineFed)) {
-            graphics.renderItem(new ItemStack(next.get()), x, iconY);
-        }
-        int textX = x + ICON + 4;
-        graphics.drawString(font, text, textX, iconY + 4, color, true);
-
         Component label;
         int labelColor = TEXT_COLOR;
         if (magazineFed && !unlimited) {
@@ -117,14 +111,45 @@ public final class GunHud {
         } else {
             label = next.map(Item::getDescription).orElse(Component.empty());
         }
-        graphics.drawString(font, label, x, iconY + ICON + 2, labelColor, true);
+        // Minecraft's minimum GUI is 320 wide. Stay outside its 182-wide
+        // hotbar, above Quick Slot, and below Backpacks+' compact mount row.
+        int available = Math.max(ICON + 8, screenWidth - screenWidth / 2 - 105);
+        int width = Math.min(Math.min(MAX_WIDTH, available),
+                Math.max(ICON + 4 + font.width(text), font.width(label)));
+        int x = screenWidth - RIGHT_INSET - width;
+        int iconY = screenHeight - 51;
+        if (net.neoforged.fml.ModList.get().isLoaded("backpacksplus")
+                && BackpackHudCompat.browsingBottomRow(mc, screenWidth)) {
+            iconY = screenHeight - 114;
+        }
+        int labelY = iconY + ICON + 2;
+        int barY = iconY - BAR_HEIGHT - 2;
+        graphics.fill(x - 3, barY - 2, x + width + 3, labelY + font.lineHeight + 1, 0x90000000);
+        if (next.isPresent() && (rounds > 0 || unlimited || !magazineFed)) {
+            graphics.renderItem(new ItemStack(next.get()), x, iconY);
+        }
+        int countWidth = width - ICON - 4;
+        if (font.width(text) > countWidth) text = text.replace(" / ", "/");
+        float scale = Math.min(1F, (float) countWidth / Math.max(1, font.width(text)));
+        graphics.pose().pushPose();
+        graphics.pose().translate(x + ICON + 4, iconY + 4, 0);
+        graphics.pose().scale(scale, scale, 1);
+        graphics.drawString(font, text, 0, 0, color, true);
+        graphics.pose().popPose();
+        graphics.drawString(font, fitted(font, label, width), x, labelY, labelColor, true);
 
         Reload reload = stack.get(ModData.RELOAD.get());
         if (reload != null && mc.level != null) {
             float progress = reload.progress(mc.level.getGameTime());
-            int barY = iconY - BAR_HEIGHT - 2;
-            graphics.fill(x, barY, x + BAR_WIDTH, barY + BAR_HEIGHT, BAR_BACK);
-            graphics.fill(x, barY, x + Math.round(BAR_WIDTH * progress), barY + BAR_HEIGHT, BAR_FILL);
+            graphics.fill(x, barY, x + width, barY + BAR_HEIGHT, BAR_BACK);
+            graphics.fill(x, barY, x + Math.round(width * progress), barY + BAR_HEIGHT, BAR_FILL);
         }
+    }
+
+    /** requires: width fits the ellipsis. effects: preserves styling while fitting the panel. */
+    private static FormattedCharSequence fitted(Font font, Component label, int width) {
+        if (font.width(label) <= width) return label.getVisualOrderText();
+        return Language.getInstance().getVisualOrder(FormattedText.composite(
+                font.substrByWidth(label, width - font.width("…")), Component.literal("…")));
     }
 }

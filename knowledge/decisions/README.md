@@ -39,3 +39,5 @@ thought and someone later would want to know *why*.
 - [D-0019](D-0019.md): Six-shot revolver, built-in medium-ammo cylinder and articulated action.
 
 - [D-0020](D-0020.md): Vertical shotgun-pump recipe avoids the wooden roof recipes.
+
+- [D-0021](D-0021.md): Lower-right ammo panel clears Quick Slot and backpack controls.
