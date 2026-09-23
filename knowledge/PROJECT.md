@@ -258,3 +258,16 @@ package moved from `com.nfx.rangedweaponsmod` to `com.chunkworks.rangedweaponsmo
 Rusty's reminder; the protocol library's `com.nfx.rangedweapons` and Armed Pillagers'
 package are a coordinated move still to be decided. Release awaits Rusty's go, together
 with Backpacks+ 0.2.2.
+
+## Published and deployed — 2026-09-23, pack 1.57.1
+
+Version 2.7.0 (carrying the unreleased 2.6.0) is
+[published](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.7.0)
+and deployed through Mod Hub in pack **1.57.1**, replacing 2.5.1. Release asset, tested jar
+and installed server jar match SHA-1 `c4df20f0c317f2613cd8ce2cc2c7e8d15cfdcb83`. Rusty:
+"Release when done and 2 min warning restart on the server". The restart was issued at
+23:06:21 UTC with nobody online after the warning; the new log reached ready at 23:06:35,
+the same 36 baseline errors, 20 TPS, Mod Hub "server matches the published pack". The mode
+ships as `MAGAZINES`; the box's config file is written on this first start, and flipping it
+is `knowledge/operations/feed-mode.md` in the server repo. The gametest classpath now takes
+the published Backpacks+ 0.2.3.
