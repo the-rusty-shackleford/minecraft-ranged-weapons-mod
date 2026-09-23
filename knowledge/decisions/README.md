@@ -43,3 +43,5 @@ thought and someone later would want to know *why*.
 - [D-0021](D-0021.md): Lower-right ammo panel clears Quick Slot and backpack controls.
 
 - [D-0022](D-0022.md): Magazines stack to eight by load; the screen fills exactly one.
+
+- [D-0023](D-0023.md): The server chooses magazines or loose rounds; loose reaches into bags; rounds stack to 99.

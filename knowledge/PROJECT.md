@@ -219,19 +219,6 @@ The test harness is excluded from the jar. The complete standard shader client b
 removed, confirming the client loads and operates without them. Deployment with Aberrant Mobs 1.3.1
 in pack 1.48.0 is authorized after the requested world reset.
 
-## Stackable magazines — 2.6.0 (2026-09-23), unreleased
-
-Rusty asked for magazines to stack, "at least like kind", eight to a slot. D-0022:
-`MagazineItem` stacks to eight by the game's own rule (same item, same load, name and
-dye; an emptied magazine stacks with new ones), `R` takes one magazine off a stack and
-the old one goes back to the vacated slot or wherever it fits, and the fill screen fills
-exactly one magazine, setting the rest of a stack aside before it opens and before every
-server-side write (a stack reaching the hand while the screen is open would otherwise be
-loaded from one handful of rounds). The domain is unchanged. 124 JUnit tests and 52
-real-server GameTests (three magazine-stack tests, two of them new) passed; the booth was
-not run, since nothing rendered changed. Release awaits Rusty's go, together with
-Backpacks+ 0.2.2.
-
 ## Published and deployed — 2026-09-19
 
 Version 2.5.1 is published on GitHub and installed in pack 1.48.0. The
@@ -243,3 +230,31 @@ The requested Chunky hexagon is running in the new Overworld at X/Z 0, 0 with a
 15,000-block radius. The client pack applies 125% entity distance through Pack
 Keeper; Rusty imports it in Prism. This completes the release authorization
 recorded above, superseding any earlier local-candidate wording.
+
+## Stackable magazines — 2.6.0 (2026-09-23), unreleased
+
+Rusty asked for magazines to stack, "at least like kind", eight to a slot. D-0022:
+`MagazineItem` stacks to eight by the game's own rule (same item, same load, name and
+dye; an emptied magazine stacks with new ones), `R` takes one magazine off a stack and
+the old one goes back to the vacated slot or wherever it fits, and the fill screen fills
+exactly one magazine, setting the rest of a stack aside before it opens and before every
+server-side write (a stack reaching the hand while the screen is open would otherwise be
+loaded from one handful of rounds). The domain is unchanged. 124 JUnit tests and 52
+real-server GameTests (three magazine-stack tests, two of them new) passed; the booth was
+not run, since nothing rendered changed. Never released on its own: 2.7.0 carries it.
+
+## Ammunition modes, rounds to 99, the chunkworks package — 2.7.0 (2026-09-23), unreleased
+
+Rusty asked for "requires magazines" as a mode and a second mode that pulls rounds from
+anywhere in the inventory including backpacks, and for rounds to stack to 128. D-0023:
+a server config `ammunition.feed`, `MAGAZINES` (default, unchanged) or `LOOSE` (every gun
+an internal store, loaded from the pockets first and then from the worn and carried
+Backpacks+ bags' storage cells, in the gun's change time; a held magazine handed back),
+sent to clients at login. The pure layer gains `FeedMode` and `Pockets` (kinds in the
+order met, counts, a draw plan first pocket first); `RoundSources` builds the pockets
+from the player and draws through Backpacks+'s public storage API, which needs no change.
+Rounds stack to 99, the game's ceiling, since 128 would be refused on world load. The
+package moved from `com.nfx.rangedweaponsmod` to `com.chunkworks.rangedweaponsmod` on
+Rusty's reminder; the protocol library's `com.nfx.rangedweapons` and Armed Pillagers'
+package are a coordinated move still to be decided. Release awaits Rusty's go, together
+with Backpacks+ 0.2.2.

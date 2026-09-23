@@ -67,7 +67,8 @@ it still holds, and the first loaded magazine the gun takes in your
 inventory, hotbar first, goes in, trading places with it -- so a half-spent
 magazine is kept, never lost. From a stack, one magazine goes in and the
 rest keep their slot; the old one then goes onto a like stack or into a free
-slot, and only with your inventory full does it land at your feet. Pulling the trigger on an empty gun does the
+slot, and only with your inventory full does it land at your feet. Rounds stack to
+99, the game's ceiling. Pulling the trigger on an empty gun does the
 same when you carry a loaded magazine (with none, the gun clicks once per
 pull; an empty magazine does not count). `Shift+R` swaps: the next loaded
 magazine after the one the last swap took, in inventory order, wrapping
@@ -90,6 +91,22 @@ reload is abandoned rather than finished early. Creative has unlimited
 ammunition, as it has unlimited arrows: every gun fires without spending a
 round, needs no magazine, never reloads, and the counter shows an infinity
 sign.
+
+**Two modes**, the server's choice (`feed` in the world's
+`serverconfig/rangedweaponsmod-server.toml`). **Magazines**, the default, is
+everything above. **Loose** makes every gun an internal store like the shotgun:
+`R` and the empty trigger load loose rounds, one kind at a time, `Shift+R` changes
+kind and hands the loaded ones back, capacity is the gun's own (15, 30, 30, 75), and
+a load into the pistol, rifles or machine gun takes the gun's change time, the same
+number as its magazine change. Rounds come from your pockets first, hotbar first,
+then from the bag on your back and any Backpacks+ bag you carry, storage cells
+only, never the mounts: the bag is the reserve, drawn on when the pockets are
+empty, and rounds a swap hands back go to your pockets, never into a bag. A gun
+holding a magazine hands it back on first sight, load and all, and no gun takes
+one; magazines stay craftable and fillable so nothing is lost, and switching back
+adopts loose rounds into a magazine as before. Every client receives the mode at
+login, so the counter and the tooltips show the rule in force: change the file,
+then restart the server.
 
 **Recoil.** Each shot kicks the camera up by the gun's `recoil_pitch` and a
 random side by `recoil_yaw`, and the kick recovers exponentially at `recovery`
@@ -321,6 +338,14 @@ overshoot that can clip even when the source PCM was normalized. Rebuild with
 cannot keep every decoded sample at or below .98. Recordings and action timing remain
 as credited in the sound sources. See D-0017 for the reproduced UI/audio defects.
 
+## Server config
+
+`serverconfig/rangedweaponsmod-server.toml` in the world folder, written with its
+defaults the first time the world starts, and sent to every client at login. One
+value: `feed`, `MAGAZINES` (the default) or `LOOSE`, described under *Two modes*
+above. Change it, then restart the server; a client connected while it changes
+keeps the old mode until it logs in again.
+
 ## Client config
 
 `config/rangedweaponsmod-client.toml`:
@@ -369,7 +394,9 @@ other two are for eyes and hands.
 - `./gradlew test` -- plain JUnit against the `domain` source set, the pure
   layer: the fire clock, the trigger's rule table (the swap among them), the
   reload plan, the magazine (runs, order, fill) and which magazine or kind a
-  change takes, the recoil model, stance spread, and the recipe tree. That source set is compiled against nothing but the
+  change takes, the pockets a loose reload draws on (kinds in the order met,
+  counts, the draw plan first pocket first) and the feed mode, the recoil
+  model, stance spread, and the recipe tree. That source set is compiled against nothing but the
   JDK, so a `net.minecraft` import there is a compile error. Partitions are
   written at the top of each test class.
 - `./gradlew runGameTestServer` -- gametests on a real headless server. The
@@ -383,7 +410,14 @@ other two are for eyes and hands.
   with the next round's stats; the screen fills in inventory order from the
   family only; magazines stack to eight by load, `R` takes one of a stack
   and the old one finds room, and the screen fills one of a stack and sets
-  the rest aside, or stays shut with no room; the shotgun's tube reloads from the inventory, takes its full
+  the rest aside, or stays shut with no room; in loose mode a magazine-fed
+  gun loads loose rounds in its change time and conjures no magazine, a
+  magazine in the gun is handed back with its load, `Shift+R` changes kind
+  and a magazine is not ammunition, the worn Backpacks+ bag is a pocket
+  after the inventory's and its mounts never, a bag carried in a slot is a
+  pocket in loose mode and no bag is in magazines mode (Backpacks+ is on
+  the gametest classpath for this, never in the jar), and rounds stack to
+  the game's ceiling of 99; the shotgun's tube reloads from the inventory, takes its full
   time, consumes exactly what it loads, blocks fire meanwhile, and `Shift+R`
   unloads it and loads the next kind, or nothing with nothing to change to;
   a magazine of another mod's medium round goes in and a small one does

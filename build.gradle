@@ -192,8 +192,14 @@ dependencies {
         }
     }
 
-    // Optional client layout adapter; never bundled or required at runtime.
+    // Optional adapters: the client layout beside its gear bar, and in loose
+    // mode its bags as pockets. Never bundled or required at runtime; on the
+    // gametest server so the bag pocket is exercised against the real thing.
     compileOnly 'com.chunkworks.backpacksplus:backpacksplus:0.2.1'
+    // The unreleased 0.2.2 from the adjacent workspace until it is published: it
+    // skips a player whose connection never negotiated its channel (a test's
+    // mock), which 0.2.1 crashed on. Point this back at the published artifact then.
+    gametestImplementation files('../minecraft-backpacks-plus/build/libs/backpacksplus-0.2.2.jar')
 
     implementation sourceSets.domain.output
 

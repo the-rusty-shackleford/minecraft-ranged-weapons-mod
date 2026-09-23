@@ -5,7 +5,7 @@
       "name": "RANGEDWEAPONSMOD_PISTOL",
       "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
       "parameters": {
-        "class": "com/nfx/rangedweaponsmod/client/ArmPoses",
+        "class": "com/chunkworks/rangedweaponsmod/client/ArmPoses",
         "field": "PISTOL"
       }
     }
