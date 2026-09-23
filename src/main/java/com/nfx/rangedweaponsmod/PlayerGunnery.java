@@ -334,10 +334,12 @@ public final class PlayerGunnery {
      * one goes in, trading places in the inventory -- so a half-spent
      * magazine is kept, and a swap walks the carried magazines in order.
      *
-     * <p>effects: if a loaded magazine the gun takes is carried, puts the
-     * gun's magazine (if any) in its slot and it in the gun, with the sound;
-     * returns the finger remembering the slot. Otherwise nothing: the
-     * magazine was dropped mid-change.
+     * <p>effects: if a loaded magazine the gun takes is carried, takes one
+     * from its slot into the gun and puts the gun's magazine (if any) in
+     * that slot -- or, when the slot still holds the rest of a stack,
+     * wherever it fits (onto a like stack, a free slot, else the ground at
+     * the player's feet), with the sound; returns the finger remembering the
+     * slot. Otherwise nothing: the magazine was dropped mid-change.
      */
     private static Gunnery finishMagazineChange(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                                 Gunnery gunnery, boolean swap) {
@@ -346,9 +348,15 @@ public final class PlayerGunnery {
             return gunnery;
         }
         int slot = choice.get();
-        ItemStack incoming = player.getInventory().getItem(slot);
+        ItemStack incoming = player.getInventory().removeItem(slot, 1);
         ItemStack outgoing = Magazines.eject(stack, weapon);
-        player.getInventory().setItem(slot, outgoing);
+        if (!outgoing.isEmpty()) {
+            if (player.getInventory().getItem(slot).isEmpty()) {
+                player.getInventory().setItem(slot, outgoing);
+            } else {
+                player.getInventory().placeItemBackInInventory(outgoing);
+            }
+        }
         Magazines.insert(stack, weapon, incoming);
         play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
         return gunnery.swappedFrom(slot);

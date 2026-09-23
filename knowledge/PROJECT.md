@@ -219,6 +219,19 @@ The test harness is excluded from the jar. The complete standard shader client b
 removed, confirming the client loads and operates without them. Deployment with Aberrant Mobs 1.3.1
 in pack 1.48.0 is authorized after the requested world reset.
 
+## Stackable magazines — 2.6.0 (2026-09-23), unreleased
+
+Rusty asked for magazines to stack, "at least like kind", eight to a slot. D-0022:
+`MagazineItem` stacks to eight by the game's own rule (same item, same load, name and
+dye; an emptied magazine stacks with new ones), `R` takes one magazine off a stack and
+the old one goes back to the vacated slot or wherever it fits, and the fill screen fills
+exactly one magazine, setting the rest of a stack aside before it opens and before every
+server-side write (a stack reaching the hand while the screen is open would otherwise be
+loaded from one handful of rounds). The domain is unchanged. 124 JUnit tests and 52
+real-server GameTests (three magazine-stack tests, two of them new) passed; the booth was
+not run, since nothing rendered changed. Release awaits Rusty's go, together with
+Backpacks+ 0.2.2.
+
 ## Published and deployed — 2026-09-19
 
 Version 2.5.1 is published on GitHub and installed in pack 1.48.0. The

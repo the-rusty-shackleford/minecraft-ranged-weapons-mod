@@ -54,12 +54,20 @@ inventory in inventory order, the first kind first. Name one in an anvil
 and dye it in a crafting grid, and it says so in the HUD. Capacity is the
 magazine item's, so an extended or a double-stack magazine is another item
 that every gun of the family takes. Guns saved before magazines existed
-have their loose rounds adopted into a magazine on first sight.
+have their loose rounds adopted into a magazine on first sight. Magazines
+stack, eight to a slot, by the game's own rule for stacking: the same item
+with the same load, name and dye. Eight full pistol magazines are one slot;
+a half-spent one sits alone; a magazine fired empty stacks with new ones.
+The screen fills one magazine at a time: right-click a stack and one stays
+in your hand while the rest go onto a like stack or into a free slot first,
+and with no room for them the screen does not open and says so.
 
 **Reload.** `R` changes magazines: the one in the gun comes out, with what
 it still holds, and the first loaded magazine the gun takes in your
 inventory, hotbar first, goes in, trading places with it -- so a half-spent
-magazine is kept, never lost. Pulling the trigger on an empty gun does the
+magazine is kept, never lost. From a stack, one magazine goes in and the
+rest keep their slot; the old one then goes onto a like stack or into a free
+slot, and only with your inventory full does it land at your feet. Pulling the trigger on an empty gun does the
 same when you carry a loaded magazine (with none, the gun clicks once per
 pull; an empty magazine does not count). `Shift+R` swaps: the next loaded
 magazine after the one the last swap took, in inventory order, wrapping
@@ -373,7 +381,9 @@ other two are for eyes and hands.
   magazine for the first loaded one and keeps it; `Shift+R` walks the
   carried magazines in order and wraps; a mixed magazine fires in order
   with the next round's stats; the screen fills in inventory order from the
-  family only; the shotgun's tube reloads from the inventory, takes its full
+  family only; magazines stack to eight by load, `R` takes one of a stack
+  and the old one finds room, and the screen fills one of a stack and sets
+  the rest aside, or stays shut with no room; the shotgun's tube reloads from the inventory, takes its full
   time, consumes exactly what it loads, blocks fire meanwhile, and `Shift+R`
   unloads it and loads the next kind, or nothing with nothing to change to;
   a magazine of another mod's medium round goes in and a small one does

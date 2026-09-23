@@ -41,3 +41,5 @@ thought and someone later would want to know *why*.
 - [D-0020](D-0020.md): Vertical shotgun-pump recipe avoids the wooden roof recipes.
 
 - [D-0021](D-0021.md): Lower-right ammo panel clears Quick Slot and backpack controls.
+
+- [D-0022](D-0022.md): Magazines stack to eight by load; the screen fills exactly one.

@@ -21,6 +21,7 @@ import com.nfx.rangedweaponsmod.domain.Magazine;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleContainer;
@@ -44,6 +45,13 @@ import net.minecraft.world.item.ItemStack;
  * magazine's own inventory slot is locked while the screen is open, so the
  * thing being filled cannot be moved out from under it.
  *
+ * <p>The screen fills exactly one magazine. Magazines stack by load, so a
+ * write to a stack of several would load them all from one handful of
+ * rounds; before the screen opens, and again before every write on the
+ * server (a number-key swap or a pickup can put a stack in the hand while
+ * the screen is open), the rest of the stack is set aside
+ * ({@link #setAside}), leaving one in the hand.
+ *
  * <p>Slot capacity is the magazine's, not the stack's: the last slot that
  * would take a round past the capacity takes only what fits.
  */
@@ -62,11 +70,62 @@ public final class MagazineMenu extends AbstractContainerMenu {
     private final SimpleContainer runs = new SimpleContainer(RUN_SLOTS);
     private boolean loading;
 
-    /** effects: opens this menu on the server for the magazine in {@code hand} */
-    public static void open(Player player, InteractionHand hand) {
+    /**
+     * effects: on the server, opens this menu for the magazine in
+     * {@code hand}. With a stack of several in the hand, one stays there to
+     * be filled and the rest are set aside in the inventory first; if they
+     * do not fit, nothing opens and the player is told. Returns whether it
+     * opened.
+     */
+    public static boolean open(Player player, InteractionHand hand) {
+        if (!setAside(player, hand, false)) {
+            player.displayClientMessage(Component.translatable("screen.rangedweaponsmod.magazine.no_room"), true);
+            return false;
+        }
         ItemStack magazine = player.getItemInHand(hand);
         player.openMenu(new SimpleMenuProvider((id, inv, p) -> new MagazineMenu(id, inv, hand), magazine.getHoverName()),
                 buf -> buf.writeEnum(hand));
+        return true;
+    }
+
+    /**
+     * effects: leaves one magazine of the stack in {@code hand} there and
+     * puts the rest away: onto like stacks with room, then into a free
+     * slot, and with none free, on the ground at the player's feet if
+     * {@code mayDrop}, else back in the hand. Nothing with one or none in
+     * the hand. Returns whether the hand holds at most one magazine now.
+     */
+    static boolean setAside(Player player, InteractionHand hand, boolean mayDrop) {
+        ItemStack held = player.getItemInHand(hand);
+        if (held.getCount() <= 1) {
+            return true;
+        }
+        Inventory inventory = player.getInventory();
+        int handSlot = hand == InteractionHand.MAIN_HAND ? inventory.selected : -1;
+        ItemStack rest = held.split(held.getCount() - 1);
+        for (int slot = 0; slot < inventory.items.size() && !rest.isEmpty(); slot++) {
+            ItemStack there = inventory.items.get(slot);
+            if (slot == handSlot || !ItemStack.isSameItemSameComponents(there, rest)) {
+                continue;
+            }
+            int moved = Math.min(rest.getCount(), there.getMaxStackSize() - there.getCount());
+            there.grow(moved);
+            rest.shrink(moved);
+        }
+        if (rest.isEmpty()) {
+            return true;
+        }
+        int free = inventory.getFreeSlot();
+        if (free >= 0) {
+            inventory.setItem(free, rest);
+            return true;
+        }
+        if (mayDrop) {
+            player.drop(rest, false);
+            return true;
+        }
+        held.grow(rest.getCount());
+        return false;
     }
 
     /** The client's constructor: the hand travels with the open-screen packet. */
@@ -148,11 +207,18 @@ public final class MagazineMenu extends AbstractContainerMenu {
         }
     }
 
-    /** effects: writes the run slots back to the magazine, in order, empties skipped, same kinds merged */
+    /**
+     * effects: writes the run slots back to the magazine, in order, empties
+     * skipped, same kinds merged -- to one magazine: on the server, the rest
+     * of a stack in the hand is set aside first
+     */
     private void writeBack() {
         MagazineItem item = item();
         if (item == null) {
             return;
+        }
+        if (!inventory.player.level().isClientSide) {
+            setAside(inventory.player, hand, true);
         }
         Magazine<Item> magazine = Magazine.empty(item.capacity());
         for (int i = 0; i < RUN_SLOTS; i++) {
@@ -211,13 +277,15 @@ public final class MagazineMenu extends AbstractContainerMenu {
      * inventory -- the accepted rounds in inventory order, hotbar first, the
      * first kind first, then the next -- as far as the capacity and the row
      * of slots allow, taking the rounds out of the inventory; returns
-     * whether anything was loaded
+     * whether anything was loaded. Fills one magazine: the rest of a stack
+     * in the hand is set aside first.
      */
     @Override
     public boolean clickMenuButton(Player player, int id) {
         if (id != FILL_BUTTON || item() == null || player.level().isClientSide) {
             return false;
         }
+        setAside(player, hand, true);
         MagazineItem item = item();
         Magazine<Item> magazine = contents();
         List<Item> order = new ArrayList<>();

@@ -42,23 +42,32 @@ import net.minecraft.world.level.Level;
  * vanilla's dye (the item is tagged dyeable); both travel with the
  * magazine into the gun and back out.
  *
+ * <p>Magazines stack, {@link #MAX_STACK} to a slot, by the game's own rule:
+ * the same item with the same components, so the same load, name and dye.
+ * Two full pistol magazines share a slot; a half-spent one sits alone; a
+ * magazine fired empty is a new one again (an empty load is no component)
+ * and stacks with new ones.
+ *
  * <p>Using it (right-click, in either hand) opens the screen it is filled
  * in: a row of slots for the runs of rounds, and a button that fills it from
- * the inventory.
+ * the inventory. The screen fills one magazine; the rest of a stack is set
+ * aside first ({@link MagazineMenu#open}).
  */
 public final class MagazineItem extends Item {
+
+    /** How many magazines of one kind and load share a slot. */
+    public static final int MAX_STACK = 8;
 
     private final TagKey<Item> family;
     private final int capacity;
 
     /**
-     * @param properties the item's; the stack size is forced to one, since
-     *                   two magazines with different loads cannot share a stack
+     * @param properties the item's; the stack size is forced to {@link #MAX_STACK}
      * @param family     the rounds it takes
      * @param capacity   how many, at least one
      */
     public MagazineItem(Properties properties, TagKey<Item> family, int capacity) {
-        super(properties.stacksTo(1));
+        super(properties.stacksTo(MAX_STACK));
         if (capacity < 1) {
             throw new IllegalArgumentException("capacity must be >= 1, was " + capacity);
         }
@@ -86,15 +95,16 @@ public final class MagazineItem extends Item {
 
     /**
      * effects: on the server, opens the magazine screen for the magazine in
-     * {@code hand}; returns success on either side so the hand swings once
+     * {@code hand} (one of a stack; the rest are set aside), and fails if
+     * there is no room to set them aside; the client swings the hand once
      */
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (!level.isClientSide) {
-            MagazineMenu.open(player, hand);
+        if (level.isClientSide) {
+            return InteractionResultHolder.success(stack);
         }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return MagazineMenu.open(player, hand) ? InteractionResultHolder.consume(stack) : InteractionResultHolder.fail(stack);
     }
 
     @Override

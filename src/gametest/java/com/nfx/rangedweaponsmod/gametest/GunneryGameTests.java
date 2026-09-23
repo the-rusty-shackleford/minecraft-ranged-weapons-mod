@@ -73,7 +73,9 @@ import java.util.List;
  * the first loaded one and keeps it; Shift+R walks the carried magazines
  * in inventory order and wraps; a mixed magazine fires in order with the
  * next round's stats; the screen fills in inventory order from the family
- * only. The tube (the shotgun): an empty trigger reloads from the
+ * only. Stacks: magazines stack to eight by load; R takes one of a stack
+ * and the old one finds room; the screen fills one and sets the rest
+ * aside, or stays shut with no room. The tube (the shotgun): an empty trigger reloads from the
  * inventory, loading the lesser of the space and the rounds carried; the
  * key tops up without the trigger; a gun mid-reload neither fires nor
  * restarts; Shift+R unloads and loads the next kind, or nothing with
@@ -551,10 +553,10 @@ public final class GunneryGameTests {
     }
 
     @GameTest(template = "arena")
-    public void magazinesStackOneTakeADyeAndKnowTheirFamily(GameTestHelper helper) {
+    public void magazinesStackToEightByLoadTakeADyeAndKnowTheirFamily(GameTestHelper helper) {
         for (MagazineItem item : ModItems.magazines()) {
             ItemStack stack = new ItemStack(item);
-            helper.assertValueEqual(stack.getMaxStackSize(), 1, item + " stacks to one: two loads cannot share a stack");
+            helper.assertValueEqual(stack.getMaxStackSize(), MagazineItem.MAX_STACK, item + " stacks to eight");
             helper.assertTrue(stack.is(ItemTags.DYEABLE), item + " takes a dye in the crafting grid");
             helper.assertTrue(item.accepts(new ItemStack(BuiltInRegistries.ITEM.get(
                     item.family().equals(AmmoFamilies.SMALL) ? ModItems.SMALL_ROUND.getId() : ModItems.ROUND.getId()))),
@@ -564,6 +566,75 @@ public final class GunneryGameTests {
         helper.assertValueEqual(ModItems.PISTOL_MAGAZINE.get().capacity(), 15, "the pistol magazine");
         helper.assertValueEqual(ModItems.RIFLE_MAGAZINE.get().capacity(), 30, "the rifle magazine");
         helper.assertValueEqual(ModItems.MACHINE_GUN_BOX.get().capacity(), 75, "the box");
+        // Like kind is the game's rule -- same item, same components -- so the same load, name and dye.
+        MagazineItem rifle = ModItems.RIFLE_MAGAZINE.get();
+        Item round = ModItems.ROUND.get();
+        helper.assertTrue(ItemStack.isSameItemSameComponents(new ItemStack(rifle), new ItemStack(rifle)), "two new magazines share a stack");
+        helper.assertTrue(ItemStack.isSameItemSameComponents(box(rifle, round, 30), box(rifle, round, 30)), "two of the same load share a stack");
+        helper.assertFalse(ItemStack.isSameItemSameComponents(box(rifle, round, 30), box(rifle, round, 29)), "different loads do not");
+        helper.assertFalse(ItemStack.isSameItemSameComponents(box(rifle, round, 30), box(rifle, Items.IRON_NUGGET, 30)), "nor different rounds");
+        ItemStack spent = box(rifle, round, 1);
+        Magazines.setContents(spent, Magazines.contents(spent).pop());
+        helper.assertTrue(ItemStack.isSameItemSameComponents(spent, new ItemStack(rifle)), "a magazine fired empty is a new one again");
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.getInventory().setItem(2, box(rifle, round, 30));
+        player.getInventory().add(box(rifle, round, 30));
+        helper.assertValueEqual(player.getInventory().getItem(2).getCount(), 2, "the inventory merges like magazines");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public void theReloadKeyTakesOneMagazineOfAStackAndTheOldOneFindsRoom(GameTestHelper helper) {
+        Gunner g = gunner(helper, 20, 0);                    // adopted into a box of 20 on the first tick
+        ItemStack three = box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 75);
+        three.setCount(3);
+        g.player().getInventory().setItem(6, three);
+        driveTicks(helper, g, 1, 1);
+        helper.runAtTickTime(2, () -> PlayerGunnery.onReloadKey(g.player(), false));
+        driveTicks(helper, g, 3, RELOAD_TICKS + 3);
+        helper.runAtTickTime(RELOAD_TICKS + 4, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 75, "one full magazine went in");
+            helper.assertValueEqual(Magazines.inserted(g.gun()).orElseThrow().getCount(), 1, "one, not the stack");
+            ItemStack rest = g.player().getInventory().getItem(6);
+            helper.assertValueEqual(rest.getCount(), 2, "two of the three keep their slot");
+            helper.assertValueEqual(Magazines.contents(rest).rounds(), 75, "still full");
+            // The gun is in slot 0; the part magazine matches nothing carried, so it takes the first free slot.
+            helper.assertValueEqual(Magazines.contents(g.player().getInventory().getItem(1)).rounds(), 20, "the part magazine found the first free slot");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void theMagazineScreenFillsOneMagazineOfAStackAndSetsTheRestAside(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        Player player = g.player();
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.RIFLE_MAGAZINE.get(), 3));
+        player.getInventory().setItem(9, new ItemStack(ModItems.ROUND.get(), 64));
+        helper.assertTrue(MagazineMenu.open(player, InteractionHand.MAIN_HAND), "the screen opens");
+        helper.assertValueEqual(player.getMainHandItem().getCount(), 1, "one stays in the hand");
+        helper.assertValueEqual(player.getInventory().getItem(1).getCount(), 2, "the other two are set aside in the first free slot");
+        MagazineMenu menu = new MagazineMenu(1, player.getInventory(), InteractionHand.MAIN_HAND);
+        helper.assertTrue(menu.clickMenuButton(player, MagazineMenu.FILL_BUTTON), "the fill loads");
+        helper.assertValueEqual(Magazines.contents(player.getMainHandItem()).rounds(), 30, "the one in the hand is full");
+        helper.assertTrue(Magazines.contents(player.getInventory().getItem(1)).isEmpty(), "the two set aside are still empty");
+        helper.assertValueEqual(player.getInventory().countItem(ModItems.ROUND.get()), 34, "thirty rounds taken, once");
+        // A stack that reaches the hand while the screen is open (a number-key swap, a pickup) is set aside before the next write.
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.RIFLE_MAGAZINE.get(), 2));
+        helper.assertTrue(menu.clickMenuButton(player, MagazineMenu.FILL_BUTTON), "the fill loads again");
+        helper.assertValueEqual(player.getMainHandItem().getCount(), 1, "one in the hand");
+        helper.assertValueEqual(Magazines.contents(player.getMainHandItem()).rounds(), 30, "filled");
+        helper.assertValueEqual(player.getInventory().countItem(ModItems.ROUND.get()), 4, "thirty more taken, not sixty");
+        helper.assertValueEqual(player.getInventory().getItem(1).getCount(), 3, "the spare empty one joined the two set aside");
+        // With nowhere to set a stack aside the screen does not open and the stack is untouched.
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.RIFLE_MAGAZINE.get(), 2));
+        for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+            if (player.getInventory().items.get(slot).isEmpty()) {
+                player.getInventory().setItem(slot, new ItemStack(Items.COBBLESTONE));
+            }
+        }
+        player.getInventory().setItem(1, new ItemStack(ModItems.RIFLE_MAGAZINE.get(), MagazineItem.MAX_STACK));   // like, but full
+        helper.assertFalse(MagazineMenu.open(player, InteractionHand.MAIN_HAND), "no room: the screen stays shut");
+        helper.assertValueEqual(player.getMainHandItem().getCount(), 2, "and the stack is still in the hand");
         helper.succeed();
     }
 
