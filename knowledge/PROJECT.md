@@ -274,10 +274,19 @@ dependency is `[0.3.0,)` so an older Backpacks+ beside this mod is refused by th
 rather than misplaced. The HUD booth gained the friend's cases: GUI scale 3 in the 1280
 window (427 wide) and a full-HD window at the auto scale (480 wide) with both attack
 indicator settings, browsing and idle, and swaps the gun back after each G release so the
-counter stays in every photo. Record: `devtools/verification/release-2.7.1.md`. Until
-0.3.0 is published, `build.gradle` takes the sibling checkout's jar; restore the ivy
-artifact before tagging. Release awaits Rusty's go with Backpacks+ 0.3.0 and Redstonewall
-Jackson 0.2.0.
+counter stays in every photo. Record: `devtools/verification/release-2.7.1.md`. The
+gametest classpath takes the published Backpacks+ 0.3.0. Released with Backpacks+ 0.3.0
+and Redstonewall Jackson 0.2.0 in pack 1.58.0, below.
+
+## Published and deployed — 2026-09-24 UTC, pack 1.58.0
+
+Version 2.7.1 is [published](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.7.1)
+and deployed through Mod Hub in pack **1.58.0**, replacing 2.7.0. Release asset, tested jar
+and installed server jar match SHA-1 `65dc99d9bc2127f5f4d7a348a896e4f1d1fd7c6f`. Rusty:
+"go. 2 minute warning then restart server". Restart 00:16:11 UTC after the warning (one
+player still on), ready at 00:16:32, the log noting "rangedweaponsmod (version 2.7.0 ->
+2.7.1)" with the nested protocol 1.7.0 found, 20 TPS, Mod Hub parity clean. The server
+repo's `knowledge/releases/pack-1.58.0.md` has the whole deployment.
 
 ## Published and deployed — 2026-09-23, pack 1.57.1
 
