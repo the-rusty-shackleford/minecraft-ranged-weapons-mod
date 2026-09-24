@@ -17,6 +17,7 @@
  */
 package com.chunkworks.rangedweaponsmod.net;
 
+import com.chunkworks.rangedweaponsmod.FeedModes;
 import com.chunkworks.rangedweaponsmod.PlayerGunnery;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.client.RecoilCamera;
@@ -25,7 +26,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
- * The four payloads, registered under one protocol version. Handlers run
+ * The five payloads, registered under one protocol version. Handlers run
  * on the main thread of their side, which the registrar arranges by
  * default.
  */
@@ -33,7 +34,7 @@ public final class Payloads {
     private Payloads() {}
 
     /** Bumped when a payload's shape changes; a mismatch refuses the connection early. */
-    private static final String VERSION = "2";
+    private static final String VERSION = "3";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
@@ -43,6 +44,12 @@ public final class Payloads {
                 (payload, context) -> PlayerGunnery.onReloadKey(context.player(), payload.swap()));
         registrar.playToServer(AimPayload.TYPE, AimPayload.STREAM_CODEC,
                 (payload, context) -> PlayerGunnery.onAim(context.player(), payload.aiming()));
+        registrar.playToServer(FeedPayload.TYPE, FeedPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof net.minecraft.server.level.ServerPlayer player) {
+                        FeedModes.set(player, payload.mode());
+                    }
+                });
         registrar.playToClient(ShotFiredPayload.TYPE, ShotFiredPayload.STREAM_CODEC,
                 (payload, context) -> {
                     // Only ever executed on a client; the guard keeps the

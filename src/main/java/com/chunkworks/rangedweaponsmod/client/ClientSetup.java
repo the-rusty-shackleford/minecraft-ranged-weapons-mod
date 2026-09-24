@@ -77,6 +77,12 @@ public final class ClientSetup {
         }
     };
 
+    /** The Mods screen's config page, so the feed mode and the feel are a click away in game, saved live. Called from the mod's constructor on a client only. */
+    public static void registerConfigScreen(net.neoforged.fml.ModContainer container) {
+        container.registerExtensionPoint(net.neoforged.neoforge.client.gui.IConfigScreenFactory.class,
+                net.neoforged.neoforge.client.gui.ConfigurationScreen::new);
+    }
+
     @SubscribeEvent
     public static void registerKeys(RegisterKeyMappingsEvent event) {
         event.register(Keys.RELOAD);

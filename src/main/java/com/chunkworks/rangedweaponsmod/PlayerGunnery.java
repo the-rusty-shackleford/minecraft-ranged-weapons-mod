@@ -179,7 +179,7 @@ public final class PlayerGunnery {
         }
         Gunnery gunnery = player.getData(ModData.GUNNERY);
         long now = level.getGameTime();
-        FeedMode mode = ServerConfig.feed();
+        FeedMode mode = FeedModes.of(player);
         boolean magazineFed = GunItem.usesMagazines(stack, mode);
         // Creative has unlimited ammunition, as it has unlimited arrows: the
         // gun is presented to the trigger as full and no shot spends a round.
@@ -439,7 +439,7 @@ public final class PlayerGunnery {
      * no kind other than the loaded one is in reach
      */
     public static Optional<Item> nextKind(Player player, RangedWeapon weapon, ItemStack stack) {
-        return nextKind(RoundSources.of(player, ServerConfig.feed()), weapon, stack);
+        return nextKind(RoundSources.of(player, FeedModes.of(player)), weapon, stack);
     }
 
     static Optional<Item> nextKind(RoundSources reach, RangedWeapon weapon, ItemStack stack) {
@@ -454,7 +454,7 @@ public final class PlayerGunnery {
      * accepted round in reach, the inventory hotbar first
      */
     public static Optional<Item> chooseAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
-        return chooseAmmo(RoundSources.of(player, ServerConfig.feed()), weapon, stack);
+        return chooseAmmo(RoundSources.of(player, FeedModes.of(player)), weapon, stack);
     }
 
     static Optional<Item> chooseAmmo(RoundSources reach, RangedWeapon weapon, ItemStack stack) {
@@ -467,7 +467,7 @@ public final class PlayerGunnery {
      * if none
      */
     public static int countAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
-        return countAmmo(RoundSources.of(player, ServerConfig.feed()), weapon, stack);
+        return countAmmo(RoundSources.of(player, FeedModes.of(player)), weapon, stack);
     }
 
     static int countAmmo(RoundSources reach, RangedWeapon weapon, ItemStack stack) {

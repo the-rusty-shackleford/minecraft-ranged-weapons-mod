@@ -54,10 +54,12 @@ public final class RangedWeaponsMod {
         // A client config is only ever loaded on a client; registering it on a
         // dedicated server is a no-op, and the class holds no client types.
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
-        // The server's rules for everyone, kept with the world and sent to
-        // each client at login.
-        container.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
-        // A game-bus event, not a mod-bus one.
+        // The config page under Mods; the client class is only touched on a client.
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
+            com.chunkworks.rangedweaponsmod.client.ClientSetup.registerConfigScreen(container);
+        }
+        // Game-bus events, not mod-bus ones.
         NeoForge.EVENT_BUS.addListener(PlayerGunnery::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(FeedModes::onLogout);
     }
 }

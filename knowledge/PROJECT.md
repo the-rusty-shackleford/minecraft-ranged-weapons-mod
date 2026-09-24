@@ -262,7 +262,25 @@ Rusty's reminder; the protocol library's `com.nfx.rangedweapons` and Armed Pilla
 package are a coordinated move still to be decided. Release awaits Rusty's go, together
 with Backpacks+ 0.2.2.
 
-## The counter asks Backpacks+ where the gesture is — 2.7.1 (2026-09-23, evening), unreleased
+## The feed mode is each player's own — 2.8.0 (2026-09-24 UTC), unreleased
+
+Rusty, told the mode was the world's server config plus a restart: "It should be a
+per-player config setting." D-0024 supersedes D-0023's server-wide rule (the modes
+themselves stand): `ammunition.feed` is now in each player's `rangedweaponsmod-client.toml`
+and on NeoForge's config page under Mods (`IConfigScreenFactory` registered, so every
+client value is editable in game, saved live). `FeedSync` sends a `FeedPayload` at login
+and whenever the client config reloads; `FeedModes` keeps each connected player's choice
+on the server (by UUID, dropped at logout; `MAGAZINES` for a client the server has not
+heard from); the gunnery reads `FeedModes.of(player)`, the tooltip and the counter the
+client's own setting. Protocol "3". `ServerConfig` is deleted; the box's
+`serverconfig/rangedweaponsmod-server.toml` is ignored. Gametests set the mode on their
+own mock gunner (`loose(gunner(...))`), no batches; the HUD booth chooses through
+`FeedSync`. 133 JUnit, 59 real-server gametests (two modes side by side in one tick), the
+HUD booth's loose and adopted frames through the client's own choice
+(`devtools/verification/release-2.8.0.md`); jar SHA-1 `1a44f1ed036dc7ba54063509ae77d513e558d89f`.
+Release awaits Rusty's go: protocol "3" makes every client update together.
+
+## The counter asks Backpacks+ where the gesture is — 2.7.1 (2026-09-23, evening)
 
 Backpacks+ 0.3.0 (its D-0025) keeps its four-mount row beside the hotbar by closing the
 cells up instead of lifting, after Rusty's friend's bar went compact with the Expedition

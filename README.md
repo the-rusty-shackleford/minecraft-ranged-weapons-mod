@@ -95,9 +95,9 @@ ammunition, as it has unlimited arrows: every gun fires without spending a
 round, needs no magazine, never reloads, and the counter shows an infinity
 sign.
 
-**Two modes**, the server's choice (`feed` in the world's
-`serverconfig/rangedweaponsmod-server.toml`). **Magazines**, the default, is
-everything above. **Loose** makes every gun an internal store like the shotgun:
+**Two modes**, each player's own choice (`ammunition.feed` in your
+`config/rangedweaponsmod-client.toml`, or Mods → Ranged Weapons Mod → Config in
+game, saved live). **Magazines**, the default, is everything above. **Loose** makes every gun an internal store like the shotgun:
 `R` and the empty trigger load loose rounds, one kind at a time, `Shift+R` changes
 kind and hands the loaded ones back, capacity is the gun's own (15, 30, 30, 75), and
 a load into the pistol, rifles or machine gun takes the gun's change time, the same
@@ -107,9 +107,10 @@ only, never the mounts: the bag is the reserve, drawn on when the pockets are
 empty, and rounds a swap hands back go to your pockets, never into a bag. A gun
 holding a magazine hands it back on first sight, load and all, and no gun takes
 one; magazines stay craftable and fillable so nothing is lost, and switching back
-adopts loose rounds into a magazine as before. Every client receives the mode at
-login, so the counter and the tooltips show the rule in force: change the file,
-then restart the server.
+adopts loose rounds into a magazine as before. Your client tells the server your
+choice at login and the moment you change it, and the server follows it for your
+guns alone; the counter and the tooltips read it straight from your setting.
+Another player on the same server can be in the other mode.
 
 **Recoil.** Each shot kicks the camera up by the gun's `recoil_pitch` and a
 random side by `recoil_yaw`, and the kick recovers exponentially at `recovery`
@@ -341,20 +342,13 @@ overshoot that can clip even when the source PCM was normalized. Rebuild with
 cannot keep every decoded sample at or below .98. Recordings and action timing remain
 as credited in the sound sources. See D-0017 for the reproduced UI/audio defects.
 
-## Server config
-
-`serverconfig/rangedweaponsmod-server.toml` in the world folder, written with its
-defaults the first time the world starts, and sent to every client at login. One
-value: `feed`, `MAGAZINES` (the default) or `LOOSE`, described under *Two modes*
-above. Change it, then restart the server; a client connected while it changes
-keeps the old mode until it logs in again.
-
 ## Client config
 
 `config/rangedweaponsmod-client.toml`:
 
 | Key | Default | Meaning |
 |---|---|---|
+| `ammunition.feed` | `MAGAZINES` | `MAGAZINES` or `LOOSE`: how your guns take rounds, described under *Two modes*; yours alone, told to the server at login and on change; also on the Mods screen's config page |
 | `recoil.recoilScale` | 1.0 | multiplies the camera kick of every shot; 0 turns it off |
 | `recoil.modelKickScale` | 1.0 | multiplies how much the gun in hand jumps, separately |
 | `recoil.modelBackPerDegree` | 0.07 | blocks the gun in hand is pushed back toward the shoulder per degree of camera kick |

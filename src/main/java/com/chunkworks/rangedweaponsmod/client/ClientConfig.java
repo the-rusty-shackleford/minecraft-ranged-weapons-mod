@@ -17,6 +17,7 @@
  */
 package com.chunkworks.rangedweaponsmod.client;
 
+import com.chunkworks.rangedweaponsmod.domain.FeedMode;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
@@ -37,9 +38,24 @@ public final class ClientConfig {
     public static final ModConfigSpec.DoubleValue AIM_ZOOM;
     public static final ModConfigSpec.DoubleValue SCOPE_ZOOM;
     public static final ModConfigSpec.BooleanValue HUD_ENABLED;
+    /** How this player's guns take their rounds; see {@link FeedMode}. */
+    public static final ModConfigSpec.EnumValue<FeedMode> FEED;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+
+        builder.comment("How your guns take their rounds. Yours alone: the server follows each player's own choice,",
+                        "told at login and whenever this changes (the Mods screen's config page saves it live).")
+               .push("ammunition");
+
+        FEED = builder
+                .comment("MAGAZINES: the pistol, rifles and machine gun take detachable magazines and hold nothing without one;",
+                         "           the shotgun and revolver load loose rounds from the inventory.",
+                         "LOOSE: every gun loads loose rounds, drawn from the whole inventory and then from carried Backpacks+ bags;",
+                         "       magazines are not needed, and a gun holding one hands it back.")
+                .defineEnum("feed", FeedMode.MAGAZINES);
+
+        builder.pop();
 
         builder.comment("How a shot feels. The kick itself comes from the gun's handling data;",
                         "these scale what reaches your screen. Read live.")
@@ -92,5 +108,14 @@ public final class ClientConfig {
 
         builder.pop();
         SPEC = builder.build();
+    }
+
+    /**
+     * effects: returns this player's choice of how their guns take rounds,
+     * {@link FeedMode#MAGAZINES} before the config loads or where there is
+     * none (a dedicated server)
+     */
+    public static FeedMode feed() {
+        return SPEC.isLoaded() ? FEED.get() : FeedMode.MAGAZINES;
     }
 }

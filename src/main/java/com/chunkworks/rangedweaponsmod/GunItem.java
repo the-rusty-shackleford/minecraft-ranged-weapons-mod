@@ -105,9 +105,9 @@ public final class GunItem extends Item {
         return isMagazineFed(stack) && mode.requiresMagazines();
     }
 
-    /** effects: returns {@link #usesMagazines(ItemStack, FeedMode)} under the mode in force */
+    /** effects: returns {@link #usesMagazines(ItemStack, FeedMode)} under this client's own setting: what the tooltip and the counter show */
     public static boolean usesMagazines(ItemStack stack) {
-        return usesMagazines(stack, ServerConfig.feed());
+        return usesMagazines(stack, FeedModes.local());
     }
 
     /** Whether aiming down its sights looks through a scope. */

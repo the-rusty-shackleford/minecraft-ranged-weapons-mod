@@ -22,7 +22,7 @@ import com.chunkworks.rangedweaponsmod.Magazines;
 import com.chunkworks.rangedweaponsmod.ModData;
 import com.chunkworks.rangedweaponsmod.ModItems;
 import com.chunkworks.rangedweaponsmod.Reload;
-import com.chunkworks.rangedweaponsmod.ServerConfig;
+import com.chunkworks.rangedweaponsmod.client.FeedSync;
 import com.chunkworks.rangedweaponsmod.domain.FeedMode;
 import com.chunkworks.rangedweaponsmod.domain.Magazine;
 import net.minecraft.client.Minecraft;
@@ -162,9 +162,9 @@ public final class HudBooth {
         }
         if(phase==10) {
             // Loose mode: a machine gun with forty loose rounds and no magazine, a stack of eight boxes beside it.
+            FeedSync.choose(FeedMode.LOOSE);   // this player's own choice, told to the integrated server
             mc.getSingleplayerServer().execute(()->{
                 var sp=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
-                ServerConfig.FEED.set(FeedMode.LOOSE);
                 ItemStack gun=new ItemStack(ModItems.MACHINE_GUN.get());
                 RangedWeapons.resolve(gun).load(gun,40,ModItems.ROUND.get());
                 sp.setItemSlot(EquipmentSlot.MAINHAND,gun);
@@ -173,7 +173,7 @@ public final class HudBooth {
         }
         if(phase==11) {
             // Back to magazines: the loose rounds are adopted into a box on the gunnery's next look.
-            mc.getSingleplayerServer().execute(()->ServerConfig.FEED.set(FeedMode.MAGAZINES));
+            FeedSync.choose(FeedMode.MAGAZINES);
         }
     }
 

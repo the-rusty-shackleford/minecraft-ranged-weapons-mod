@@ -39,7 +39,7 @@ import com.chunkworks.rangedweaponsmod.MagazineItem;
 import com.chunkworks.rangedweaponsmod.PlayerGunnery;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.Reload;
-import com.chunkworks.rangedweaponsmod.ServerConfig;
+import com.chunkworks.rangedweaponsmod.FeedModes;
 import com.chunkworks.rangedweaponsmod.domain.FeedMode;
 import com.chunkworks.backpacksplus.BackpackItems;
 import com.chunkworks.backpacksplus.BagContents;
@@ -47,8 +47,6 @@ import com.chunkworks.backpacksplus.BagLocations;
 import com.chunkworks.backpacksplus.domain.BackpackTier;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.BlockPos;
-import net.minecraft.gametest.framework.AfterBatch;
-import net.minecraft.gametest.framework.BeforeBatch;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
@@ -126,25 +124,10 @@ public final class GunneryGameTests {
         return gunner(helper, mode, ModItems.MACHINE_GUN.get(), rounds, ammo);
     }
 
-    /**
-     * The server's feed mode is one value for every test running at once, so
-     * the mode is a property of the batch, not the test: the default batch
-     * runs in magazines mode (whatever a crashed run left in the world's
-     * config) and the "loose" batch in loose mode, put back after.
-     */
-    @BeforeBatch(batch = "defaultBatch")
-    public void magazinesMode(ServerLevel level) {
-        ServerConfig.FEED.set(FeedMode.MAGAZINES);
-    }
-
-    @BeforeBatch(batch = "loose")
-    public void looseMode(ServerLevel level) {
-        ServerConfig.FEED.set(FeedMode.LOOSE);
-    }
-
-    @AfterBatch(batch = "loose")
-    public void looseModeOff(ServerLevel level) {
-        ServerConfig.FEED.set(FeedMode.MAGAZINES);
+    /** The feed mode is each player's own (D-0024): a gunner in loose mode has told the server so, as a client does at login. */
+    private static Gunner loose(Gunner g) {
+        FeedModes.set(g.player(), FeedMode.LOOSE);
+        return g;
     }
 
     private static Gunner gunner(GameTestHelper helper, GameType mode, net.minecraft.world.item.Item gunItem, int rounds, int ammo) {
@@ -848,11 +831,11 @@ public final class GunneryGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "arena", batch = "loose", timeoutTicks = 100)
+    @GameTest(template = "arena", timeoutTicks = 100)
     public void looseModeLoadsLooseRoundsIntoAMagazineFedGunInItsChangeTime(GameTestHelper helper) {
-        Gunner g = gunner(helper, 0, 100);                   // a stack of ninety-nine and one more
+        Gunner g = loose(gunner(helper, 0, 100));            // a stack of ninety-nine and one more
         helper.assertValueEqual(g.player().getInventory().getItem(1).getCount(), 99, "the inventory holds ninety-nine to a slot");
-        helper.assertValueEqual(ServerConfig.feed(), FeedMode.LOOSE, "the batch runs in loose mode");
+        helper.assertValueEqual(FeedModes.of(g.player()), FeedMode.LOOSE, "this gunner is in loose mode");
         PlayerGunnery.onTrigger(g.player(), true);
         driveTicks(helper, g, 1, RELOAD_TICKS + 1);
         helper.runAtTickTime(2, () -> {
@@ -869,9 +852,9 @@ public final class GunneryGameTests {
         });
     }
 
-    @GameTest(template = "arena", batch = "loose", timeoutTicks = 60)
+    @GameTest(template = "arena", timeoutTicks = 60)
     public void looseModeHandsAMagazineBackWithItsLoad(GameTestHelper helper) {
-        Gunner g = gunner(helper, 0, 0);
+        Gunner g = loose(gunner(helper, 0, 0));
         Magazines.insert(g.gun(), g.weapon(), box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 20));
         helper.assertValueEqual(g.weapon().rounds(g.gun()), 20, "the box feeds the gun until the gunnery sees it");
         driveTicks(helper, g, 1, 1);
@@ -885,9 +868,9 @@ public final class GunneryGameTests {
         });
     }
 
-    @GameTest(template = "arena", batch = "loose", timeoutTicks = 200)
+    @GameTest(template = "arena", timeoutTicks = 200)
     public void looseModeShiftRChangesKindAndAMagazineIsNotAmmunition(GameTestHelper helper) {
-        Gunner g = gunner(helper, 10, 0);
+        Gunner g = loose(gunner(helper, 10, 0));
         g.weapon().load(g.gun(), 10, ModItems.ROUND.get());                                         // ten rounds of a stated kind, loose in the store
         g.player().getInventory().setItem(4, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 75));   // a full box: not ammunition here
         g.player().getInventory().setItem(6, new ItemStack(Items.IRON_NUGGET, 30));                 // the other medium kind
@@ -908,10 +891,10 @@ public final class GunneryGameTests {
         });
     }
 
-    @GameTest(template = "arena", batch = "loose", timeoutTicks = 100)
+    @GameTest(template = "arena", timeoutTicks = 100)
     public void looseModeDrawsFromTheWornBagAfterThePocketsAndNeverFromAMount(GameTestHelper helper) {
         helper.assertTrue(ModList.get().isLoaded("backpacksplus"), "Backpacks+ is on the gametest classpath");
-        Gunner g = gunner(helper, 0, 5);                                                            // five rounds in the pockets
+        Gunner g = loose(gunner(helper, 0, 5));                                                     // five rounds in the pockets
         ItemStack bag = bag(BackpackItems.EXPEDITION.get(), 0, new ItemStack(ModItems.ROUND.get(), 60));
         BackpackTier tier = BagContents.tier(bag);
         int mount = tier.storageSlots() + 3;                                                        // the last mount of four: a small one
@@ -935,9 +918,9 @@ public final class GunneryGameTests {
         });
     }
 
-    @GameTest(template = "arena", batch = "loose", timeoutTicks = 60)
+    @GameTest(template = "arena", timeoutTicks = 60)
     public void aBagCarriedInASlotIsAPocketInLooseMode(GameTestHelper helper) {
-        Gunner g = shotgunner(helper, 0, 0);
+        Gunner g = loose(shotgunner(helper, 0, 0));
         g.player().getInventory().setItem(7, bag(BackpackItems.BASIC.get(), 2, new ItemStack(ModItems.SHELL.get(), 12)));
         helper.assertValueEqual(PlayerGunnery.chooseAmmo(g.player(), g.weapon(), g.gun()).orElseThrow(), ModItems.SHELL.get(), "the carried bag is a pocket");
         helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 12, "with its twelve shells");
@@ -946,7 +929,7 @@ public final class GunneryGameTests {
 
     @GameTest(template = "arena", timeoutTicks = 60)
     public void noBagIsAPocketInMagazinesMode(GameTestHelper helper) {
-        helper.assertValueEqual(ServerConfig.feed(), FeedMode.MAGAZINES, "the default batch runs in magazines mode");
+        helper.assertValueEqual(FeedModes.of(helper.makeMockPlayer(GameType.SURVIVAL)), FeedMode.MAGAZINES, "a player the server has not heard from is in magazines mode");
         Gunner g = shotgunner(helper, 0, 3);
         g.player().getInventory().setItem(7, bag(BackpackItems.BASIC.get(), 2, new ItemStack(ModItems.SHELL.get(), 12)));
         g.player().getInventory().setItem(BagLocations.CHEST, bag(BackpackItems.EXPEDITION.get(), 0, new ItemStack(ModItems.SHELL.get(), 40)));

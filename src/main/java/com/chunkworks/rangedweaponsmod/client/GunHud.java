@@ -86,7 +86,7 @@ public final class GunHud {
         int screenHeight = graphics.guiHeight();
 
         boolean unlimited = mc.player.hasInfiniteMaterials();
-        boolean magazineFed = GunItem.usesMagazines(stack);   // the server's mode, received at login
+        boolean magazineFed = GunItem.usesMagazines(stack);   // this player's own setting
         Optional<ItemStack> magazine = Magazines.inserted(stack);
         if (magazineFed && !unlimited && magazine.isPresent()) {
             capacity = Magazines.contents(magazine.get()).capacity();
