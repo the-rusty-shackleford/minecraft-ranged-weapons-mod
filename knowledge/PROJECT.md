@@ -132,6 +132,9 @@ Decided by Rusty on 2026-09-06, in this order:
   ammunition families; 1.3 for
   the block impact and the Hold My Items hook; 1.2 for the synced data map, the muzzle origin in
   `ShotReport.play` and the non-saving fallback bullet.
+- `minecraft-backpacks-plus` 0.3.0 or later, optional, client side, never bundled: the
+  ammo panel asks it where a gear gesture is (since 2.7.1); in loose mode its bags are
+  pockets (since 2.7.0). Absent, the panel keeps its place and only the inventory feeds.
 
 
 2026-09-16 presentation polish: D-0017 repairs long magazine labels with bounded styled text and full hover help,
@@ -258,6 +261,23 @@ package moved from `com.nfx.rangedweaponsmod` to `com.chunkworks.rangedweaponsmo
 Rusty's reminder; the protocol library's `com.nfx.rangedweapons` and Armed Pillagers'
 package are a coordinated move still to be decided. Release awaits Rusty's go, together
 with Backpacks+ 0.2.2.
+
+## The counter asks Backpacks+ where the gesture is — 2.7.1 (2026-09-23, evening), unreleased
+
+Backpacks+ 0.3.0 (its D-0025) keeps its four-mount row beside the hotbar by closing the
+cells up instead of lifting, after Rusty's friend's bar went compact with the Expedition
+bag; Rusty: "make sure it does not clash with the ammo indicator UI". This mod's adapter
+had recomputed Backpacks+' old fit formula to decide when to raise the panel, and would
+have drifted. `BackpackHudCompat.browsingBottomRight()` now calls
+`GearClient.browsingBottomRight()`, Backpacks+' own word from its own layout; the optional
+dependency is `[0.3.0,)` so an older Backpacks+ beside this mod is refused by the loader
+rather than misplaced. The HUD booth gained the friend's cases: GUI scale 3 in the 1280
+window (427 wide) and a full-HD window at the auto scale (480 wide) with both attack
+indicator settings, browsing and idle, and swaps the gun back after each G release so the
+counter stays in every photo. Record: `devtools/verification/release-2.7.1.md`. Until
+0.3.0 is published, `build.gradle` takes the sibling checkout's jar; restore the ivy
+artifact before tagging. Release awaits Rusty's go with Backpacks+ 0.3.0 and Redstonewall
+Jackson 0.2.0.
 
 ## Published and deployed — 2026-09-23, pack 1.57.1
 

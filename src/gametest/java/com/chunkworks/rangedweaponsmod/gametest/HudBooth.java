@@ -47,7 +47,13 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 /**
- * Real-client HUD partitions: normal and compact GUI, gear idle/browsing,
+ * Real-client HUD partitions: normal GUI (640 wide), gear idle/browsing; GUI
+ * scale 3 in the 1280 window (427 wide), where the Expedition bag's four
+ * mounts close up beside the hotbar and the held-deposit cell goes one row up,
+ * browsing and idle, the counter clear of both; a full-HD window at the auto
+ * scale (480 wide), a friend's full screen, browsing and idle with the
+ * crosshair indicator and browsing with the hotbar attack indicator, where the
+ * four mounts close up; the compact minimum (320 wide), where the row lifts;
  * renamed magazine, reload progress, right/left main hand; then the server's
  * loose mode (the counter shows rounds and the kind, never "No magazine", and
  * a stack of eight boxes shows its count on the hotbar) and the switch back,
@@ -64,7 +70,10 @@ public final class HudBooth {
     private static int changedAt;
     private static String pending;
     private static boolean initialized;
-    private static final String[] NAMES={"normal-idle","normal-gear","compact-gear","compact-left","normal-reload","loose-rounds","magazines-adopted"};
+    private static final String[] NAMES={"normal-idle","normal-gear","scale3-gear","scale3-idle",
+            "fullhd-gear","fullhd-idle","fullhd-hotbar-indicator-gear","compact-gear","compact-left","normal-reload","loose-rounds","magazines-adopted"};
+    /** The tick at which G goes down again to swap the gun back into the hand after a release put it in the bag; -1 for none. */
+    private static int swapBackAt=-1;
     private HudBooth() {}
 
     @SubscribeEvent
@@ -116,6 +125,10 @@ public final class HudBooth {
             }
             return;
         }
+        // Releasing G swaps the gun into the first mount, as it should; a second press and release swaps it
+        // back, so the photos after a release keep the gun in hand and its counter on screen.
+        if(tick==swapBackAt) browse(mc,true);
+        if(tick==swapBackAt+2) {browse(mc,false);swapBackAt=-1;}
         if(pending==null && tick-changedAt>=50) pending="hud-"+NAMES[phase];
         if(tick>1000) fail(mc,"HUD capture never completed");
     }
@@ -133,16 +146,21 @@ public final class HudBooth {
         com.chunkworks.rangedweaponsmod.RangedWeaponsMod.LOGGER.info("booth: PASS HUD captured {} at {}x{}",name,event.getGuiGraphics().guiWidth(),event.getGuiGraphics().guiHeight());
         phase++;changedAt=tick;
         if(phase==1) browse(mc,true);
-        if(phase==2) {mc.options.guiScale().set(4);mc.resizeDisplay();}
-        if(phase==3) {mc.options.mainHand().set(net.minecraft.world.entity.HumanoidArm.LEFT);mc.options.broadcastOptions();}
-        if(phase==4) {
-            browse(mc,false);mc.options.guiScale().set(2);mc.resizeDisplay();
+        if(phase==2) {mc.options.guiScale().set(3);mc.resizeDisplay();}   // 427 wide in the 1280 window: four mounts close up, still browsing
+        if(phase==3) release(mc);
+        if(phase==4) {mc.getWindow().setWindowed(1920,1080);mc.options.guiScale().set(4);mc.resizeDisplay();browse(mc,true);}   // 480 wide: full HD at the auto scale
+        if(phase==5) release(mc);
+        if(phase==6) {mc.options.attackIndicator().set(net.minecraft.client.AttackIndicatorStatus.HOTBAR);browse(mc,true);}   // the quick slot moves out: four mounts close up
+        if(phase==7) {mc.options.attackIndicator().set(net.minecraft.client.AttackIndicatorStatus.CROSSHAIR);mc.getWindow().setWindowed(1280,960);mc.resizeDisplay();}   // 320 wide: the minimum, the row lifts
+        if(phase==8) {mc.options.mainHand().set(net.minecraft.world.entity.HumanoidArm.LEFT);mc.options.broadcastOptions();}
+        if(phase==9) {
+            release(mc);mc.options.guiScale().set(2);mc.resizeDisplay();
             mc.getSingleplayerServer().execute(()->{
                 var sp=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
                 sp.getMainHandItem().set(ModData.RELOAD.get(),new Reload(sp.level().getGameTime(),200));
             });
         }
-        if(phase==5) {
+        if(phase==10) {
             // Loose mode: a machine gun with forty loose rounds and no magazine, a stack of eight boxes beside it.
             mc.getSingleplayerServer().execute(()->{
                 var sp=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
@@ -153,7 +171,7 @@ public final class HudBooth {
                 sp.getInventory().setItem(1,new ItemStack(ModItems.MACHINE_GUN_BOX.get(),8));
             });
         }
-        if(phase==6) {
+        if(phase==11) {
             // Back to magazines: the loose rounds are adopted into a box on the gunnery's next look.
             mc.getSingleplayerServer().execute(()->ServerConfig.FEED.set(FeedMode.MAGAZINES));
         }
@@ -161,6 +179,11 @@ public final class HudBooth {
 
     private static void browse(Minecraft mc,boolean down) {
         for(var key:mc.options.keyMappings) if(key.getName().equals("key.backpacksplus.gear")) key.setDown(down);
+    }
+
+    /** Lets go of G, which swaps the gun into the first mount, and arranges the swap back a few ticks later. */
+    private static void release(Minecraft mc) {
+        browse(mc,false);swapBackAt=tick+8;
     }
 
     private static void fail(Minecraft mc,String message) {

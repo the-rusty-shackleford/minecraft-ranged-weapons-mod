@@ -14,10 +14,13 @@ mob that arms itself through the protocol can carry it. [Armed
 Pillagers](../minecraft-armed-pillagers) does, subject to its own class policy
 (automatic weapons are denied by default, so no pillager is issued this one).
 
-The ammo panel sits above Quick Slot and below Backpacks+' compact gear row.
-While browsing a full-width backpack gear row, it rises above the expanded controls.
-It stays on the right at different GUI scales, shortens long magazine names
-with an ellipsis, and keeps the count and reload bar inside the screen.
+The ammo panel sits above Quick Slot and Backpacks+' gear row beside it, and below
+that row where it lifts above the status icons on the smallest screens. While a gear
+gesture is open in the bottom-right corner, Backpacks+ 0.3.0 or later says so and the
+panel rises above the gesture's cells and text; with an older Backpacks+ present the
+loader refuses to load this mod rather than let the two overlap. The panel stays on the
+right at different GUI scales, shortens long magazine names with an ellipsis, and keeps
+the count and reload bar inside the screen.
 
 ## What it does
 

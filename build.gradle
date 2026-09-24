@@ -197,8 +197,9 @@ dependencies {
     // gametest server so the bag pocket is exercised against the real thing.
     // 0.2.2 or later on the gametest server: it skips a player whose connection never
     // negotiated its channel (a test's mock), which 0.2.1 crashed on.
-    compileOnly 'com.chunkworks.backpacksplus:backpacksplus:0.2.3'
-    gametestImplementation 'com.chunkworks.backpacksplus:backpacksplus:0.2.3'
+    // 0.3.0 or later: it says itself where its gear gesture is (its D-0025).
+    compileOnly 'com.chunkworks.backpacksplus:backpacksplus:0.3.0'
+    gametestImplementation 'com.chunkworks.backpacksplus:backpacksplus:0.3.0'
 
     implementation sourceSets.domain.output
 

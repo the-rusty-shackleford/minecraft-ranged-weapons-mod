@@ -112,14 +112,15 @@ public final class GunHud {
             label = next.map(Item::getDescription).orElse(Component.empty());
         }
         // Minecraft's minimum GUI is 320 wide. Stay outside its 182-wide
-        // hotbar, above Quick Slot, and below Backpacks+' compact mount row.
+        // hotbar, above Quick Slot and Backpacks+' mount row beside it, and
+        // below that row when it lifts above the status icons.
         int available = Math.max(ICON + 8, screenWidth - screenWidth / 2 - 105);
         int width = Math.min(Math.min(MAX_WIDTH, available),
                 Math.max(ICON + 4 + font.width(text), font.width(label)));
         int x = screenWidth - RIGHT_INSET - width;
         int iconY = screenHeight - 51;
         if (net.neoforged.fml.ModList.get().isLoaded("backpacksplus")
-                && BackpackHudCompat.browsingBottomRow(mc, screenWidth)) {
+                && BackpackHudCompat.browsingBottomRight()) {
             iconY = screenHeight - 114;
         }
         int labelY = iconY + ICON + 2;
