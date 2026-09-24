@@ -296,6 +296,20 @@ counter stays in every photo. Record: `devtools/verification/release-2.7.1.md`. 
 gametest classpath takes the published Backpacks+ 0.3.0. Released with Backpacks+ 0.3.0
 and Redstonewall Jackson 0.2.0 in pack 1.58.0, below.
 
+## Published and deployed — 2026-09-24 UTC, pack 1.59.0
+
+Version 2.8.0 is [published](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.8.0)
+and deployed through Mod Hub in pack **1.59.0**, replacing 2.7.1. Release asset, tested jar
+and installed server jar match SHA-1 `1a44f1ed036dc7ba54063509ae77d513e558d89f`. Rusty:
+"release all that". Restart 03:04:49 UTC after the two-minute warning (three players still
+on), ready at 03:05:05, the log noting "rangedweaponsmod (version 2.7.1 -> 2.8.0)" with the
+nested protocol 1.7.0 found, 20 TPS, Mod Hub parity clean. Protocol "3" refuses every 2.7.x
+client until it updates. The box's `serverconfig/rangedweaponsmod-server.toml` is no longer
+read; the mode is each player's client setting (`knowledge/operations/feed-mode.md` in the
+server repo). Not yet seen on a live client: the Mods-screen config page and a mid-session
+switch; Rusty's own is the first. The server repo's `knowledge/releases/pack-1.59.0.md` has
+the whole deployment.
+
 ## Published and deployed — 2026-09-24 UTC, pack 1.58.0
 
 Version 2.7.1 is [published](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.7.1)

@@ -33,3 +33,14 @@ the server by their client at login and on change, kept per connected player.
   `ConfigurationScreen`, registered in the mod constructor on the client only; its save fires
   `ModConfigEvent.Reloading`, which `FeedSync` listens for), and a player changing mode
   mid-session on the shared server. Rusty's own switch is the first live test.
+
+## Published — 2026-09-24 03:00 UTC
+
+Rusty: "release all that". `./gradlew --offline --no-watch-fs clean build` on the same
+commit (ad5e76a) green again, all 59 required gametests passed, the jar byte-identical
+(SHA-1 `1a44f1ed036dc7ba54063509ae77d513e558d89f`, 453260 bytes). Tag `v2.8.0`, pushed;
+[release](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.8.0)
+asset downloaded back and matching by SHA-1. Pack 1.59.0 assembled on the box at 03:02:33
+UTC by `modhub add-file --replaces mods/rangedweaponsmod-2.7.1.jar`, `set-version 1.59.0`,
+`assemble` (client sha256 `b9b809ed…`, server `663baa4c…`); the deployment is in the server
+repo's `knowledge/releases/pack-1.59.0.md`.
