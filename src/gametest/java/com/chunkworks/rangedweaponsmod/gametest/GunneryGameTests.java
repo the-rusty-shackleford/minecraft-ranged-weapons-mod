@@ -87,7 +87,7 @@ import java.util.List;
  * magazine; a magazine in the gun is handed back with its load; Shift+R
  * changes kind and a magazine is not ammunition; the worn bag is a pocket
  * after the inventory's, its mounts never; a bag carried in a slot is a
- * pocket in loose mode and no bag is in magazines mode; rounds stack to
+ * pocket in either mode (D-0026, overturning D-0023's magazines-mode rule); rounds stack to
  * the game's ceiling. The tube (the shotgun): an empty trigger reloads from the
  * inventory, loading the lesser of the space and the rounds carried; the
  * key tops up without the trigger; a gun mid-reload neither fires nor
@@ -478,10 +478,10 @@ public final class GunneryGameTests {
         g.player().getInventory().setItem(3, box(ModItems.PISTOL_MAGAZINE.get(), ModItems.SMALL_ROUND.get(), 10));
         g.player().getInventory().setItem(4, box(ModItems.RIFLE_MAGAZINE.get(), Items.IRON_NUGGET, 10));
         g.player().getInventory().setItem(6, box(ModItems.MACHINE_GUN_BOX.get(), Items.IRON_NUGGET, 10));
-        helper.assertValueEqual(Magazines.loadedMagazineSlots(g.player(), g.gun(), g.weapon()), List.of(6), "only the box counts");
+        helper.assertValueEqual(Magazines.loadedMagazines(g.player(), g.gun(), g.weapon()).stream().map(Magazines.Found::position).toList(), List.of(6), "only the box counts");
         ItemStack rifle = new ItemStack(ModItems.RIFLE.get());
         RangedWeapon rifleWeapon = RangedWeapons.resolve(rifle);
-        helper.assertValueEqual(Magazines.loadedMagazineSlots(g.player(), rifle, rifleWeapon), List.of(4), "the rifle takes the rifle magazine and not the box");
+        helper.assertValueEqual(Magazines.loadedMagazines(g.player(), rifle, rifleWeapon).stream().map(Magazines.Found::position).toList(), List.of(4), "the rifle takes the rifle magazine and not the box");
         helper.assertTrue(Magazines.accepts(new ItemStack(ModItems.SCOPED_RIFLE.get()), rifleWeapon,
                 new ItemStack(ModItems.RIFLE_MAGAZINE.get())), "the scoped rifle shares the rifle's magazines");
         helper.assertFalse(Magazines.accepts(new ItemStack(ModItems.PISTOL.get()), RangedWeapons.resolve(new ItemStack(ModItems.PISTOL.get())),
@@ -927,14 +927,36 @@ public final class GunneryGameTests {
         helper.succeed();
     }
 
+    /** D-0026 (Rusty: bags count in both modes), overturning D-0023's inventory-only magazines mode. */
     @GameTest(template = "arena", timeoutTicks = 60)
-    public void noBagIsAPocketInMagazinesMode(GameTestHelper helper) {
+    public void everyBagIsAPocketInMagazinesModeToo(GameTestHelper helper) {
         helper.assertValueEqual(FeedModes.of(helper.makeMockPlayer(GameType.SURVIVAL)), FeedMode.MAGAZINES, "a player the server has not heard from is in magazines mode");
         Gunner g = shotgunner(helper, 0, 3);
         g.player().getInventory().setItem(7, bag(BackpackItems.BASIC.get(), 2, new ItemStack(ModItems.SHELL.get(), 12)));
         g.player().getInventory().setItem(BagLocations.CHEST, bag(BackpackItems.EXPEDITION.get(), 0, new ItemStack(ModItems.SHELL.get(), 40)));
-        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 3, "the shotgun reaches the inventory's three shells and neither bag");
+        helper.assertValueEqual(PlayerGunnery.countAmmo(g.player(), g.weapon(), g.gun()), 3 + 12 + 40, "the shotgun reaches the inventory's three shells and both bags'");
         helper.succeed();
+    }
+
+    /** D-0026: a loaded magazine carried only in a bag is one the gun takes, after the inventory's,
+     * in magazines mode; the finger remembers the bag's cell, placed after every inventory slot. */
+    @GameTest(template = "arena", timeoutTicks = 100)
+    public void anEmptyTriggerLoadsAMagazineCarriedInABag(GameTestHelper helper) {
+        Gunner g = gunner(helper, 0, 0);
+        g.player().getInventory().setItem(2, new ItemStack(ModItems.MACHINE_GUN_BOX.get()));   // empty: passed over
+        g.player().getInventory().setItem(9, bag(BackpackItems.BASIC.get(), 4, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 40)));
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, RELOAD_TICKS + 1);
+        helper.runAtTickTime(2, () -> {
+            Reload reload = g.gun().get(ModData.RELOAD.get());
+            helper.assertTrue(reload != null && !reload.swap(), "a magazine change started: the bag's magazine counts as carried");
+        });
+        helper.runAtTickTime(RELOAD_TICKS + 2, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), 40, "the bag's magazine went in");
+            helper.assertTrue(BagContents.copy(g.player().getInventory().getItem(9)).get(4).isEmpty(), "and left the bag's cell");
+            helper.assertValueEqual(g.player().getData(ModData.GUNNERY).lastSwapSlot(), 1000 + 4, "the finger remembers the bag's cell, after every inventory slot");
+            helper.succeed();
+        });
     }
 
     // --- the action worked after a shot --------------------------------------

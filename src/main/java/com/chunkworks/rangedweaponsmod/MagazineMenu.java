@@ -17,6 +17,7 @@
  */
 package com.chunkworks.rangedweaponsmod;
 
+import com.chunkworks.carried.api.Carried;
 import com.chunkworks.rangedweaponsmod.domain.Magazine;
 import java.util.ArrayList;
 import java.util.List;
@@ -289,12 +290,11 @@ public final class MagazineMenu extends AbstractContainerMenu {
         MagazineItem item = item();
         Magazine<Item> magazine = contents();
         List<Item> order = new ArrayList<>();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            ItemStack candidate = inventory.getItem(slot);
+        Carried.forEach(player, (store, cell, candidate) -> {
             if (item.accepts(candidate) && !order.contains(candidate.getItem())) {
                 order.add(candidate.getItem());
             }
-        }
+        });
         boolean loaded = false;
         for (Item round : order) {
             if (magazine.isFull()) {
@@ -305,7 +305,9 @@ public final class MagazineMenu extends AbstractContainerMenu {
             if (count <= 0 || stacksOf(next) > RUN_SLOTS) {
                 continue;   // this kind would need a slot the row does not have
             }
-            PlayerGunnery.takeItem(player, round, count);
+            if (!PlayerGunnery.takeItem(player, round, count)) {
+                continue;
+            }
             magazine = next;
             loaded = true;
         }

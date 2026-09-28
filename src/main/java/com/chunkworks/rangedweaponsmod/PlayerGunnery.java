@@ -17,6 +17,7 @@
  */
 package com.chunkworks.rangedweaponsmod;
 
+import com.chunkworks.carried.api.Carried;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import com.nfx.rangedweapons.api.Shot;
@@ -203,11 +204,11 @@ public final class PlayerGunnery {
         } else if (magazineFed) {
             // What can be loaded is a magazine with rounds in it; the one in
             // the gun is not carried and so is never its own replacement.
-            boolean carried = !Magazines.loadedMagazineSlots(player, stack, weapon).isEmpty();
+            boolean carried = Magazines.hasLoadedMagazine(player, stack, weapon);
             ammoAvailable = carried;
             swapAvailable = carried;
         } else {
-            RoundSources reach = RoundSources.of(player, mode);
+            RoundSources reach = RoundSources.of(player);
             ammoAvailable = countAmmo(reach, weapon, stack) > 0;
             swapAvailable = nextKind(reach, weapon, stack).isPresent();
         }
@@ -233,9 +234,9 @@ public final class PlayerGunnery {
                 } else if (magazineFed) {
                     after = finishMagazineChange(player, level, weapon, stack, after, reload.swap());
                 } else if (reload.swap()) {
-                    finishKindSwap(player, level, weapon, stack, capacity, mode);
+                    finishKindSwap(player, level, weapon, stack, capacity);
                 } else {
-                    finishReload(player, level, weapon, stack, rounds, capacity, mode);
+                    finishReload(player, level, weapon, stack, rounds, capacity);
                 }
             }
             case CLICK_EMPTY -> {
@@ -308,7 +309,7 @@ public final class PlayerGunnery {
         if (magazineFed && !player.hasInfiniteMaterials()) {
             int standard = weapon.profile().defaults().capacity();
             int incoming = chooseMagazine(player, stack, weapon, gunnery, swap)
-                    .map(slot -> Magazines.contents(player.getInventory().getItem(slot)).capacity())
+                    .map(found -> Magazines.contents(found.stack()).capacity())
                     .orElse(standard);
             duration = ReloadPlan.magazineChangeTicks(Handling.of(stack).magazineChangeTicks(), standard, incoming);
         } else if (GunItem.isMagazineFed(stack) && !player.hasInfiniteMaterials()) {
@@ -321,13 +322,15 @@ public final class PlayerGunnery {
         play(level, player, ModSounds.RELOAD_START.get(), 0.8f, 1.0f);
     }
 
-    /** effects: returns the inventory slot a change or a swap would take its magazine from right now, if any */
-    private static Optional<Integer> chooseMagazine(Player player, ItemStack stack, RangedWeapon weapon, Gunnery gunnery,
-                                                    boolean swap) {
-        List<Integer> slots = Magazines.loadedMagazineSlots(player, stack, weapon);
+    /** effects: returns the carried magazine a change or a swap would take right now, if any: the
+     * inventory's and the bags' (D-0026), by their positions in reading order */
+    private static Optional<Magazines.Found> chooseMagazine(Player player, ItemStack stack, RangedWeapon weapon, Gunnery gunnery,
+                                                          boolean swap) {
+        List<Magazines.Found> found = Magazines.loadedMagazines(player, stack, weapon);
+        List<Integer> positions = found.stream().map(Magazines.Found::position).toList();
         OptionalInt last = gunnery.lastSwapSlot() < 0 ? OptionalInt.empty() : OptionalInt.of(gunnery.lastSwapSlot());
-        OptionalInt choice = swap ? MagazineChoice.forSwap(slots, last) : MagazineChoice.forReload(slots);
-        return choice.isPresent() ? Optional.of(choice.getAsInt()) : Optional.empty();
+        OptionalInt choice = swap ? MagazineChoice.forSwap(positions, last) : MagazineChoice.forReload(positions);
+        return choice.isPresent() ? Optional.of(found.get(positions.indexOf(choice.getAsInt()))) : Optional.empty();
     }
 
     /** Creative loads its native round, or keeps the one it holds; it needs no magazine and no ammunition. */
@@ -358,23 +361,26 @@ public final class PlayerGunnery {
      */
     private static Gunnery finishMagazineChange(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
                                                 Gunnery gunnery, boolean swap) {
-        Optional<Integer> choice = chooseMagazine(player, stack, weapon, gunnery, swap);
+        Optional<Magazines.Found> choice = chooseMagazine(player, stack, weapon, gunnery, swap);
         if (choice.isEmpty()) {
             return gunnery;
         }
-        int slot = choice.get();
-        ItemStack incoming = player.getInventory().removeItem(slot, 1);
+        Magazines.Found found = choice.get();
+        ItemStack incoming = Carried.takeFrom(player, found.store(), found.cell(), 1);
+        if (incoming.isEmpty()) {
+            return gunnery;
+        }
         ItemStack outgoing = Magazines.eject(stack, weapon);
         if (!outgoing.isEmpty()) {
-            if (player.getInventory().getItem(slot).isEmpty()) {
-                player.getInventory().setItem(slot, outgoing);
+            if (found.inInventory() && player.getInventory().getItem(found.cell()).isEmpty()) {
+                player.getInventory().setItem(found.cell(), outgoing);
             } else {
-                player.getInventory().placeItemBackInInventory(outgoing);
+                Carried.giveOrDrop(player, outgoing);
             }
         }
         Magazines.insert(stack, weapon, incoming);
         play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
-        return gunnery.swappedFrom(slot);
+        return gunnery.swappedFrom(found.position());
     }
 
     /**
@@ -386,16 +392,15 @@ public final class PlayerGunnery {
      * one in reach order, as many as are in reach; the sound plays if
      * anything was loaded
      */
-    private static void finishKindSwap(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack, int capacity,
-                                       FeedMode mode) {
-        RoundSources reach = RoundSources.of(player, mode);
+    private static void finishKindSwap(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack, int capacity) {
+        RoundSources reach = RoundSources.of(player);
         Optional<Item> next = nextKind(reach, weapon, stack);
         int rounds = weapon.rounds(stack);
         Optional<Item> loaded = weapon.loadedAmmo(stack)
                 .or(() -> weapon.profile().ammoItem().flatMap(BuiltInRegistries.ITEM::getOptional));
         if (rounds > 0 && loaded.isPresent()) {
-            player.getInventory().placeItemBackInInventory(new ItemStack(loaded.get(), rounds));
-            reach = RoundSources.of(player, mode);   // the inventory changed under the reach
+            Carried.giveOrDrop(player, new ItemStack(loaded.get(), rounds));
+            reach = RoundSources.of(player);   // the inventory changed under the reach
         }
         weapon.load(stack, 0);
         if (next.isEmpty()) {
@@ -405,14 +410,16 @@ public final class PlayerGunnery {
         if (loadedNow == 0) {
             return;
         }
-        reach.take(next.get(), loadedNow);
+        if (!reach.take(next.get(), loadedNow)) {
+            return;
+        }
         weapon.load(stack, loadedNow, next.get());
         play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
     }
 
     private static void finishReload(Player player, ServerLevel level, RangedWeapon weapon, ItemStack stack,
-                                     int rounds, int capacity, FeedMode mode) {
-        RoundSources reach = RoundSources.of(player, mode);
+                                     int rounds, int capacity) {
+        RoundSources reach = RoundSources.of(player);
         Optional<Item> round = chooseAmmo(reach, weapon, stack);
         if (round.isEmpty()) {
             return;
@@ -421,7 +428,9 @@ public final class PlayerGunnery {
         if (loaded == 0) {
             return;
         }
-        reach.take(round.get(), loaded);
+        if (!reach.take(round.get(), loaded)) {
+            return;
+        }
         weapon.load(stack, rounds + loaded, round.get());
         play(level, player, ModSounds.RELOAD_END.get(), 0.8f, 1.0f);
     }
@@ -439,7 +448,7 @@ public final class PlayerGunnery {
      * no kind other than the loaded one is in reach
      */
     public static Optional<Item> nextKind(Player player, RangedWeapon weapon, ItemStack stack) {
-        return nextKind(RoundSources.of(player, FeedModes.of(player)), weapon, stack);
+        return nextKind(RoundSources.of(player), weapon, stack);
     }
 
     static Optional<Item> nextKind(RoundSources reach, RangedWeapon weapon, ItemStack stack) {
@@ -454,7 +463,7 @@ public final class PlayerGunnery {
      * accepted round in reach, the inventory hotbar first
      */
     public static Optional<Item> chooseAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
-        return chooseAmmo(RoundSources.of(player, FeedModes.of(player)), weapon, stack);
+        return chooseAmmo(RoundSources.of(player), weapon, stack);
     }
 
     static Optional<Item> chooseAmmo(RoundSources reach, RangedWeapon weapon, ItemStack stack) {
@@ -467,40 +476,25 @@ public final class PlayerGunnery {
      * if none
      */
     public static int countAmmo(Player player, RangedWeapon weapon, ItemStack stack) {
-        return countAmmo(RoundSources.of(player, FeedModes.of(player)), weapon, stack);
+        return countAmmo(RoundSources.of(player), weapon, stack);
     }
 
     static int countAmmo(RoundSources reach, RangedWeapon weapon, ItemStack stack) {
         return chooseAmmo(reach, weapon, stack).map(reach::count).orElse(0);
     }
 
+    /** effects: returns how many of {@code item} the player carries, their bags included (D-0026) */
     static int countItem(Player player, Item item) {
-        int count = 0;
-        Inventory inventory = player.getInventory();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            ItemStack stack = inventory.getItem(slot);
-            if (stack.is(item)) {
-                count += stack.getCount();
-            }
-        }
-        return count;
+        return Carried.count(player, item);
     }
 
     /**
-     * requires: the player carries at least {@code count} of {@code item}<br>
-     * effects: removes that many, first slots first
+     * requires: the logical server<br>
+     * effects: removes {@code count} of {@code item} from what the player carries, the inventory's
+     * before the bags', and returns true; removes nothing and returns false when fewer are carried
      */
-    static void takeItem(Player player, Item item, int count) {
-        Inventory inventory = player.getInventory();
-        int remaining = count;
-        for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
-            ItemStack stack = inventory.getItem(slot);
-            if (stack.is(item)) {
-                int taken = Math.min(remaining, stack.getCount());
-                stack.shrink(taken);
-                remaining -= taken;
-            }
-        }
+    static boolean takeItem(Player player, Item item, int count) {
+        return Carried.take(player, stack -> stack.is(item), count, taken -> {});
     }
 
     /** How far along the look the crosshair is taken to point when nothing is in the way. */

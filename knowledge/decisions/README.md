@@ -47,3 +47,5 @@ thought and someone later would want to know *why*.
 - [D-0023](D-0023.md): The server chooses magazines or loose rounds; loose reaches into bags; rounds stack to 99.
 
 - [D-0024](D-0024.md): The feed mode is each player's own, in their client config, told to the server by their client at login and on change; the server config is gone.
+
+- [D-0026](D-0026.md): Rounds and magazines come from everything a player carries, bags included, in either feed mode, through Carried; what comes back goes where a give goes (supersedes D-0023's reach).

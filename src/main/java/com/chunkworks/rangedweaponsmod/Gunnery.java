@@ -35,7 +35,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param firedThisPress   whether the gun has fired since the trigger was pressed; a semi-automatic fires once per pull
  * @param aiming           whether the player is aiming down the sights
  * @param swapRequested    whether the swap key (Shift+R) was pressed and not yet acted on
- * @param lastSwapSlot     the inventory slot the last swap took its magazine from, or -1: swaps walk the inventory from there
+ * @param lastSwapSlot     the position the last swap took its magazine from, or -1: swaps walk what the player carries from there
+ *                         (an inventory slot's number, or a bag's cell after them: {@code Magazines.Found}, D-0026)
  * @param cycleAt          the tick the action's sound (a pump, a bolt) is due after the last shot, or 0 for none
  * @param cycleSound       that sound's id, or null
  */
@@ -91,7 +92,7 @@ public record Gunnery(boolean held, long nextShotAt, boolean clickedThisPress, b
         return new Gunnery(held, nextShotAt, clickedThisPress, false, firedThisPress, aiming, false, lastSwapSlot, cycleAt, cycleSound);
     }
 
-    /** effects: returns this remembering that a swap took its magazine from {@code slot} */
+    /** effects: returns this remembering that a swap took its magazine from position {@code slot} (see {@code Magazines.Found}) */
     public Gunnery swappedFrom(int slot) {
         return new Gunnery(held, nextShotAt, clickedThisPress, reloadRequested, firedThisPress, aiming, swapRequested, slot, cycleAt, cycleSound);
     }

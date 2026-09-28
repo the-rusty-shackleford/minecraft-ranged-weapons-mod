@@ -17,6 +17,7 @@
  */
 package com.chunkworks.rangedweaponsmod;
 
+import com.chunkworks.carried.api.Carried;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
 import com.chunkworks.rangedweaponsmod.domain.Magazine;
@@ -185,25 +186,52 @@ public final class Magazines {
         if (inserted(gun).isEmpty()) {
             return false;
         }
-        player.getInventory().placeItemBackInInventory(eject(gun, weapon));
+        Carried.giveOrDrop(player, eject(gun, weapon));
         return true;
     }
 
     /**
-     * effects: returns the inventory slots holding a magazine {@code gun}
-     * takes with rounds in it, in inventory order -- hotbar first, as the
-     * container numbers them
+     * A carried magazine and where it is.
+     * <p>AF: the magazine {@code stack} at cell {@code cell} of {@code store} (Carried's names: the
+     * inventory's slot, or a bag's cell), at {@code position} in reading order: an inventory slot
+     * is its own number (0-40, hotbar first), a bag's cell comes after them all, at 1000 + 100 x the
+     * bag's place among the player's bags + the cell, so the swap order walks the inventory and then
+     * each bag (D-0026).
      */
-    public static List<Integer> loadedMagazineSlots(Player player, ItemStack gun, RangedWeapon weapon) {
-        List<Integer> slots = new ArrayList<>();
-        Inventory inventory = player.getInventory();
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            ItemStack candidate = inventory.getItem(slot);
-            if (accepts(gun, weapon, candidate) && contents(candidate).rounds() > 0) {
-                slots.add(slot);
-            }
+    public record Found(int position, String store, int cell, ItemStack stack) {
+        /** effects: whether the magazine is in an inventory slot rather than a bag */
+        public boolean inInventory() {
+            return Carried.INVENTORY.equals(store);
         }
-        return slots;
+    }
+
+    /**
+     * effects: returns the carried magazines {@code gun} takes with rounds in them, in reading
+     * order: the inventory (hotbar first, as the container numbers it), then every carried bag's
+     * storage cells (D-0026)
+     */
+    public static List<Found> loadedMagazines(Player player, ItemStack gun, RangedWeapon weapon) {
+        List<Found> found = new ArrayList<>();
+        List<String> stores = new ArrayList<>();
+        Carried.forEach(player, (store, cell, candidate) -> {
+            if (!accepts(gun, weapon, candidate) || contents(candidate).rounds() <= 0) {
+                return;
+            }
+            if (Carried.INVENTORY.equals(store)) {
+                found.add(new Found(cell, store, cell, candidate));
+                return;
+            }
+            if (!stores.contains(store)) {
+                stores.add(store);
+            }
+            found.add(new Found(1000 + 100 * stores.indexOf(store) + cell, store, cell, candidate));
+        });
+        return found;
+    }
+
+    /** effects: returns whether the player carries a magazine {@code gun} takes with rounds in it, their bags included */
+    public static boolean hasLoadedMagazine(Player player, ItemStack gun, RangedWeapon weapon) {
+        return Carried.has(player, candidate -> accepts(gun, weapon, candidate) && contents(candidate).rounds() > 0);
     }
 
     /** effects: returns the weapon for {@code gun}, or empty if the protocol has none for it */
