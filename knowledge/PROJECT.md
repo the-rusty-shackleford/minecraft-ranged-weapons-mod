@@ -340,3 +340,12 @@ nuggets". D-0025: the medium round is an iron nugget over gunpowder over `#c:nug
 (Create's copper nugget in the pack), eight to the craft; the slug keeps its iron ingot until Rusty
 says otherwise. The gametest mod stands in a never-shipped `copper_nugget` for the tag. Recipes
 regenerated (`round.json` alone changed); `clean build` green, 59 GameTests. No protocol change.
+
+## Published and deployed — 2026-09-28, pack 1.67.0
+
+Version 2.8.1 is [published](https://github.com/the-rusty-shackleford/minecraft-ranged-weapons-mod/releases/tag/v2.8.1)
+(asset SHA-1 `ab71b94845a8f49f5855cd28296a142d70bf3517`, matching the clean-built jar) and deployed through Mod Hub in pack
+**1.67.0**, replacing 2.8.0, on Rusty's "release with everything else after a 5 minute server
+warning": restart 01:13:36 UTC at the end of the warning with nobody on, `Done` at 01:13:52,
+"(2.8.0 -> 2.8.1)" in the log, 36 baseline errors, 20 TPS, parity clean. The server repo's
+`knowledge/releases/pack-1.67.0.md` has the deployment. Not yet seen in play by Rusty.
