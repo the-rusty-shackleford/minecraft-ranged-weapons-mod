@@ -192,8 +192,8 @@ them). A datapack that ships either path with the same item key overrides it.
 A gun with no `handling` entry gets a default for its profile's class.
 
 Ammunition: small rounds (an iron nugget over gunpowder over an iron nugget
-makes ten), medium rounds (an iron nugget over gunpowder over a copper ingot
-makes eight), shells (paper over gunpowder over an iron nugget makes four)
+makes ten), medium rounds (an iron nugget over gunpowder over a copper nugget,
+`c:nuggets/copper`, which Create's nugget fills in the pack, makes eight), shells (paper over gunpowder over an iron nugget makes four)
 and slugs (paper over gunpowder over an iron ingot makes four). Each is
 tagged into the protocol's family of that name, and each gun takes its
 family, so another mod's rounds of the same family load too.

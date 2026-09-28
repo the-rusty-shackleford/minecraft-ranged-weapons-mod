@@ -40,6 +40,10 @@ public final class BoothMod {
     /** A real registered addon round for long-label UI and Fill-button verification. Never shipped. */
     public static final DeferredItem<Item> LONG_ROUND = ITEMS.registerSimpleItem("long_round");
 
+    /** Stands in for Create's copper nugget, which fills c:nuggets/copper in the pack; the
+     * gametest server has no Create, and a round's case is that tag (D-0025). Never shipped. */
+    public static final DeferredItem<Item> COPPER_NUGGET = ITEMS.registerSimpleItem("copper_nugget");
+
     /** One item per candidate, named a..f as in the generator. */
     public static final List<DeferredItem<Item>> BOOTH_ITEMS = List.of(
             ITEMS.registerItem("booth_a", Item::new, new Item.Properties()),

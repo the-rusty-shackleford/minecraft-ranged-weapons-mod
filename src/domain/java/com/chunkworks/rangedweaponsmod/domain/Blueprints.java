@@ -56,7 +56,8 @@ public final class Blueprints {
     public static final String PLANKS = "#minecraft:planks";
     public static final String STICK = "#c:rods/wooden";
     public static final String GLASS_PANE = "#c:glass_panes/colorless";
-    public static final String COPPER = "#c:ingots/copper";
+    /** A round's case, by the common tag: Create's nugget fills it in the pack (D-0025). */
+    public static final String COPPER_NUGGET = "#c:nuggets/copper";
     public static final String IRON_NUGGET = "#c:nuggets/iron";
     public static final String GUNPOWDER = "#c:gunpowders";
     public static final String PAPER = "minecraft:paper";
@@ -151,7 +152,7 @@ public final class Blueprints {
             List.of("N", "G", "N"), Map.of('N', IRON_NUGGET, 'G', GUNPOWDER), List.of(GUNPOWDER));
 
     public static final Blueprint ROUND_RECIPE = new Shaped(ROUND, Category.COMBAT, ROUND, 8,
-            List.of("N", "G", "C"), Map.of('N', IRON_NUGGET, 'G', GUNPOWDER, 'C', COPPER), List.of(GUNPOWDER));
+            List.of("N", "G", "C"), Map.of('N', IRON_NUGGET, 'G', GUNPOWDER, 'C', COPPER_NUGGET), List.of(GUNPOWDER));
 
     public static final Blueprint SHELL_RECIPE = new Shaped(SHELL, Category.COMBAT, SHELL, 4,
             List.of("P", "G", "N"), Map.of('P', PAPER, 'G', GUNPOWDER, 'N', IRON_NUGGET), List.of(GUNPOWDER));

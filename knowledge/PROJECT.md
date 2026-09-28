@@ -332,3 +332,11 @@ the same 36 baseline errors, 20 TPS, Mod Hub "server matches the published pack"
 ships as `MAGAZINES`; the box's config file is written on this first start, and flipping it
 is `knowledge/operations/feed-mode.md` in the server repo. The gametest classpath now takes
 the published Backpacks+ 0.2.3.
+
+## Rounds from a copper nugget — 2026-09-28, 2.8.1
+
+Rusty: "for crafting rounds in the ranged weapons mod, instead of whole ingots they should use
+nuggets". D-0025: the medium round is an iron nugget over gunpowder over `#c:nuggets/copper`
+(Create's copper nugget in the pack), eight to the craft; the slug keeps its iron ingot until Rusty
+says otherwise. The gametest mod stands in a never-shipped `copper_nugget` for the tag. Recipes
+regenerated (`round.json` alone changed); `clean build` green, 59 GameTests. No protocol change.

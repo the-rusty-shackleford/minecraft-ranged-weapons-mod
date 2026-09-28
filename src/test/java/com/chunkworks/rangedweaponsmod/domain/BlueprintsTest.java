@@ -165,6 +165,9 @@ final class BlueprintsTest {
         assertEquals(4, Blueprints.byResult(Blueprints.SHELL).orElseThrow().count());
         assertEquals(4, Blueprints.byResult(Blueprints.SLUG).orElseThrow().count());
         assertTrue(Blueprints.rawMaterials(Blueprints.SLUG).containsKey(IRON), "a slug takes a whole ingot");
+        // D-0025: a round's case is a copper nugget, not an ingot.
+        assertEquals(Map.of(Blueprints.IRON_NUGGET, 1, Blueprints.GUNPOWDER, 1, Blueprints.COPPER_NUGGET, 1),
+                Blueprints.byResult(Blueprints.ROUND).orElseThrow().ingredients());
         assertEquals(List.of(Blueprints.SMALL_ROUND, Blueprints.ROUND, Blueprints.SHELL, Blueprints.SLUG), Blueprints.ammunition());
     }
 
@@ -174,7 +177,7 @@ final class BlueprintsTest {
         Blueprints.all().forEach(b -> used.addAll(b.ingredients().keySet()));
         // Coal is not here: only steel's recipe took it, and that is Metals and Materials' now.
         for (String material : List.of(IRON, Blueprints.REDSTONE, Blueprints.PLANKS, Blueprints.STICK, Blueprints.GLASS_PANE,
-                Blueprints.COPPER, Blueprints.IRON_NUGGET, Blueprints.GUNPOWDER, Blueprints.PAPER, Blueprints.STEEL)) {
+                Blueprints.COPPER_NUGGET, Blueprints.IRON_NUGGET, Blueprints.GUNPOWDER, Blueprints.PAPER, Blueprints.STEEL)) {
             assertTrue(used.contains(material), material + " is never used");
         }
         assertTrue(Blueprints.external().stream().anyMatch(b -> b.ingredients().containsKey(COAL)), "coal is used by the steel we count through");
