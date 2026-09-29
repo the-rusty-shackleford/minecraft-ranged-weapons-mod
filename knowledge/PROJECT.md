@@ -7,7 +7,7 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
-## Carried — 2.9.0, unreleased (2026-09-28)
+## Carried — 2.9.0 (2026-09-28), released 2026-09-29 in pack 1.68.0
 
 Rusty's one change for every mod that looks at a player's inventory: the Carried protocol.
 [D-0026](decisions/D-0026.md): rounds and magazines come from everything a player carries, bags
@@ -15,7 +15,8 @@ included, in either feed mode (overturning D-0023's inventory-only magazines mod
 "yes"); what comes back goes where a give goes. `BackpackPockets` and `Pockets` retired. 60
 GameTests with Backpacks+ 0.6.0 on the gametest server, green, and the HUD booth, green, in the
 release gate. Backpacks+ 0.6.0 comes from its GitHub release through the ivy repository in
-`build.gradle`. Ships with Carried and Backpacks+ 0.6.0 as one pack on Rusty's go.
+`build.gradle`; the jar built against it was byte-identical to the sibling build's. 126 JUnit.
+Deployed with Carried and Backpacks+ 0.6.0, sha1 `50cd3e36` on the server. Not yet seen in play.
 
 ## What this is
 
