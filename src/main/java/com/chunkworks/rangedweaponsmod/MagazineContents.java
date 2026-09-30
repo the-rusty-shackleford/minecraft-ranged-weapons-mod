@@ -83,6 +83,21 @@ public record MagazineContents(List<Run> runs) {
         return magazine;
     }
 
+    /**
+     * effects: returns how many rounds these contents hold in a magazine of {@code capacity}, as
+     * {@link #toMagazine} would keep them, without building the magazine
+     */
+    public int rounds(int capacity) {
+        int rounds = 0;
+        for (Run run : runs) {
+            rounds += run.count();
+            if (rounds >= capacity) {
+                return capacity;
+            }
+        }
+        return rounds;
+    }
+
     /** effects: returns the contents of {@code magazine} */
     public static MagazineContents of(Magazine<Item> magazine) {
         return new MagazineContents(magazine.segments().stream()

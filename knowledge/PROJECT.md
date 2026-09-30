@@ -7,6 +7,15 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
+## The counter — 2.10.0 (2026-09-29), unreleased
+
+Rusty: the counter should read the rounds loaded over the total you have, not over the capacity.
+[D-0027](decisions/D-0027.md): a full rifle with two full magazines carried reads `30 / 90`; the
+total is what a reload can reach through Carried (magazines the gun takes in Magazines mode, loose
+rounds it takes for a gun loaded directly, every kind); creative reads `∞` alone. `Stock` counts,
+`domain/Counter` writes the text, the HUD counts once a game tick. JUnit `CounterTest` (5), two
+GameTests; the HUD booth carries a spare box in the bag and loose rounds in its loose phase.
+
 ## Carried — 2.9.0 (2026-09-28), released 2026-09-29 in pack 1.68.0
 
 Rusty's one change for every mod that looks at a player's inventory: the Carried protocol.

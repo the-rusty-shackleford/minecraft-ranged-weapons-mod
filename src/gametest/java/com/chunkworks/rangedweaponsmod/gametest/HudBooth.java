@@ -106,6 +106,10 @@ public final class HudBooth {
                 var cells=NonNullList.withSize(40,ItemStack.EMPTY);
                 cells.set(36,new ItemStack(Items.IRON_SWORD));cells.set(37,new ItemStack(Items.IRON_PICKAXE));
                 cells.set(38,new ItemStack(Items.TORCH,32));cells.set(39,new ItemStack(Items.APPLE,8));
+                // A spare full box in the bag's first storage cell: the counter reads 75 / 150 (D-0027; a box holds 75).
+                ItemStack spare=new ItemStack(ModItems.MACHINE_GUN_BOX.get());
+                Magazines.setContents(spare,Magazine.<Item>empty(75).push(ModItems.ROUND.get(),75));
+                cells.set(0,spare);
                 bag.set(DataComponents.CONTAINER,ItemContainerContents.fromItems(cells));
                 sp.setItemSlot(EquipmentSlot.CHEST,bag);
                 ItemStack gun=new ItemStack(ModItems.MACHINE_GUN.get());
@@ -169,6 +173,8 @@ public final class HudBooth {
                 RangedWeapons.resolve(gun).load(gun,40,ModItems.ROUND.get());
                 sp.setItemSlot(EquipmentSlot.MAINHAND,gun);
                 sp.getInventory().setItem(1,new ItemStack(ModItems.MACHINE_GUN_BOX.get(),8));
+                // Sixty-four loose rounds: 40 / 104 here, the boxes not counted; 40 / 115 once back in magazines, the loose ones not.
+                sp.getInventory().setItem(2,new ItemStack(ModItems.ROUND.get(),64));
             });
         }
         if(phase==11) {

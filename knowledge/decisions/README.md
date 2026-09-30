@@ -49,3 +49,5 @@ thought and someone later would want to know *why*.
 - [D-0024](D-0024.md): The feed mode is each player's own, in their client config, told to the server by their client at login and on change; the server config is gone.
 
 - [D-0026](D-0026.md): Rounds and magazines come from everything a player carries, bags included, in either feed mode, through Carried; what comes back goes where a give goes (supersedes D-0023's reach).
+
+- [D-0027](D-0027.md): The counter reads the rounds loaded over every round a reload can reach, the loaded ones included (a full rifle and two full magazines: 30 / 90); loose rounds count only for a gun loaded directly; creative reads one infinity sign.

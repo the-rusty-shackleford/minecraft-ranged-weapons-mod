@@ -30,6 +30,8 @@ import java.util.Optional;
 import com.chunkworks.rangedweaponsmod.Magazines;
 import com.chunkworks.rangedweaponsmod.ModData;
 import com.chunkworks.rangedweaponsmod.Reload;
+import com.chunkworks.rangedweaponsmod.Stock;
+import com.chunkworks.rangedweaponsmod.domain.Counter;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -40,12 +42,13 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * The ammo panel above the lower-right quick slots: the round that fires next as
- * its item's icon, {@code rounds / capacity} beside it, the magazine's label
- * under it in the magazine's colour (or the round's name, for a gun loaded
- * directly), and a bar that fills while a reload runs. Drawn only while a
- * gun is held; everything it shows is on the stack (the rounds, the reload
- * and the inserted magazine, all synced) or in the profile (the capacity,
- * synced with the data map).
+ * its item's icon, {@code loaded / total} beside it ({@link Counter}: the total is
+ * every round a reload can reach, the loaded ones included, D-0027), the
+ * magazine's label under it in the magazine's colour (or the round's name, for a
+ * gun loaded directly), and a bar that fills while a reload runs. Drawn only
+ * while a gun is held; everything it shows is on the stack (the rounds, the
+ * reload and the inserted magazine, all synced), in the profile (the capacity,
+ * synced with the data map), or in what the player carries ({@link Stock}).
  */
 public final class GunHud {
     private GunHud() {}
@@ -61,6 +64,12 @@ public final class GunHud {
     private static final int LOW_FRACTION = 5;
     /** An item icon's size. */
     private static final int ICON = 16;
+
+    /** The reserve, counted at most once a tick though the panel is drawn every frame: for which stack, in which feed, at which game tick. */
+    private static ItemStack reserveFor = ItemStack.EMPTY;
+    private static boolean reserveMagazines;
+    private static long reserveAt = Long.MIN_VALUE;
+    private static int reserve;
 
     static void render(GuiGraphics graphics, DeltaTracker delta) {
         if (!ClientConfig.HUD_ENABLED.get()) {
@@ -91,7 +100,14 @@ public final class GunHud {
         if (magazineFed && !unlimited && magazine.isPresent()) {
             capacity = Magazines.contents(magazine.get()).capacity();
         }
-        String text = unlimited ? "\u221e / " + capacity : rounds + " / " + capacity;
+        long now = mc.level == null ? 0L : mc.level.getGameTime();
+        if (!unlimited && (stack != reserveFor || magazineFed != reserveMagazines || now != reserveAt)) {
+            reserveFor = stack;
+            reserveMagazines = magazineFed;
+            reserveAt = now;
+            reserve = Stock.reserve(player, stack, weapon, magazineFed);
+        }
+        String text = Counter.text(unlimited, rounds, reserve);
         int color = !unlimited && rounds * LOW_FRACTION <= capacity ? TEXT_LOW_COLOR : TEXT_COLOR;
 
         // The round that fires next, as its own icon: a slug looks like a

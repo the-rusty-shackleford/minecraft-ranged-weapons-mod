@@ -39,6 +39,8 @@ import com.chunkworks.rangedweaponsmod.MagazineItem;
 import com.chunkworks.rangedweaponsmod.PlayerGunnery;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.Reload;
+import com.chunkworks.rangedweaponsmod.Stock;
+import com.chunkworks.rangedweaponsmod.domain.Counter;
 import com.chunkworks.rangedweaponsmod.FeedModes;
 import com.chunkworks.rangedweaponsmod.domain.FeedMode;
 import com.chunkworks.backpacksplus.BackpackItems;
@@ -569,6 +571,52 @@ public final class GunneryGameTests {
         ItemStack magazine = new ItemStack(item);
         Magazines.setContents(magazine, Magazine.<Item>empty(item.capacity()).push(round, count));
         return magazine;
+    }
+
+    // --- the counter: the rounds loaded over every round a reload can reach (D-0027)
+
+    /** effects: returns the counter's text for {@code g}'s gun as the HUD computes it, under the feed {@code magazineFed} names */
+    private static String counter(Gunner g, boolean magazineFed) {
+        return Counter.text(false, g.weapon().rounds(g.gun()), Stock.reserve(g.player(), g.gun(), g.weapon(), magazineFed));
+    }
+
+    @GameTest(template = "arena")
+    public void theCounterReadsLoadedOverEveryRoundAReloadCanReach(GameTestHelper helper) {
+        Gunner g = gunner(helper, GameType.SURVIVAL, ModItems.RIFLE.get(), 0, 0);
+        Player p = g.player();
+        Magazines.insert(g.gun(), g.weapon(), box(ModItems.RIFLE_MAGAZINE.get(), ModItems.ROUND.get(), 30));
+        ItemStack two = box(ModItems.RIFLE_MAGAZINE.get(), ModItems.ROUND.get(), 30);
+        two.setCount(2);
+        p.getInventory().setItem(1, two);
+        helper.assertValueEqual(counter(g, true), "30 / 90", "a full rifle and two full magazines carried, as a stack");
+        // What a reload cannot reach adds nothing: loose rounds, an empty magazine, other guns' magazines.
+        p.getInventory().setItem(2, new ItemStack(ModItems.ROUND.get(), 64));
+        p.getInventory().setItem(3, new ItemStack(ModItems.RIFLE_MAGAZINE.get()));
+        p.getInventory().setItem(4, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 75));
+        p.getInventory().setItem(5, box(ModItems.PISTOL_MAGAZINE.get(), ModItems.SMALL_ROUND.get(), 15));
+        helper.assertValueEqual(counter(g, true), "30 / 90", "loose rounds and magazines it does not take are not counted");
+        // The off hand, the worn bag and a bag carried in a slot all count, a half-spent magazine by what it holds.
+        p.setItemInHand(InteractionHand.OFF_HAND, box(ModItems.RIFLE_MAGAZINE.get(), ModItems.ROUND.get(), 12));
+        p.getInventory().setItem(BagLocations.CHEST, bag(BackpackItems.EXPEDITION.get(), 0, box(ModItems.RIFLE_MAGAZINE.get(), ModItems.ROUND.get(), 30)));
+        p.getInventory().setItem(9, bag(BackpackItems.BASIC.get(), 4, box(ModItems.RIFLE_MAGAZINE.get(), ModItems.ROUND.get(), 7)));
+        helper.assertValueEqual(counter(g, true), "30 / 139", "30 + 60 + 12 + 30 + 7");
+        // Loose mode: the same rifle reaches loose rounds, a bag's too, and never a magazine.
+        p.getInventory().setItem(10, bag(BackpackItems.BASIC.get(), 0, new ItemStack(ModItems.ROUND.get(), 20)));
+        helper.assertValueEqual(counter(g, false), "30 / 114", "30 + 64 loose + 20 in a bag");
+        helper.succeed();
+    }
+
+    @GameTest(template = "arena")
+    public void aShotgunsCounterCountsEveryKindItTakes(GameTestHelper helper) {
+        Gunner g = gunner(helper, GameType.SURVIVAL, ModItems.SHOTGUN.get(), 4, 0);
+        Player p = g.player();
+        p.getInventory().setItem(1, new ItemStack(ModItems.SHELL.get(), 10));
+        p.getInventory().setItem(BagLocations.CHEST, bag(BackpackItems.EXPEDITION.get(), 0, new ItemStack(ModItems.SLUG.get(), 5)));
+        p.getInventory().setItem(2, new ItemStack(ModItems.ROUND.get(), 30));
+        p.getInventory().setItem(3, box(ModItems.MACHINE_GUN_BOX.get(), ModItems.ROUND.get(), 75));
+        helper.assertValueEqual(counter(g, GunItem.usesMagazines(g.gun(), FeedMode.MAGAZINES)), "4 / 19",
+                "four in the tube, ten shells and five slugs; another family's rounds and a magazine are not counted");
+        helper.succeed();
     }
 
     @GameTest(template = "arena")

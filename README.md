@@ -93,7 +93,7 @@ when picked up; if the clock it was started on is gone (another world), the
 reload is abandoned rather than finished early. Creative has unlimited
 ammunition, as it has unlimited arrows: every gun fires without spending a
 round, needs no magazine, never reloads, and the counter shows an infinity
-sign.
+sign alone.
 
 **Two modes**, each player's own choice (`ammunition.feed` in your
 `config/rangedweaponsmod-client.toml`, or Mods → Ranged Weapons Mod → Config in
@@ -147,10 +147,18 @@ the scope's mask covers all but a circle, the crosshair stays, and the gun is
 out of the way. Both zooms are client config.
 
 **The counter.** Beside the hotbar while a gun is held: the round that fires
-next as its own icon, rounds over capacity beside it, red at a fifth of a
-magazine, and under them the magazine's name in its dye colour (or *No
-magazine* in red; for the shotgun and revolver, the kind of round loaded), with a
-progress bar during a reload. Hidden with the rest of the HUD (`F1`).
+next as its own icon, and beside it the rounds loaded over every round you have
+for the gun, the loaded ones included (since 2.10.0, D-0027; it read rounds
+over capacity before). A full rifle with two full magazines carried reads
+`30 / 90`, and the second number falls only as you fire. "Every round you have"
+is what a reload can reach, wherever a reload looks (your pockets, your offhand
+and your bags): in Magazines mode, the rounds in the magazines the gun takes,
+never loose rounds, which go into a magazine first; for the shotgun, the
+revolver and every gun in Loose mode, the loose rounds it takes, of every kind
+(shells and slugs together). The loaded number turns red at a fifth of a magazine.
+Under them the magazine's name in its dye colour (or *No magazine* in red; for the
+shotgun and revolver, the kind of round loaded), with a progress bar during a
+reload. Hidden with the rest of the HUD (`F1`).
 
 **Where a round goes.** It leaves the muzzle -- forward, to the main-hand
 side, a little below the eye; on the line of sight when aiming, or a scope
