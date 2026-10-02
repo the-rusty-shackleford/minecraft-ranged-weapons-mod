@@ -24,6 +24,11 @@ repositories {
         metadataSources { artifact() }
         content { includeGroup('com.chunkworks.backpacksplus') }
     }
+    // Modrinth's maven, for the pack's Immersive Aircraft on the gametest server and in the booth.
+    maven {
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup('maven.modrinth') }
+    }
     mavenLocal()
 }
 
@@ -61,6 +66,24 @@ var copyGameTestStructures = tasks.register("copyGameTestStructures", Copy) {
 // whatever of the pack should be in the picture (Not Enough Animations and
 // its library, which re-pose the player) -- jars dropped there load, where
 // jars on the classpath are not discovered as mods by a dev launch.
+// Jars of the pack a booth needs, copied into run/booth/mods for the run that wants them and taken
+// out again for every other: Immersive Aircraft for the launcher booth's biplane (D-0028).
+configurations { boothMods { transitive = false } }
+var boothModsWanted = project.hasProperty('boothLauncher')
+var copyBoothMods = tasks.register("copyBoothMods") {
+    def jars = configurations.boothMods
+    def into = file('run/booth/mods')
+    def wanted = boothModsWanted
+    doLast {
+        into.mkdirs()
+        new File(into, 'immersive-aircraft-RkWu0N4D.jar').delete()
+        if (wanted) {
+            jars.files.each { jar -> java.nio.file.Files.copy(jar.toPath(), new File(into, jar.name).toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
+        }
+    }
+}
+
 var prepareBoothWorld = tasks.register("prepareBoothWorld", Copy) {
     from "run/world"
     into "run/booth/saves/booth"
@@ -113,6 +136,8 @@ neoForge {
             systemProperty 'rangedweaponsmod.photobooth', 'true'
             systemProperty 'rangedweaponsmod.hud', project.hasProperty('boothHud').toString()
             systemProperty 'rangedweaponsmod.revolver', project.hasProperty('boothRevolver') ? 'true' : 'false'
+            // -PboothLauncher: the rocket launcher's frames (D-0028), for its art.
+            systemProperty 'rangedweaponsmod.launcher', project.hasProperty('boothLauncher') ? 'true' : 'false'
             systemProperty 'rangedweaponsmod.observers', project.hasProperty('boothObservers') ? 'true' : 'false'
             // -PboothPose=one photographs the calibration items in the
             // one-handed pose, for a pistol's frame; two-handed otherwise.
@@ -122,6 +147,7 @@ neoForge {
             systemProperty 'rangedweaponsmod.booth.reference', project.findProperty('boothReference') ?: ''
             programArguments.addAll('--quickPlaySingleplayer', 'booth')
             taskBefore prepareBoothWorld
+            taskBefore copyBoothMods
         }
         // Data generation: the recipes and their recipe-book unlocks are
         // written from the domain's blueprints into src/generated/resources,
@@ -206,6 +232,11 @@ dependencies {
     // real thing. 0.6.0 or later: Carried's provider.
     compileOnly 'com.chunkworks.backpacksplus:backpacksplus:0.6.0'
     gametestImplementation 'com.chunkworks.backpacksplus:backpacksplus:0.6.0'
+    // Immersive Aircraft 1.4.6, the very jar the pack ships (Modrinth version RkWu0N4D, sha1
+    // f9bc465d0b64...): a biplane for the launcher booth to lock onto and bring down (D-0028).
+    // Booth only, through run/booth/mods: on the gametest server it sends its own payload to every
+    // mock player that joins, which their embedded connections refuse.
+    boothMods 'maven.modrinth:immersive-aircraft:RkWu0N4D'
 
     implementation sourceSets.domain.output
 

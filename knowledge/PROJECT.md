@@ -20,19 +20,26 @@ server switch; a lock holds until fired or lost; Astra does the art and sound.
   `Targets`, `RocketConfig` (the server config), and on the client `LockHud`, `LockTones`,
   `RocketRenderer` and `RocketSounds`.
 - **Network** version "4". Recipes regenerated; `collisions.py` against the pack's 115 jars finds none.
-- **Tests:** 173 JUnit, and 75 GameTests (13 new in `LauncherGameTests`, on a new 20×12×40 `range`
+- **Tests:** 173 JUnit, and 77 GameTests (15 new in `LauncherGameTests`, on a new 20×12×40 `range`
   structure). Each new rule was run once against a mutation and its test failed:
   - no steering;
   - every entity a target;
   - the switch ignored;
   - always armed;
   - the off hand allowed;
-  - the lock needing the sight.
+  - the lock needing the sight;
+  - no sanity cone, and no line of sight, on a client's report.
+- **The launcher booth** (`-PboothLauncher`, 2026-10-02): Rusty asked for a plane locked and shot
+  down. It plays a cow and Immersive Aircraft's biplane through the real keys, with 14 checks and
+  frames for Astra. It found three things, in D-0028's amendment:
+  - contact is now judged on the client and validated by the server, since a fast plane trailed
+    11° on the server and never locked;
+  - a proximity burst strikes the target's face, since a plane survived a burst 1.5 blocks off;
+  - Immersive Aircraft runs only in the booth, since it breaks mock players on the gametest server.
 
 **Not releasable yet:**
 - The art and sound are placeholders. Astra's brief is `devtools/art/ROCKET_LAUNCHER_BRIEF.md`.
 - Rusty's feel test is still to come: lock time, turn rate, blast power.
-- The booth has not been run; nothing in it shows the launcher until the art exists.
 
 Not verified anywhere yet: the tagged modded vehicles in a live client, and the HUD under shaders.
 

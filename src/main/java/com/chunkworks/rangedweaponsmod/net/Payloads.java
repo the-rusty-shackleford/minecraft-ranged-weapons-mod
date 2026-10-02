@@ -20,6 +20,7 @@ package com.chunkworks.rangedweaponsmod.net;
 import com.chunkworks.rangedweaponsmod.FeedModes;
 import com.chunkworks.rangedweaponsmod.PlayerGunnery;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
+import com.chunkworks.rangedweaponsmod.Seeking;
 import com.chunkworks.rangedweaponsmod.client.LockTones;
 import com.chunkworks.rangedweaponsmod.client.RecoilCamera;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -35,7 +36,7 @@ public final class Payloads {
     private Payloads() {}
 
     /** Bumped when a payload's shape changes; a mismatch refuses the connection early. */
-    // "4": the rocket launcher's synced seeker (D-0028); a "3" client cannot read it.
+    // "4": the rocket launcher's synced seeker and its reticle report (D-0028); a "3" client knows neither.
     private static final String VERSION = "4";
 
     public static void register(RegisterPayloadHandlersEvent event) {
@@ -46,6 +47,8 @@ public final class Payloads {
                 (payload, context) -> PlayerGunnery.onReloadKey(context.player(), payload.swap()));
         registrar.playToServer(AimPayload.TYPE, AimPayload.STREAM_CODEC,
                 (payload, context) -> PlayerGunnery.onAim(context.player(), payload.aiming()));
+        registrar.playToServer(SeekPayload.TYPE, SeekPayload.STREAM_CODEC,
+                (payload, context) -> Seeking.onSeen(context.player(), payload.entity()));
         registrar.playToServer(FeedPayload.TYPE, FeedPayload.STREAM_CODEC,
                 (payload, context) -> {
                     if (context.player() instanceof net.minecraft.server.level.ServerPlayer player) {

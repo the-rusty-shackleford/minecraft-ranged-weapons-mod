@@ -34,6 +34,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -41,16 +42,25 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
  * The launcher's seeker on the server (D-0028): the adapter between a player and the pure
- * {@link Seeker}. Each tick, for a player holding a launcher, it finds the valid target in the
- * reticle while the sight is up ({@link ModData#AIMING}, which the use key or the aim key
- * raises), asks whether the lock still holds, steps the seeker, and stores it in
- * {@link ModData#LOCK} when it changed, whence it reaches the holder's HUD. A player holding
- * anything else has no seeker.
+ * {@link Seeker}. Each tick, for a player holding a launcher, it takes the target the holder's
+ * client reports in its reticle while the sight is up ({@link ModData#AIMING}, which the use key
+ * or the aim key raises), validates it, asks whether the lock still holds, steps the seeker, and
+ * stores it in {@link ModData#LOCK} when it changed, whence it reaches the holder's HUD. A player
+ * holding anything else has no seeker.
+ *
+ * <p>Why the client judges contact: it is what shows the player where a moving target is, and
+ * what it shows trails the server by the connection and the smoothing. The launcher booth's
+ * biplane, crossing at 0.8 blocks a tick, was eight blocks ahead on the server of where the
+ * player's reticle sat on it -- eleven degrees off a cone of two and a half -- and never locked
+ * while judged on the server. The server still decides: a report counts only for a valid target,
+ * within {@link Seeker#RANGE}, that the eye can see, within {@link #SANITY_CONE} of the server's
+ * own view of the look.
  *
  * <p>Cost, stated: for a player not holding a launcher, one item-class check per tick. For one
- * holding it with the sight down, an entity lookup by id when locked. With the sight up, eight
- * entity queries along the look, each a box about 16 blocks long padded by the reticle's width
- * there, and a block ray to the best few candidates.
+ * holding it, on the server, an entity lookup by id for the lock and for the report, and one block
+ * ray. The reticle's search ({@link #inReticle}) runs on the holder's client: with the sight up,
+ * eight entity queries along the look, each a box about 16 blocks long padded by the reticle's
+ * width there, and a block ray to the best few candidates.
  */
 public final class Seeking {
     private Seeking() {}
@@ -62,6 +72,10 @@ public final class Seeking {
             ByteBufCodecs.VAR_INT, Seeker::contactTicks,
             ByteBufCodecs.VAR_INT, Seeker::gapTicks,
             Seeker::new);
+
+    /** How far off the server's view of the look a reported target may be: generous, for a fast
+     * target and a slow connection, while refusing one the player is not facing. */
+    public static final double SANITY_CONE = Math.toRadians(30.0);
 
     /** Blocks of the look searched by one entity query. */
     private static final double SEGMENT = 16.0;
@@ -80,13 +94,55 @@ public final class Seeking {
             after = Seeker.IDLE;
         } else {
             boolean seeking = player.getData(ModData.AIMING);
-            Entity seen = seeking ? inReticle(level, player) : null;
+            Entity seen = seeking ? reported(level, player) : null;
             boolean holds = before.isLocked() && holds(level, player, before.locked());
             after = before.step(seeking, seen == null ? Seeker.NONE : seen.getId(), holds);
         }
         if (!after.equals(before)) {
             player.setData(ModData.LOCK, after);
         }
+    }
+
+    /**
+     * effects: records what {@code player}'s client reports in its reticle: an entity id, or
+     * {@link Seeker#NONE}
+     */
+    public static void onSeen(Player player, int entity) {
+        if (player.getData(ModData.SEEN) != entity) {
+            player.setData(ModData.SEEN, entity);
+        }
+    }
+
+    /**
+     * effects: returns the entity {@code player}'s client last reported in its reticle if the
+     * report stands: the entity is in this level, a valid target, within {@link Seeker#RANGE},
+     * visible from the eye, and within {@link #SANITY_CONE} of the look as the server has it; else
+     * null
+     */
+    static Entity reported(ServerLevel level, Player player) {
+        int id = player.getData(ModData.SEEN);
+        Entity target = id == Seeker.NONE ? null : level.getEntity(id);
+        if (target == null || !Targets.valid(player, target)) {
+            return null;
+        }
+        Vec3 eye = player.getEyePosition();
+        Vec3 center = target.getBoundingBox().getCenter();
+        Vec3 to = center.subtract(eye);
+        if (to.length() > Seeker.RANGE || to.lengthSqr() < 1e-6) {
+            return null;
+        }
+        Vec3 look = player.getViewVector(1.0f);
+        double radius = Math.max(target.getBbWidth(), target.getBbHeight()) / 2.0;
+        if (Seeker.offAxis(new Vector3(look.x, look.y, look.z), new Vector3(to.x, to.y, to.z), radius) > SANITY_CONE) {
+            return null;
+        }
+        return visible(level, player, eye, center, to.length(), radius) ? target : null;
+    }
+
+    /** effects: returns whether a block ray from the eye reaches the target's edge */
+    private static boolean visible(Level level, Player player, Vec3 eye, Vec3 center, double distance, double radius) {
+        HitResult hit = level.clip(new ClipContext(eye, center, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+        return hit.getType() == HitResult.Type.MISS || eye.distanceTo(hit.getLocation()) >= distance - radius;
     }
 
     /**
@@ -114,11 +170,12 @@ public final class Seeking {
     }
 
     /**
-     * effects: returns the valid target in {@code player}'s reticle: of those within
-     * {@link Seeker#RANGE} whose edge is within {@link Seeker#HALF_CONE} of the look, the least
-     * off it (the nearer on a tie) that the eye can see; null if none
+     * effects: returns the valid target in {@code player}'s reticle as {@code level} shows it: of
+     * those within {@link Seeker#RANGE} whose edge is within {@link Seeker#HALF_CONE} of the look,
+     * the least off it (the nearer on a tie) that the eye can see; null if none. The client calls it
+     * on what it draws, and reports the answer.
      */
-    public static Entity inReticle(ServerLevel level, Player player) {
+    public static Entity inReticle(Level level, Player player) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getViewVector(1.0f);
         Vector3 lookV = new Vector3(look.x, look.y, look.z);
@@ -144,9 +201,7 @@ public final class Seeking {
         }
         found.sort(Comparator.comparingDouble(Candidate::off).thenComparingDouble(Candidate::distance));
         for (Candidate c : found) {
-            Vec3 center = c.entity().getBoundingBox().getCenter();
-            HitResult hit = level.clip(new ClipContext(eye, center, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-            if (hit.getType() == HitResult.Type.MISS || eye.distanceTo(hit.getLocation()) >= c.distance() - c.radius()) {
+            if (visible(level, player, eye, c.entity().getBoundingBox().getCenter(), c.distance(), c.radius())) {
                 return c.entity();
             }
         }

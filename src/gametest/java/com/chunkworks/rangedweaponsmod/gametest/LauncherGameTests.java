@@ -68,7 +68,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * hand's item use is refused under a launcher and only under a launcher.
  *
  * <p>Seeker tests step the seeker in a loop within one tick, since a lock on a still target
- * needs no world ticks; flights let the level fly the rocket.
+ * needs no world ticks; flights let the level fly the rocket. Each step first does the client's
+ * half, reporting what the reticle is on; one test reports as a lying client would.
  */
 @GameTestHolder(RangedWeaponsMod.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -128,12 +129,19 @@ public final class LauncherGameTests {
         face(player, yaw, pitch);
     }
 
-    /** effects: steps the gunnery, seeker included, {@code ticks} times at once */
+    /** effects: steps the gunnery, seeker included, {@code ticks} times at once, the client's report first */
     private static void step(GameTestHelper h, Shooter s, int ticks) {
         ServerLevel level = h.getLevel();
         for (int i = 0; i < ticks; i++) {
+            report(level, s.player());
             PlayerGunnery.tick(s.player(), level);
         }
+    }
+
+    /** effects: the client's half (SeekReport): with the sight up, reports what the reticle is on */
+    private static void report(ServerLevel level, Player player) {
+        Entity seen = player.getData(ModData.AIMING) ? Seeking.inReticle(level, player) : null;
+        Seeking.onSeen(player, seen == null ? Seeker.NONE : seen.getId());
     }
 
     private static Seeker seeker(Shooter s) {
@@ -199,6 +207,42 @@ public final class LauncherGameTests {
         face(s.player(), 0.0f, 10.0f);   // at the floor and the backstop: blocks only
         step(h, s, Seeker.ACQUIRE_TICKS + 10);
         h.assertTrue(!seeker(s).isLocked() && !seeker(s).isAcquiring(), "a block is not a target");
+        h.succeed();
+    }
+
+    /** A lying client: reports the server cannot stand count for nothing. */
+    @GameTest(template = "range")
+    public void aReportTheServerCannotStandIsRefused(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1);
+        LivingEntity cow = h.spawnWithNoFreeWill(EntityType.COW, new Vec3(3.5, 1.0, 22.5));
+        PlayerGunnery.onAim(s.player(), true);
+        // Facing away from it.
+        face(s.player(), 150.0f, 0.0f);
+        for (int i = 0; i < Seeker.ACQUIRE_TICKS + 10; i++) {
+            Seeking.onSeen(s.player(), cow.getId());
+            PlayerGunnery.tick(s.player(), h.getLevel());
+        }
+        h.assertFalse(seeker(s).isAcquiring() || seeker(s).isLocked(), "a cow behind the player is refused");
+        // Facing it, a wall between.
+        for (int x = 0; x < 8; x++) {
+            for (int y = 1; y < 6; y++) {
+                h.setBlock(new BlockPos(x, y, 12), Blocks.STONE);
+            }
+        }
+        aimAt(s.player(), cow);
+        for (int i = 0; i < Seeker.ACQUIRE_TICKS + 10; i++) {
+            Seeking.onSeen(s.player(), cow.getId());
+            PlayerGunnery.tick(s.player(), h.getLevel());
+        }
+        h.assertFalse(seeker(s).isAcquiring() || seeker(s).isLocked(), "a cow behind a wall is refused");
+        // Something that is no target at all, in plain sight.
+        Entity stand = h.spawn(EntityType.ARMOR_STAND, new Vec3(3.5, 1.0, 8.5));
+        aimAt(s.player(), stand);
+        for (int i = 0; i < Seeker.ACQUIRE_TICKS + 10; i++) {
+            Seeking.onSeen(s.player(), stand.getId());
+            PlayerGunnery.tick(s.player(), h.getLevel());
+        }
+        h.assertFalse(seeker(s).isAcquiring() || seeker(s).isLocked(), "an armour stand reported is refused");
         h.succeed();
     }
 
@@ -277,6 +321,23 @@ public final class LauncherGameTests {
         PlayerGunnery.onTrigger(s.player(), true);
         step(h, s, 1);
         h.succeedWhen(() -> h.assertTrue(boat.isRemoved(), "the boat is broken"));
+    }
+
+    /**
+     * The tag's path, which Immersive Aircraft's, Man of Many Planes' and Automobility's vehicles take
+     * in the pack: an end crystal is neither alive nor vanilla's kind of vehicle, and locks only
+     * because this gametest pack's own copy of the tag names it. The real biplane is the launcher
+     * booth's (its mod sends a payload every mock player's connection refuses).
+     */
+    @GameTest(template = "range")
+    public void anEntityTheTagNamesIsLockedOnto(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1);
+        Entity crystal = h.spawn(EntityType.END_CRYSTAL, new Vec3(3.5, 2.0, 22.5));
+        aimAt(s.player(), crystal);
+        PlayerGunnery.onAim(s.player(), true);
+        step(h, s, Seeker.ACQUIRE_TICKS);
+        h.assertValueEqual(seeker(s).locked(), crystal.getId(), "the tagged end crystal is locked onto");
+        h.succeed();
     }
 
     // --- the blast ------------------------------------------------------------

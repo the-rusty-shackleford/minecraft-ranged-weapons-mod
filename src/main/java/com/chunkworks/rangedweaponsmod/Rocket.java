@@ -41,8 +41,8 @@ import net.neoforged.fml.loading.FMLEnvironment;
 /**
  * A rocket in flight (D-0028). The server flies it: the {@link Motor} gives its speed by age and
  * the {@link Guidance} its heading toward its target, if it has one, once the motor has lit. It
- * detonates on touching a block or an entity, within {@link Motor#PROXIMITY} of its target, or when
- * its motor is spent; it breaks without a blast if it touches anything before
+ * detonates on touching a block or an entity, on coming within {@link Motor#PROXIMITY} of its
+ * target (on the target's nearest face: close enough is a hit), or when its motor is spent; it breaks without a blast if it touches anything before
  * {@link Motor#ARMING_DISTANCE}. The blast is the game's explosion with the rocket as its source,
  * so its owner is credited and the server's PvP rule applies; its power and whether it breaks
  * blocks are the world's {@link RocketConfig}.
@@ -152,11 +152,16 @@ public final class Rocket extends Projectile {
         Vec3 from = this.position();
         Vec3 to = from.add(next);
         if (target != null) {
-            Vec3 nearest = nearestOnSegment(from, to, target.getBoundingBox());
-            if (distanceToBox(nearest, target.getBoundingBox()) <= Motor.PROXIMITY
-                    && Motor.armed(this.flown + from.distanceTo(nearest))) {
-                this.flown += from.distanceTo(nearest);
-                this.setPos(nearest);
+            AABB box = target.getBoundingBox();
+            Vec3 nearest = nearestOnSegment(from, to, box);
+            if (distanceToBox(nearest, box) <= Motor.PROXIMITY && Motor.armed(this.flown + from.distanceTo(nearest))) {
+                // Close enough is a hit: the warhead reaches the target's nearest face within the
+                // tick, so a proximity burst strikes as hard as contact. Short of it, a vehicle
+                // that scales blasts down (Immersive Aircraft's planes) flew on (the booth, D-0028).
+                Vec3 struck = new Vec3(Mth.clamp(nearest.x, box.minX, box.maxX), Mth.clamp(nearest.y, box.minY, box.maxY),
+                        Mth.clamp(nearest.z, box.minZ, box.maxZ));
+                this.flown += from.distanceTo(struck);
+                this.setPos(struck);
                 this.detonate(level);
                 return;
             }

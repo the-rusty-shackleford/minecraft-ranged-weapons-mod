@@ -66,8 +66,39 @@ The explosion is vanilla's own sound.
 - **The seeker tones** may be synthesized. A real seeker's tone is electronic, so D-0012's rule against synthesized gun sounds doesn't cover them. Rusty hears them before release.
 - **Volume:** every clip must pass the decoded 0.98 peak ceiling (D-0017; see `sound_export.py`).
 
+## Seeing your work: the launcher booth
+
+```
+"/home/rusty/Code/minecraft mods/tools/booth/run_iconified.sh" \
+    "/home/rusty/Code/minecraft mods/minecraft-ranged-weapons-mod" run/booth runPhotoBooth -PboothLauncher
+```
+
+It plays the launcher on a real client through the real keys, checks every step in its log
+(`run/booth/logs/latest.log`, `booth: PASS` / `booth: FAIL`), and writes these frames to
+`run/booth/screenshots/`:
+
+| Frame | Shows |
+|---|---|
+| `launcher-first-hip`, `launcher-first-sight` | First person, sight down and up |
+| `launcher-hud-acquiring`, `launcher-hud-locked`, `launcher-hud-offscreen` | The HUD's brackets, diamond and edge marker on a cow 24 blocks out |
+| `launcher-rocket-leaving`, `launcher-rocket-lit`, `launcher-rocket-flight` | **Your in-flight rocket model**: leaving the tube, the motor lit, in flight |
+| `launcher-first-reloading` | The reload |
+| `launcher-third-front`, `launcher-third-front-sight`, `launcher-third-side` | Third person: the hold and the display transforms |
+| `launcher-inventory` | The icons beside the rifle, the rockets, the tube, the seeker and the scope |
+| `launcher-plane-acquiring`, `launcher-plane-locked`, `launcher-plane-intercept-1..3`, `launcher-plane-down` | Immersive Aircraft's biplane tracked, locked and brought down |
+
+How booths run on this machine:
+- Only one Minecraft client at a time.
+- Always through `run_iconified.sh`, which hides the window on Rusty's desktop.
+- Volume at zero.
+- With Rusty's own client up, set `disableConfigWatcher = true` in `run/booth/config/fml.toml` first.
+
+Rusty's monitor must be on: with it off the client finds no display, and the run hangs until it
+fails.
+
 ## When it's done
 
-- Run `./gradlew build`, then the booth through `tools/booth/run_iconified.sh`.
-- Look at the launcher in first person, third person and the inventory, and a rocket in flight, at three times the size beside the other guns.
+- Run `./gradlew build` (JUnit and GameTests stay green), then the launcher booth.
+- Look at every frame above at three times the size, beside the rifle's frames from the default booth (`runPhotoBooth`).
 - Delete the word PLACEHOLDER from each model's `credit`.
+- Commit on local `main`, as Rusty. Don't push, tag or release.

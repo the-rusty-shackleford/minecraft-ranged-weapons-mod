@@ -110,6 +110,15 @@ public final class ModData {
                     .sync((holder, to) -> holder == to, Seeking.STREAM_CODEC).build());
 
     /**
+     * What the launcher holder's client last reported in its reticle (D-0028): an entity id or
+     * {@link Seeker#NONE}. The client judges contact because it is the one that shows the player
+     * where a moving target is; {@link Seeking} validates the report before it counts. Transient,
+     * server-side, never synced.
+     */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> SEEN =
+            ATTACHMENTS.register("seen", () -> AttachmentType.builder(() -> Seeker.NONE).build());
+
+    /**
      * A rocket in flight. Sent to clients within eight chunks with its position and velocity every
      * tick, since it steers every tick and a client left to extrapolate would draw it off its
      * course. Never saved: a chunk written mid-flight forgets it, as the protocol's bullet is.

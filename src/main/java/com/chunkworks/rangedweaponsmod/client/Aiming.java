@@ -84,6 +84,11 @@ public final class Aiming {
         progress = Mth.clamp(progress + (aiming ? 1.0f : -1.0f) / EASE_TICKS, 0.0f, 1.0f);
     }
 
+    /** effects: returns whether the sights are up, as the server was last told */
+    static boolean isUp() {
+        return aiming;
+    }
+
     /** effects: drops the sights, for a new world */
     static void reset() {
         aiming = false;

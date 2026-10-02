@@ -316,7 +316,7 @@ until Astra's brief, `devtools/art/ROCKET_LAUNCHER_BRIEF.md`, is delivered. No r
 **Using it.** It is a gun: two hands, one rocket in the tube, left click fires, R or an empty
 trigger reloads (2.5 s) from anything you carry, bags included, and creative needs no rocket.
 - **Locking on.** Hold right click (or the aim key) to raise the seeker. Keep a target in the
-  reticle for 1.5 s: amber brackets close on it with a rising growl, then a red diamond and a
+  reticle, as your screen shows it, for 1.5 s: amber brackets close on it with a rising growl, then a red diamond and a
   steady tone mean it is locked. Lapses of up to four ticks are forgiven; a different target
   starts over.
 - **After the lock.** You can look away, lower the sight and walk; the lock holds until you fire,
@@ -341,8 +341,9 @@ trigger reloads (2.5 s) from anything you carry, bags included, and creative nee
 - **Flight:** it leaves the tube slowly (0.6 blocks a tick) for three ticks, then its motor lights
   and it reaches 2.5 blocks a tick by the fifteenth. A locked rocket leads its target and turns
   at most 8° a tick, so a late sidestep can beat it; an unlocked one flies straight. No gravity.
-- **Detonation:** on touching anything, within 1.5 blocks of its target, or at eight seconds. A
-  contact within 4 blocks of the launch is a dud: a puff, no blast.
+- **Detonation:** on touching anything, on coming within 1.5 blocks of its target (where it strikes
+  the target's nearest face: close enough is a hit), or at eight seconds. A contact within 4 blocks
+  of the launch is a dud: a puff, no blast.
 - **Blast:** the game's explosion, credited to the shooter. Its power and whether it breaks blocks
   are the world's: `serverconfig/rangedweaponsmod-server.toml`, `[rocket] power = 3.0` (a creeper)
   and `breakBlocks = true`. Warehouse Manager's claimed chests are blast-proof whatever this says.
@@ -359,13 +360,32 @@ trigger reloads (2.5 s) from anything you carry, bags included, and creative nee
 That is 13 iron, 2 gold, a diamond and a block of redstone for the launcher, and a TNT, a blaze
 powder and 3 iron for every rocket. No recipe collides with the pack's.
 
+**How contact is judged.** Your client finds what your reticle is on, by what it draws, and tells
+the server (`SeekPayload`). The server counts it only for a valid target within 128 blocks that it
+can see from your eye, and that is within 30° of where it has you looking. A moving target is where
+your screen shows it, which trails the server by your connection.
+
 **Diagnosing.**
 - **No lock on something:** it is not a target by the rules above. A modded vehicle that is not
-  built on vanilla's needs the tag. Line of sight from the eye is required while locking.
+  built on vanilla's needs the tag. Line of sight from the eye is required while locking, and a
+  target more than 30° off where the server has you looking is refused.
 - **"LOCK" shown at the crosshair without a diamond:** the target is beyond what your client is
   told about (entity tracking range); the lock still holds on the server.
 - **A rocket that went off at your feet without a blast:** a dud; it hit something within 4 blocks.
 - **Network version "4":** a client on 2.10.0 or earlier cannot join.
+
+**The launcher booth.** `tools/booth/run_iconified.sh <repo> run/booth runPhotoBooth -PboothLauncher`
+runs a real client through the real keys. It photographs:
+- the launcher at the hip and with the seeker up;
+- the brackets half acquired, the lock, and the edge marker;
+- a rocket leaving the tube and in flight, at a cow 24 blocks out;
+- the reload;
+- third person, front and side;
+- the inventory beside the rifle, the rockets and the parts;
+- Immersive Aircraft's biplane crossing the sky, tracked, locked, launched at and brought down.
+
+Each step is checked. The build copies the pack's own Immersive Aircraft jar into `run/booth/mods`
+for this run only. The frames are `run/booth/screenshots/launcher-*.png`.
 
 ## Adding a gun
 
@@ -472,7 +492,9 @@ other two are for eyes and hands.
   decoration, a frame or a block; a lock outliving the look and ending with its target; a locked
   rocket turning off its line onto a moving cow and killing it; an unlocked one keeping its
   heading; the blast with the switch on and off (in its own batch, as the switch is global); the
-  dud; creative; a reload from a carried bag; the off hand under the launcher. And: the data resolves to a weapon with the right capacity; a held
+  dud; creative; a reload from a carried bag; the off hand under the launcher; an end crystal the
+  test pack's tag names, locked through the tag; and reports a lying client might send (a target
+  behind the player, behind a wall, or no target at all), each refused. And: the data resolves to a weapon with the right capacity; a held
   trigger fires at the profile's rate and a release stops it; loose rounds
   in a magazine-fed gun become a magazine; an empty pull takes the first
   loaded magazine carried and only a loaded one; `R` changes a part
