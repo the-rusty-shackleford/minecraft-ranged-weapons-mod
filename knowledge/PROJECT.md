@@ -15,8 +15,7 @@ sound (`12698ea`, `devtools/verification/launcher-art.md`). Release gate:
 - the default, HUD and launcher booths green;
 - jar sha1 `01f4d0da`, the GitHub asset matching it.
 
-Rusty's hands-on playtest is the next gate. Astra's record leaves one concern for it: the lock
-markers may still look stepped under a real mouse, cause unproven.
+Rusty playtested it after the release, the same day: "Works great!"
 
 
 Rusty asked for a rocket launcher with lock-on, dear to make and to feed: hold right click on a
