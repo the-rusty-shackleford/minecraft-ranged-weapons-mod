@@ -7,12 +7,22 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
-## The rocket launcher — 2.11.0 (2026-10-01), unreleased: review accepted, release handed to Claude
+## The rocket launcher — 2.11.0 (2026-10-01), released 2026-10-02 in pack 1.71.0
+
+Released on Rusty's "Astra is done, ready to release this in a new pack", after Astra's art and
+sound (`12698ea`, `devtools/verification/launcher-art.md`). Release gate:
+- 179 JUnit and 77 GameTests;
+- the default, HUD and launcher booths green;
+- jar sha1 `01f4d0da`, the GitHub asset matching it.
+
+Rusty's hands-on playtest is the next gate. Astra's record leaves one concern for it: the lock
+markers may still look stepped under a real mouse, cause unproven.
+
 
 Rusty asked for a rocket launcher with lock-on, dear to make and to feed: hold right click on a
-target to lock, left click fires a rocket that homes; without a lock it flies straight. Their
+target to lock, left click fires a rocket that homes; without a lock it flies straight. His
 follow-ups: only things you could damage lock, vehicles included; right click keeps its vanilla
-interactions; reticle contact only while locking. Their calls: the blast breaks blocks behind a
+interactions; reticle contact only while locking. His calls: the blast breaks blocks behind a
 server switch; a lock holds until fired or lost; Astra does the art and sound.
 [D-0028](decisions/D-0028.md) has the design.
 - **Pure layer:** `Seeker`, `Guidance` (lead pursuit, 8° a tick), `Motor`, `TargetFacts`.

@@ -21,7 +21,8 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The world's rules for rockets (D-0028), in the server config
- * ({@code serverconfig/rangedweaponsmod-server.toml} in the world): how hard a rocket's blast is
+ * ({@code config/rangedweaponsmod-server.toml}; NeoForge 21.1 keeps server configs there, not in the
+ * world's {@code serverconfig/}): how hard a rocket's blast is
  * and whether it breaks blocks, as Dynamite's own switch does. A world rule, not a player's
  * preference, so it is the server's; the feed mode stays each player's (D-0024).
  *

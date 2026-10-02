@@ -354,7 +354,7 @@ trigger reloads (2.5 s) from anything you carry, bags included, and creative nee
   the target's nearest face: close enough is a hit), or at eight seconds. A contact within 4 blocks
   of the launch is a dud: a puff, no blast.
 - **Blast:** the game's explosion, credited to the shooter. Its power and whether it breaks blocks
-  are the world's: `serverconfig/rangedweaponsmod-server.toml`, `[rocket] power = 3.0` (a creeper)
+  are the world's: `config/rangedweaponsmod-server.toml` (on the box `/data/config/`), `[rocket] power = 3.0` (a creeper)
   and `breakBlocks = true`. Warehouse Manager's claimed chests are blast-proof whatever this says.
 
 **Crafting.** Dear by design:
