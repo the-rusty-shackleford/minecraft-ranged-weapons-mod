@@ -86,6 +86,8 @@ It plays the launcher on a real client through the real keys, checks every step 
 | `launcher-third-front`, `launcher-third-front-sight`, `launcher-third-side` | Third person: the hold and the display transforms |
 | `launcher-inventory` | The icons beside the rifle, the rockets, the tube, the seeker and the scope |
 | `launcher-plane-acquiring`, `launcher-plane-locked`, `launcher-plane-intercept-1..3`, `launcher-plane-down` | Immersive Aircraft's biplane tracked, locked and brought down |
+| `launcher-rocket-model-side`, `-side-close`, `-front-quarter`, `-rear-quarter`, `-nose`, `-tail` | **The in-flight model up close, no smoke**: a rocket drawn by its own renderer against the sky, 1.6 blocks out (1.0 for the close side), HUD and hand hidden, photographed before it makes any smoke. The camera faces south, so the side views show the nose on the left |
+| `launcher-rocket-live-side`, `launcher-rocket-live-side-past` | A live rocket crossing the view side-on, four blocks out, at the centre and a little past: its smoke trails behind it |
 
 How booths run on this machine:
 - Only one Minecraft client at a time.

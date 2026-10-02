@@ -20,6 +20,7 @@ package com.chunkworks.rangedweaponsmod.gametest;
 import com.chunkworks.rangedweaponsmod.ModData;
 import com.chunkworks.rangedweaponsmod.ModItems;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
+import com.chunkworks.rangedweaponsmod.Rocket;
 import com.chunkworks.rangedweaponsmod.client.Keys;
 import com.chunkworks.rangedweaponsmod.domain.Seeker;
 import com.nfx.rangedweapons.api.RangedWeapons;
@@ -61,7 +62,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * the tube and in flight, and the cow killed; R reloads; third person front and side; the
  * inventory with the rifle, rockets and the two parts beside it for scale; last, Immersive
  * Aircraft's biplane crossing the sky, tracked, locked, launched at and brought down (its jar is
- * copied into {@code run/booth/mods} by the build for this booth only). Screenshots land in
+ * copied into {@code run/booth/mods} by the build for this booth only); then the rocket's model in
+ * close studies with no smoke, and a live rocket side-on as it crosses the view. Screenshots land in
  * {@code run/booth/screenshots}, named {@code launcher-*}. The server owns all gun state.
  */
 @EventBusSubscriber(modid = BoothMod.MOD_ID, value = Dist.CLIENT)
@@ -88,6 +90,9 @@ public final class LauncherBooth {
         }
         if (tick >= 425 && tick < 530) {
             track(mc);
+        }
+        if (tick >= 631 && tick < 705 && crossing < 2) {
+            watchCrossing(mc);
         }
         switch (++tick) {
             case 40 -> {
@@ -204,7 +209,31 @@ public final class LauncherBooth {
                         () -> plane != Seeker.NONE && (sp.serverLevel().getEntity(plane) == null || sp.serverLevel().getEntity(plane).isRemoved())));
                 shoot(mc, "launcher-plane-down");
             }
+            // The rocket's geometry, for its art (Astra, 2026-10-02: the flight frames are smoke from
+            // behind). Close studies against the sky: a client-side rocket drawn by its own renderer,
+            // photographed before it ever ticks, so it makes no smoke; HUD and hand hidden.
             case 560 -> {
+                mc.options.hideGui = true;
+                face(mc, 0.0f, -20.0f);
+            }
+            case 570 -> study(mc, "launcher-rocket-model-side", 90.0f, 1.6);
+            case 580 -> study(mc, "launcher-rocket-model-side-close", 90.0f, 1.0);
+            case 590 -> study(mc, "launcher-rocket-model-front-quarter", 140.0f, 1.6);
+            case 600 -> study(mc, "launcher-rocket-model-rear-quarter", 40.0f, 1.6);
+            case 610 -> study(mc, "launcher-rocket-model-nose", 180.0f, 1.6);
+            case 620 -> study(mc, "launcher-rocket-model-tail", 0.0f, 1.6);
+            // Then a live one, launched across the view four blocks out, photographed side-on as the
+            // client draws it at the centre and again a little past: its smoke trails behind it.
+            case 630 -> {
+                face(mc, 0.0f, 0.0f);
+                crossing = 0;
+                onServer(mc, LauncherBooth::launchAcross);
+            }
+            case 705 -> {
+                check("a live rocket was photographed side-on as it crossed the view", () -> crossing == 2);
+                mc.options.hideGui = false;
+            }
+            case 720 -> {
                 mc.options.renderDistance().set(renderDistance);
                 RangedWeaponsMod.LOGGER.info("booth: PASS all checks ran");
                 mc.stop();
@@ -291,6 +320,78 @@ public final class LauncherBooth {
         }
         Vec3 to = biplane.getBoundingBox().getCenter().subtract(mc.player.getEyePosition());
         face(mc, (float) Math.toDegrees(Math.atan2(-to.x, to.z)), (float) Math.toDegrees(Math.atan2(-to.y, to.horizontalDistance())));
+    }
+
+    /** A study waiting to be photographed on the next tick, before the level would tick it. */
+    private static Rocket study;
+    private static String studyName;
+    /** How many frames of the live crossing were taken. */
+    private static volatile int crossing;
+
+    /**
+     * Photographs a pending study at the head of the tick, before the level ticks it: drawn by its
+     * renderer in the frames since it was placed, it has made no smoke yet. Then takes it away.
+     */
+    @SubscribeEvent
+    public static void beforeTick(ClientTickEvent.Pre event) {
+        if (!Boolean.getBoolean("rangedweaponsmod.launcher") || study == null) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        shoot(mc, studyName);
+        if (mc.level != null) {
+            mc.level.removeEntity(study.getId(), Entity.RemovalReason.DISCARDED);
+        }
+        study = null;
+    }
+
+    /**
+     * effects: places a client-side rocket {@code distance} blocks along the look, heading
+     * {@code yaw} (the camera faces south: 0 nose away, 90 nose to the screen's left, 180 nose at
+     * the camera), level, for
+     * {@link #beforeTick} to photograph as {@code name}
+     */
+    private static void study(Minecraft mc, String name, float yaw, double distance) {
+        Rocket rocket = new Rocket(ModData.ROCKET.get(), mc.level);
+        Vec3 at = mc.player.getEyePosition().add(mc.player.getViewVector(1.0f).scale(distance));
+        rocket.setPos(at);
+        rocket.xo = at.x;
+        rocket.yo = at.y;
+        rocket.zo = at.z;
+        rocket.setYRot(yaw);
+        rocket.yRotO = yaw;
+        rocket.setXRot(0.0f);
+        rocket.xRotO = 0.0f;
+        mc.level.addEntity(rocket);
+        study = rocket;
+        studyName = name;
+    }
+
+    /** effects: a stone wall to the east to catch it, and a rocket launched east four blocks ahead of the player */
+    private static void launchAcross(ServerPlayer p) {
+        var level = p.serverLevel();
+        BlockPos base = p.blockPosition();
+        for (int z = 1; z <= 8; z++) {
+            for (int y = 0; y <= 6; y++) {
+                level.setBlockAndUpdate(base.offset(16, y, z), Blocks.STONE.defaultBlockState());
+            }
+        }
+        Vec3 from = p.getEyePosition().add(-7.0, 0.0, 4.0);
+        Rocket.launch(level, p, from, new Vec3(1.0, 0.0, 0.0), null);
+    }
+
+    /** effects: photographs the live rocket as the client draws it at the view's centre, and a little past */
+    private static void watchCrossing(Minecraft mc) {
+        for (Rocket rocket : mc.level.getEntitiesOfClass(Rocket.class, mc.player.getBoundingBox().inflate(24.0))) {
+            double dx = rocket.getX() - mc.player.getX();
+            if (crossing == 0 && Math.abs(dx) < 0.6) {
+                shoot(mc, "launcher-rocket-live-side");
+                crossing = 1;
+            } else if (crossing == 1 && dx > 2.5) {
+                shoot(mc, "launcher-rocket-live-side-past");
+                crossing = 2;
+            }
+        }
     }
 
     private static void face(Minecraft mc, float yaw, float pitch) {
