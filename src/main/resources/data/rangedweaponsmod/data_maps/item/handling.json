@@ -82,6 +82,18 @@
         "airborne": 1.8,
         "aiming": 0.45
       }
+    },
+    "rangedweaponsmod:rocket_launcher": {
+      "recoil_pitch": 7.0,
+      "recoil_yaw": 1.2,
+      "recovery": 0.18,
+      "spread": {
+        "crouching": 1.0,
+        "moving": 1.0,
+        "sprinting": 1.0,
+        "airborne": 1.0,
+        "aiming": 1.0
+      }
     }
   }
 }

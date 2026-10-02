@@ -18,6 +18,9 @@
 package com.chunkworks.rangedweaponsmod;
 
 import net.minecraft.core.component.DataComponentType;
+import com.chunkworks.rangedweaponsmod.domain.Seeker;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -44,6 +47,8 @@ public final class ModData {
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, RangedWeaponsMod.MOD_ID);
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENTS =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, RangedWeaponsMod.MOD_ID);
+    private static final DeferredRegister<EntityType<?>> ENTITIES =
+            DeferredRegister.create(Registries.ENTITY_TYPE, RangedWeaponsMod.MOD_ID);
     private static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, RangedWeaponsMod.MOD_ID);
 
@@ -96,6 +101,30 @@ public final class ModData {
                     .sync(ByteBufCodecs.BOOL).build());
 
     /**
+     * The rocket launcher's seeker (D-0028): what it is locked onto and what it is acquiring.
+     * Server-authoritative, sent only to its holder, whose HUD and tones read it; transient, as a
+     * held sight is, and entity ids mean nothing across a restart.
+     */
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Seeker>> LOCK =
+            ATTACHMENTS.register("lock", () -> AttachmentType.builder(() -> Seeker.IDLE)
+                    .sync((holder, to) -> holder == to, Seeking.STREAM_CODEC).build());
+
+    /**
+     * A rocket in flight. Sent to clients within eight chunks with its position and velocity every
+     * tick, since it steers every tick and a client left to extrapolate would draw it off its
+     * course. Never saved: a chunk written mid-flight forgets it, as the protocol's bullet is.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<Rocket>> ROCKET =
+            ENTITIES.register("rocket", () -> EntityType.Builder
+                    .<Rocket>of(Rocket::new, MobCategory.MISC)
+                    .sized(0.3f, 0.3f)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .setShouldReceiveVelocityUpdates(true)
+                    .noSave()
+                    .build(RangedWeaponsMod.MOD_ID + ":rocket"));
+
+    /**
      * Item to {@link Handling}: how a gun feels in a player's hands. Any
      * datapack contributes at {@code data/rangedweaponsmod/data_maps/item/handling.json}.
      * Not synced: the server sends each shot's kick in the shot payload.
@@ -107,6 +136,7 @@ public final class ModData {
     static void register(IEventBus modBus) {
         COMPONENTS.register(modBus);
         ATTACHMENTS.register(modBus);
+        ENTITIES.register(modBus);
         MENUS.register(modBus);
         modBus.addListener(ModData::registerDataMaps);
     }

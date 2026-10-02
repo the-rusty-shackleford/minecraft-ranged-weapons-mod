@@ -3,7 +3,8 @@
 Guns for players, on the [Ranged Weapons](../minecraft-ranged-weapons)
 protocol. NeoForge 1.21.1.
 
-Six guns: a pistol, a revolver, a shotgun, a rifle, a scoped rifle and a machine gun.
+Six guns: a pistol, a revolver, a shotgun, a rifle, a scoped rifle and a machine gun; and a
+rocket launcher that locks onto what you hold it on (below).
 The mod is the part of a gun that is about the player holding it: a trigger
 you pull or hold, a fire clock that is not the item cooldown, a reload from
 your inventory, recoil that settles instead of fighting your mouse, sights to
@@ -307,6 +308,65 @@ calibrated by photograph in the booth, never derived. The booth reads the
 trigger arm off the rendered model at every gun's third-person frames and
 fails on a mismatch, whatever animation mods are in its `mods/` folder.
 
+## The rocket launcher
+
+D-0028. **Its art and sound are placeholders** (vanilla textures on plain blocks, vanilla sounds)
+until Astra's brief, `devtools/art/ROCKET_LAUNCHER_BRIEF.md`, is delivered. No release ships them.
+
+**Using it.** It is a gun: two hands, one rocket in the tube, left click fires, R or an empty
+trigger reloads (2.5 s) from anything you carry, bags included, and creative needs no rocket.
+- **Locking on.** Hold right click (or the aim key) to raise the seeker. Keep a target in the
+  reticle for 1.5 s: amber brackets close on it with a rising growl, then a red diamond and a
+  steady tone mean it is locked. Lapses of up to four ticks are forgiven; a different target
+  starts over.
+- **After the lock.** You can look away, lower the sight and walk; the lock holds until you fire,
+  put the launcher away, or the target dies, leaves for another dimension, gets more than 128
+  blocks away or stops being a target. Locking another target replaces it.
+- **Right click still works as usual.** A door, chest or villager in reach opens or trades as
+  with anything in hand. Only the off hand's item use is refused while the launcher is held: a
+  raised shield or a meal would block the trigger.
+
+**What locks.**
+- **Creatures:** anything alive but an armour stand, players included when the server allows PvP
+  (it does on the box) and they are in survival or adventure.
+- **Vehicles:** boats, minecarts, and everything built on them (Vanilla Wheels' vehicles, Shippy
+  Ships' ships), plus the entity types in `data/rangedweaponsmod/tags/entity_type/lockable_vehicles.json`:
+  Immersive Aircraft's seven aircraft, Man of Many Planes' two planes and Automobility's car. A
+  datapack adds more.
+- **Never:** blocks, item frames, paintings, dropped items, projectiles, invulnerable entities, yourself or
+  anything in your vehicle. An Automobility car locks, but that mod lets nothing damage the car
+  itself: the blast hurts its driver and anyone near.
+
+**The rocket.**
+- **Flight:** it leaves the tube slowly (0.6 blocks a tick) for three ticks, then its motor lights
+  and it reaches 2.5 blocks a tick by the fifteenth. A locked rocket leads its target and turns
+  at most 8° a tick, so a late sidestep can beat it; an unlocked one flies straight. No gravity.
+- **Detonation:** on touching anything, within 1.5 blocks of its target, or at eight seconds. A
+  contact within 4 blocks of the launch is a dud: a puff, no blast.
+- **Blast:** the game's explosion, credited to the shooter. Its power and whether it breaks blocks
+  are the world's: `serverconfig/rangedweaponsmod-server.toml`, `[rocket] power = 3.0` (a creeper)
+  and `breakBlocks = true`. Warehouse Manager's claimed chests are blast-proof whatever this says.
+
+**Crafting.** Dear by design:
+
+| Item | Recipe |
+|---|---|
+| Launch tube | eight steel in a ring |
+| Seeker | two gold ingots and a diamond over a scope, over a block of redstone |
+| Launcher | the seeker over a stock, a lower receiver and the tube |
+| Rocket, one a craft | redstone over steel, TNT and steel, over blaze powder |
+
+That is 13 iron, 2 gold, a diamond and a block of redstone for the launcher, and a TNT, a blaze
+powder and 3 iron for every rocket. No recipe collides with the pack's.
+
+**Diagnosing.**
+- **No lock on something:** it is not a target by the rules above. A modded vehicle that is not
+  built on vanilla's needs the tag. Line of sight from the eye is required while locking.
+- **"LOCK" shown at the crosshair without a diamond:** the target is beyond what your client is
+  told about (entity tracking range); the lock still holds on the server.
+- **A rocket that went off at your feet without a blast:** a dud; it hit something within 4 blocks.
+- **Network version "4":** a client on 2.10.0 or earlier cannot join.
+
 ## Adding a gun
 
 1. Register an item with `GunItem` in `ModItems` (durability is the shot count).
@@ -401,12 +461,18 @@ other two are for eyes and hands.
   reload plan, the magazine (runs, order, fill) and which magazine or kind a
   change takes, the pockets a loose reload draws on (kinds in the order met,
   counts, the draw plan first pocket first) and the feed mode, the recoil
-  model, stance spread, and the recipe tree. That source set is compiled against nothing but the
+  model, stance spread, the recipe tree, and the rocket launcher's seeker, guidance (whole flights
+  through the real motor and turn cap), motor and target rules. That source set is compiled against nothing but the
   JDK, so a `net.minecraft` import there is a compile error. Partitions are
   written at the top of each test class.
 - `./gradlew runGameTestServer` -- gametests on a real headless server. The
   tests are a mod of their own (`src/gametest`) so they exercise the mod from
-  outside: the data resolves to a weapon with the right capacity; a held
+  outside. `LauncherGameTests` flies real rockets down a 40-block range with an obsidian
+  backstop: the lock at exactly 30 ticks on a creature, a boat and a minecart and never on a
+  decoration, a frame or a block; a lock outliving the look and ending with its target; a locked
+  rocket turning off its line onto a moving cow and killing it; an unlocked one keeping its
+  heading; the blast with the switch on and off (in its own batch, as the switch is global); the
+  dud; creative; a reload from a carried bag; the off hand under the launcher. And: the data resolves to a weapon with the right capacity; a held
   trigger fires at the profile's rate and a release stops it; loose rounds
   in a magazine-fed gun become a magazine; an empty pull takes the first
   loaded magazine carried and only a loaded one; `R` changes a part

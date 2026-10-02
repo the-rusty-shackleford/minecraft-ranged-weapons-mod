@@ -55,10 +55,12 @@ public final class ModTabs {
         items.add(ModItems.RIFLE.get());
         items.add(ModItems.SCOPED_RIFLE.get());
         items.add(ModItems.MACHINE_GUN.get());
+        items.add(ModItems.ROCKET_LAUNCHER.get());
         items.add(ModItems.SMALL_ROUND.get());
         items.add(ModItems.ROUND.get());
         items.add(ModItems.SHELL.get());
         items.add(ModItems.SLUG.get());
+        items.add(ModItems.ROCKET.get());
         items.addAll(ModItems.magazines());
         items.addAll(ModItems.parts());
         return items;

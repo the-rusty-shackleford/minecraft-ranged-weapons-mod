@@ -73,5 +73,68 @@
         "pitch": 0.85
       }
     ]
+  },
+  "launcher_fire": {
+    "subtitle": "subtitles.rangedweaponsmod.launcher_fire",
+    "sounds": [
+      {
+        "name": "minecraft:entity.firework_rocket.launch",
+        "type": "event"
+      }
+    ]
+  },
+  "launcher_reload": {
+    "subtitle": "subtitles.rangedweaponsmod.launcher_reload",
+    "sounds": [
+      {
+        "name": "minecraft:item.crossbow.loading_end",
+        "type": "event"
+      }
+    ]
+  },
+  "rocket_motor": {
+    "subtitle": "subtitles.rangedweaponsmod.rocket_motor",
+    "sounds": [
+      {
+        "name": "minecraft:item.elytra.flying",
+        "type": "event"
+      }
+    ]
+  },
+  "rocket_dud": {
+    "subtitle": "subtitles.rangedweaponsmod.rocket_dud",
+    "sounds": [
+      {
+        "name": "minecraft:block.fire.extinguish",
+        "type": "event"
+      }
+    ]
+  },
+  "seeker_growl": {
+    "subtitle": "subtitles.rangedweaponsmod.seeker_growl",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.ambient",
+        "type": "event"
+      }
+    ]
+  },
+  "seeker_lock": {
+    "subtitle": "subtitles.rangedweaponsmod.seeker_lock",
+    "sounds": [
+      {
+        "name": "minecraft:block.note_block.bit",
+        "type": "event"
+      }
+    ]
+  },
+  "seeker_lost": {
+    "subtitle": "subtitles.rangedweaponsmod.seeker_lost",
+    "sounds": [
+      {
+        "name": "minecraft:block.beacon.deactivate",
+        "type": "event"
+      }
+    ]
   }
 }

@@ -67,6 +67,10 @@ public final class ModItems {
     public static final DeferredItem<GunItem> MACHINE_GUN =
             ITEMS.registerItem("machine_gun", p -> new GunItem(p, GunItem.Grip.TWO_HANDED, false, GunItem.Feed.MAGAZINE), new Item.Properties().durability(1200));
 
+    /** The rocket launcher (D-0028): one rocket in the tube, a seeker that locks onto what it is held on. */
+    public static final DeferredItem<LauncherItem> ROCKET_LAUNCHER =
+            ITEMS.registerItem("rocket_launcher", LauncherItem::new, new Item.Properties().durability(300));
+
     /**
      * Rounds stack to the game's ceiling. The max-stack-size component
      * accepts nothing above 99, and a saved stack's count is checked against
@@ -90,6 +94,10 @@ public final class ModItems {
     /** A shotgun slug: one heavy round from the same gun, for reach and a single hard hit. */
     public static final DeferredItem<Item> SLUG =
             ITEMS.registerItem("slug", Item::new, new Item.Properties().stacksTo(ROUND_STACK));
+
+    /** A rocket: heavy, dear, and stacked as ender pearls are. */
+    public static final DeferredItem<Item> ROCKET =
+            ITEMS.registerItem("rocket", Item::new, new Item.Properties().stacksTo(16));
 
     // The magazines: one default per family that a magazine-fed gun takes.
     // Capacity is the item's, so an extended or a double-stack magazine is
@@ -147,9 +155,11 @@ public final class ModItems {
     public static final DeferredItem<Item> PUMP = ITEMS.registerItem("pump", Item::new, new Item.Properties());
     /** A lens, a tube, a lens. */
     public static final DeferredItem<Item> SCOPE = ITEMS.registerItem("scope", Item::new, new Item.Properties());
+    public static final DeferredItem<Item> LAUNCH_TUBE = ITEMS.registerItem("launch_tube", Item::new, new Item.Properties());
+    public static final DeferredItem<Item> SEEKER = ITEMS.registerItem("seeker", Item::new, new Item.Properties());
 
     private static final List<DeferredItem<Item>> PARTS = List.of(
-            LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
+            LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE, LAUNCH_TUBE, SEEKER);
 
     /** effects: returns every part a gun is assembled from, in the order the tab shows them */
     public static List<Item> parts() {
@@ -173,10 +183,12 @@ public final class ModItems {
             event.accept(RIFLE.get());
             event.accept(SCOPED_RIFLE.get());
             event.accept(MACHINE_GUN.get());
+            event.accept(ROCKET_LAUNCHER.get());
             event.accept(SMALL_ROUND.get());
             event.accept(ROUND.get());
             event.accept(SHELL.get());
             event.accept(SLUG.get());
+            event.accept(ROCKET.get());
             magazines().forEach(event::accept);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {

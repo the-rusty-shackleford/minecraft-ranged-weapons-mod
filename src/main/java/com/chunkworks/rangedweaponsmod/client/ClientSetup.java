@@ -39,6 +39,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
@@ -94,9 +96,22 @@ public final class ClientSetup {
         // Above the hotbar, so it hides with the rest of the HUD on F1.
         event.registerAbove(VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "ammo"), GunHud::render);
+        // The launcher's seeker marks, over the crosshair (D-0028).
+        event.registerAbove(VanillaGuiLayers.CROSSHAIR,
+                ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "lock"), LockHud::render);
         // Below the crosshair: the mask must not cover it.
         event.registerBelow(VanillaGuiLayers.CROSSHAIR,
                 ResourceLocation.fromNamespaceAndPath(RangedWeaponsMod.MOD_ID, "scope"), Aiming::renderScope);
+    }
+
+    @SubscribeEvent
+    public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModData.ROCKET.get(), RocketRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerModels(ModelEvent.RegisterAdditional event) {
+        event.register(RocketRenderer.MODEL);
     }
 
     @SubscribeEvent

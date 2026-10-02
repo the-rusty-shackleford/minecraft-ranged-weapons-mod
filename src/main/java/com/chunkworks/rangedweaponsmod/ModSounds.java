@@ -51,6 +51,14 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_PUMP = sound("shotgun_pump");
     /** A bolt worked after a shot: the scoped rifle's cycle sound. */
     public static final DeferredHolder<SoundEvent, SoundEvent> BOLT = sound("bolt");
+    // The rocket launcher's (D-0028); Astra's to record or make, placeholders until then.
+    public static final DeferredHolder<SoundEvent, SoundEvent> LAUNCHER_FIRE = sound("launcher_fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> LAUNCHER_RELOAD = sound("launcher_reload");
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROCKET_MOTOR = sound("rocket_motor");
+    public static final DeferredHolder<SoundEvent, SoundEvent> ROCKET_DUD = sound("rocket_dud");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SEEKER_GROWL = sound("seeker_growl");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SEEKER_LOCK = sound("seeker_lock");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SEEKER_LOST = sound("seeker_lost");
 
     private static DeferredHolder<SoundEvent, SoundEvent> sound(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(

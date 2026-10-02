@@ -18,6 +18,7 @@
 package com.chunkworks.rangedweaponsmod.client;
 
 import com.chunkworks.rangedweaponsmod.GunItem;
+import com.chunkworks.rangedweaponsmod.LauncherItem;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.net.AimPayload;
 import net.minecraft.client.DeltaTracker;
@@ -36,7 +37,8 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Aiming down the sights: the aim key held with a gun in the main hand.
+ * Aiming down the sights: the aim key held with a gun in the main hand, or, with the rocket
+ * launcher, the use key (D-0028), whose raised sight is its seeker.
  *
  * <p>The server is told on each change, for spread; everything visible is
  * the client's. Any gun leans in a little (a small zoom). A scoped gun
@@ -67,7 +69,11 @@ public final class Aiming {
      * a change, and advances the ease; called once per client tick
      */
     static void tick(Minecraft mc, LocalPlayer player) {
-        boolean wants = player != null && mc.screen == null && Keys.AIM.isDown() && GunItem.isGun(player.getMainHandItem());
+        // The launcher's sight is raised by the use key too (D-0028), which vanilla still has: a door
+        // or a chest in reach opens as it would, and only the sight reads that the key is down.
+        boolean key = player != null && (Keys.AIM.isDown()
+                || (LauncherItem.isLauncher(player.getMainHandItem()) && mc.options.keyUse.isDown()));
+        boolean wants = player != null && mc.screen == null && key && GunItem.isGun(player.getMainHandItem());
         if (wants != aiming) {
             aiming = wants;
             if (player != null) {

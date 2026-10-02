@@ -122,6 +122,23 @@
         "floor": 0.5
       },
       "knockback": 1.0
+    },
+    "rangedweaponsmod:rocket_launcher": {
+      "grip": "two_handed",
+      "class": "launcher",
+      "capacity": 1,
+      "reload_ticks_per_round": 50,
+      "fire_rate_ticks": 20,
+      "damage": 20.0,
+      "projectiles_per_shot": 1,
+      "spread": 0.0,
+      "engagement_range": 96.0,
+      "projectile_speed": 2.5,
+      "projectile_lifetime_ticks": 160,
+      "ammo": "rangedweaponsmod:rocket",
+      "ammo_family": "#rangedweaponsmod:ammo/rocket",
+      "shot_sound": "rangedweaponsmod:launcher_fire",
+      "knockback": 0.0
     }
   }
 }

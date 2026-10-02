@@ -185,6 +185,7 @@ public final class CraftingGameTests {
         List<String> shown = tab.getDisplayItems().stream().map(s -> BuiltInRegistries.ITEM.getKey(s.getItem()).toString()).toList();
         List<String> expected = new ArrayList<>();
         expected.addAll(Blueprints.guns());
+        expected.addAll(Blueprints.launchers());
         expected.addAll(Blueprints.ammunition());
         expected.addAll(Blueprints.magazines());
         expected.addAll(Blueprints.parts());

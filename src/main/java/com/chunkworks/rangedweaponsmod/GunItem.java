@@ -45,7 +45,7 @@ import java.util.List;
  * a use at most every four ticks and slows a player using an item to a
  * fifth of their speed, neither of which is a gun.
  */
-public final class GunItem extends Item {
+public class GunItem extends Item {
 
     /** Legacy hold fallback for a profile without the protocol's grip declaration. */
     public enum Grip {

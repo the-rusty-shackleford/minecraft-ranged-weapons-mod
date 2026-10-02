@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "K": {
+      "item": "rangedweaponsmod:stock"
+    },
+    "L": {
+      "item": "rangedweaponsmod:lower_receiver"
+    },
+    "S": {
+      "item": "rangedweaponsmod:seeker"
+    },
+    "U": {
+      "item": "rangedweaponsmod:launch_tube"
+    }
+  },
+  "pattern": [
+    " S ",
+    "KLU"
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:rocket_launcher"
+  }
+}

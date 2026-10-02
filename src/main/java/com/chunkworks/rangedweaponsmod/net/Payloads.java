@@ -20,6 +20,7 @@ package com.chunkworks.rangedweaponsmod.net;
 import com.chunkworks.rangedweaponsmod.FeedModes;
 import com.chunkworks.rangedweaponsmod.PlayerGunnery;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
+import com.chunkworks.rangedweaponsmod.client.LockTones;
 import com.chunkworks.rangedweaponsmod.client.RecoilCamera;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -34,7 +35,8 @@ public final class Payloads {
     private Payloads() {}
 
     /** Bumped when a payload's shape changes; a mismatch refuses the connection early. */
-    private static final String VERSION = "3";
+    // "4": the rocket launcher's synced seeker (D-0028); a "3" client cannot read it.
+    private static final String VERSION = "4";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);
@@ -56,6 +58,7 @@ public final class Payloads {
                     // client class from being touched on a dedicated server.
                     if (FMLEnvironment.dist.isClient()) {
                         RecoilCamera.onShotFired(payload);
+                        LockTones.onShotFired();
                     }
                 });
     }

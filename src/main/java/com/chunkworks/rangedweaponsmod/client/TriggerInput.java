@@ -113,6 +113,7 @@ public final class TriggerInput {
             }
         }
         Aiming.tick(mc, player);
+        LockTones.tick(mc, player);
         RecoilCamera.tick();
     }
 
@@ -120,6 +121,7 @@ public final class TriggerInput {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         held = false;
         Aiming.reset();
+        LockTones.reset();
         RecoilCamera.reset();
     }
 }

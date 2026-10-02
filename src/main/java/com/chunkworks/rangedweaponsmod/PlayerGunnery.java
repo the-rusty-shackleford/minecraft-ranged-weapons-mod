@@ -166,6 +166,8 @@ public final class PlayerGunnery {
      * @param level  the level the player is in
      */
     public static void tick(Player player, ServerLevel level) {
+        // The launcher's seeker reads the sight as the aim message left it; idle for anything else.
+        Seeking.tick(player, level);
         ItemStack stack = player.getMainHandItem();
         if (!player.isAlive() || player.isSpectator() || !GunItem.isGun(stack)) {
             onAim(player, false);
@@ -319,7 +321,7 @@ public final class PlayerGunnery {
             duration = ReloadPlan.durationTicks(stats.fullReloadTicks());
         }
         stack.set(ModData.RELOAD.get(), new Reload(now, duration, swap));
-        play(level, player, ModSounds.RELOAD_START.get(), 0.8f, 1.0f);
+        play(level, player, LauncherItem.isLauncher(stack) ? ModSounds.LAUNCHER_RELOAD.get() : ModSounds.RELOAD_START.get(), 0.8f, 1.0f);
     }
 
     /** effects: returns the carried magazine a change or a swap would take right now, if any: the

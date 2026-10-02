@@ -56,7 +56,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the guns ordered pistol, shotgun, rifle, scoped rifle, machine gun by
  * iron. Tally: raw materials expand parts and whole crafts; parts count
  * transitively; a raw item is its own tally; a cycle is caught. Ammunition
- * yields. Every material constant used.
+ * yields. Every material constant used. The launcher (D-0028): parts only, a
+ * seeker and a tube, dearer than any gun in what it takes beyond iron.
  */
 final class BlueprintsTest {
 
@@ -168,7 +169,9 @@ final class BlueprintsTest {
         // D-0025: a round's case is a copper nugget, not an ingot.
         assertEquals(Map.of(Blueprints.IRON_NUGGET, 1, Blueprints.GUNPOWDER, 1, Blueprints.COPPER_NUGGET, 1),
                 Blueprints.byResult(Blueprints.ROUND).orElseThrow().ingredients());
-        assertEquals(List.of(Blueprints.SMALL_ROUND, Blueprints.ROUND, Blueprints.SHELL, Blueprints.SLUG), Blueprints.ammunition());
+        assertEquals(1, Blueprints.byResult(Blueprints.ROCKET).orElseThrow().count(), "a rocket is one a craft");
+        assertEquals(List.of(Blueprints.SMALL_ROUND, Blueprints.ROUND, Blueprints.SHELL, Blueprints.SLUG, Blueprints.ROCKET),
+                Blueprints.ammunition());
     }
 
     @Test
@@ -177,7 +180,8 @@ final class BlueprintsTest {
         Blueprints.all().forEach(b -> used.addAll(b.ingredients().keySet()));
         // Coal is not here: only steel's recipe took it, and that is Metals and Materials' now.
         for (String material : List.of(IRON, Blueprints.REDSTONE, Blueprints.PLANKS, Blueprints.STICK, Blueprints.GLASS_PANE,
-                Blueprints.COPPER_NUGGET, Blueprints.IRON_NUGGET, Blueprints.GUNPOWDER, Blueprints.PAPER, Blueprints.STEEL)) {
+                Blueprints.COPPER_NUGGET, Blueprints.IRON_NUGGET, Blueprints.GUNPOWDER, Blueprints.PAPER, Blueprints.STEEL,
+                Blueprints.GOLD, Blueprints.DIAMOND, Blueprints.REDSTONE_BLOCK, Blueprints.TNT, Blueprints.BLAZE_POWDER)) {
             assertTrue(used.contains(material), material + " is never used");
         }
         assertTrue(Blueprints.external().stream().anyMatch(b -> b.ingredients().containsKey(COAL)), "coal is used by the steel we count through");
@@ -187,5 +191,31 @@ final class BlueprintsTest {
                     .anyMatch(i -> Blueprints.maker(i).map(m -> m.result().equals(part)).orElse(false)));
             assertTrue(consumed, part + " is made but nothing takes it");
         }
+    }
+
+    @Test
+    void theLauncherIsASeekerOverAStockALowerReceiverAndATube() {
+        assertEquals(List.of(Blueprints.ROCKET_LAUNCHER), Blueprints.launchers());
+        Blueprint recipe = Blueprints.byResult(Blueprints.ROCKET_LAUNCHER).orElseThrow();
+        assertEquals(Category.COMBAT, recipe.category());
+        assertEquals(Map.of(Blueprints.SEEKER, 1, STOCK, 1, LOWER_RECEIVER, 1, Blueprints.LAUNCH_TUBE, 1), recipe.ingredients());
+        for (String ingredient : recipe.ingredients().keySet()) {
+            assertTrue(Blueprints.maker(ingredient).isPresent(), "the launcher takes raw " + ingredient);
+        }
+        assertFalse(Blueprints.guns().contains(Blueprints.ROCKET_LAUNCHER), "it has no barrel: not a gun");
+    }
+
+    @Test
+    void theLauncherAndItsRocketsAreDear() {
+        Map<String, Integer> launcher = Blueprints.rawMaterials(Blueprints.ROCKET_LAUNCHER);
+        assertEquals(1, launcher.get(Blueprints.DIAMOND), "a diamond for the seeker's lens");
+        assertEquals(2, launcher.get(Blueprints.GOLD));
+        assertEquals(1, launcher.get(Blueprints.REDSTONE_BLOCK));
+        assertTrue(Blueprints.ironEquivalent(Blueprints.ROCKET_LAUNCHER) >= Blueprints.ironEquivalent(RIFLE),
+                "at least a rifle's iron besides");
+        Map<String, Integer> rocket = Blueprints.rawMaterials(Blueprints.ROCKET);
+        assertEquals(1, rocket.get(Blueprints.TNT));
+        assertEquals(1, rocket.get(Blueprints.BLAZE_POWDER));
+        assertTrue(Blueprints.ironEquivalent(Blueprints.ROCKET) >= 2, "two steel in every rocket");
     }
 }

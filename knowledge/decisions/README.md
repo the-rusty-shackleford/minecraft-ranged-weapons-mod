@@ -51,3 +51,5 @@ thought and someone later would want to know *why*.
 - [D-0026](D-0026.md): Rounds and magazines come from everything a player carries, bags included, in either feed mode, through Carried; what comes back goes where a give goes (supersedes D-0023's reach).
 
 - [D-0027](D-0027.md): The counter reads the rounds loaded over every round a reload can reach, the loaded ones included (a full rifle and two full magazines: 30 / 90); loose rounds count only for a gun loaded directly; creative reads one infinity sign.
+
+- [D-0028](D-0028.md): The rocket launcher: the use key raises a seeker that locks onto creatures and vehicles in 1.5 s and holds until fired or lost; rockets lead their target at 8° a tick; the blast is the game's, its power and block-breaking the world's server config.

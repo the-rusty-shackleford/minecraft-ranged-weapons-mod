@@ -63,6 +63,12 @@ public final class Blueprints {
     public static final String PAPER = "minecraft:paper";
     /** Steel by its common tag: Metals and Materials' -- or any other mod's. */
     public static final String STEEL = "#c:ingots/steel";
+    // The launcher's and the rocket's dearer materials (D-0028).
+    public static final String GOLD = "#c:ingots/gold";
+    public static final String DIAMOND = "#c:gems/diamond";
+    public static final String REDSTONE_BLOCK = "#c:storage_blocks/redstone";
+    public static final String TNT = "minecraft:tnt";
+    public static final String BLAZE_POWDER = "minecraft:blaze_powder";
     /** The ingot that fills the tag in the pack: Metals and Materials', not ours since 2.3.0. */
     public static final String STEEL_INGOT = "metalsandmaterials:steel_ingot";
 
@@ -74,6 +80,8 @@ public final class Blueprints {
     public static final String STOCK = NS + ":stock";
     public static final String PUMP = NS + ":pump";
     public static final String SCOPE = NS + ":scope";
+    public static final String LAUNCH_TUBE = NS + ":launch_tube";
+    public static final String SEEKER = NS + ":seeker";
 
     // Guns and ammunition, by item id.
     public static final String PISTOL = NS + ":pistol";
@@ -82,10 +90,12 @@ public final class Blueprints {
     public static final String RIFLE = NS + ":rifle";
     public static final String SCOPED_RIFLE = NS + ":scoped_rifle";
     public static final String MACHINE_GUN = NS + ":machine_gun";
+    public static final String ROCKET_LAUNCHER = NS + ":rocket_launcher";
     public static final String SMALL_ROUND = NS + ":small_round";
     public static final String ROUND = NS + ":round";
     public static final String SHELL = NS + ":shell";
     public static final String SLUG = NS + ":slug";
+    public static final String ROCKET = NS + ":rocket";
 
     /**
      * Three iron and a little carbon make three steel -- Metals and Materials'
@@ -161,6 +171,25 @@ public final class Blueprints {
     public static final Blueprint SLUG_RECIPE = new Shaped(SLUG, Category.COMBAT, SLUG, 4,
             List.of("P", "G", "I"), Map.of('P', PAPER, 'G', GUNPOWDER, 'I', IRON), List.of(GUNPOWDER, IRON));
 
+    /** The rocket launcher's tube: eight steel, a pipe seen end-on (D-0028). */
+    public static final Blueprint LAUNCH_TUBE_RECIPE = new Shaped(LAUNCH_TUBE, Category.MISC, LAUNCH_TUBE, 1,
+            List.of("TTT", "T T", "TTT"), Map.of('T', STEEL), List.of(STEEL));
+
+    /** The seeker: a scope behind a diamond lens, gold contacts, a block of redstone to think with. */
+    public static final Blueprint SEEKER_RECIPE = new Shaped(SEEKER, Category.MISC, SEEKER, 1,
+            List.of("GDG", " O ", " R "), Map.of('G', GOLD, 'D', DIAMOND, 'O', SCOPE, 'R', REDSTONE_BLOCK),
+            List.of(DIAMOND, SCOPE));
+
+    /** The launcher: the seeker over a stock, a lower receiver and the tube, in its silhouette. */
+    public static final Blueprint ROCKET_LAUNCHER_RECIPE = new Shaped(ROCKET_LAUNCHER, Category.COMBAT, ROCKET_LAUNCHER, 1,
+            List.of(" S ", "KLU"), Map.of('S', SEEKER, 'K', STOCK, 'L', LOWER_RECEIVER, 'U', LAUNCH_TUBE),
+            List.of(SEEKER, LAUNCH_TUBE));
+
+    /** A rocket, one a craft: a TNT charge in a steel body, blaze powder for the motor, redstone to steer. */
+    public static final Blueprint ROCKET_RECIPE = new Shaped(ROCKET, Category.COMBAT, ROCKET, 1,
+            List.of(" R ", "STS", " B "), Map.of('R', REDSTONE, 'S', STEEL, 'T', TNT, 'B', BLAZE_POWDER),
+            List.of(TNT, BLAZE_POWDER));
+
     public static final String PISTOL_MAGAZINE = NS + ":pistol_magazine";
     public static final String RIFLE_MAGAZINE = NS + ":rifle_magazine";
     public static final String MACHINE_GUN_BOX = NS + ":machine_gun_box";
@@ -178,9 +207,10 @@ public final class Blueprints {
 
     private static final List<Blueprint> ALL = List.of(
             LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
-            STOCK_RECIPE, PUMP_RECIPE, SCOPE_RECIPE,
+            STOCK_RECIPE, PUMP_RECIPE, SCOPE_RECIPE, LAUNCH_TUBE_RECIPE, SEEKER_RECIPE,
             PISTOL_RECIPE, REVOLVER_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
-            SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE,
+            ROCKET_LAUNCHER_RECIPE,
+            SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE, ROCKET_RECIPE,
             PISTOL_MAGAZINE_RECIPE, RIFLE_MAGAZINE_RECIPE, MACHINE_GUN_BOX_RECIPE);
 
     /** Recipes another mod makes that the tally counts through: steel's. */
@@ -192,7 +222,10 @@ public final class Blueprints {
     private static final Map<String, String> FILLS = Map.of(STEEL, STEEL_INGOT);
 
     private static final List<String> GUNS = List.of(PISTOL, REVOLVER, SHOTGUN, RIFLE, SCOPED_RIFLE, MACHINE_GUN);
-    private static final List<String> PARTS = List.of(LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE);
+    /** Launchers fire rockets, not rounds: no barrel, so they are not among the guns. */
+    private static final List<String> LAUNCHERS = List.of(ROCKET_LAUNCHER);
+    private static final List<String> PARTS = List.of(LOWER_RECEIVER, UPPER_RECEIVER, BARREL, HEAVY_BARREL, STOCK, PUMP, SCOPE,
+            LAUNCH_TUBE, SEEKER);
 
     private static List<Blueprint> concat(List<Blueprint> a, List<Blueprint> b) {
         List<Blueprint> both = new ArrayList<>(a);
@@ -215,9 +248,14 @@ public final class Blueprints {
         return GUNS;
     }
 
+    /** effects: returns the launchers' item ids, in creative-tab order (after the guns) */
+    public static List<String> launchers() {
+        return LAUNCHERS;
+    }
+
     /** effects: returns the ammunition's item ids, in the order the tab shows them */
     public static List<String> ammunition() {
-        return List.of(SMALL_ROUND, ROUND, SHELL, SLUG);
+        return List.of(SMALL_ROUND, ROUND, SHELL, SLUG, ROCKET);
     }
 
     /** effects: returns the magazines' item ids, in the order the tab shows them */

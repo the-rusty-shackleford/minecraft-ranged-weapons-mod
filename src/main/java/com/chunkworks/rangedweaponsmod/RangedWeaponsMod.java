@@ -51,9 +51,12 @@ public final class RangedWeaponsMod {
         modBus.addListener(Payloads::register);
         modBus.addListener(MagazineFedWeapon::registerCapabilities);
         modBus.addListener(RevolverWeapon::registerCapabilities);
+        modBus.addListener(LauncherWeapon::registerCapabilities);
         // A client config is only ever loaded on a client; registering it on a
         // dedicated server is a no-op, and the class holds no client types.
         container.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
+        // The world's rules for rockets (D-0028): a server config, kept with the world.
+        container.registerConfig(ModConfig.Type.SERVER, RocketConfig.SPEC);
         // The config page under Mods; the client class is only touched on a client.
         if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
             com.chunkworks.rangedweaponsmod.client.ClientSetup.registerConfigScreen(container);
@@ -61,5 +64,6 @@ public final class RangedWeaponsMod {
         // Game-bus events, not mod-bus ones.
         NeoForge.EVENT_BUS.addListener(PlayerGunnery::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(FeedModes::onLogout);
+        NeoForge.EVENT_BUS.addListener(Seeking::onRightClickItem);
     }
 }

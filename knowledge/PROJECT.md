@@ -7,6 +7,35 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
+## The rocket launcher — 2.11.0 (2026-10-01), unreleased: waits on Astra's art and sound
+
+Rusty asked for a rocket launcher with lock-on, dear to make and to feed: hold right click on a
+target to lock, left click fires a rocket that homes; without a lock it flies straight. His
+follow-ups: only things you could damage lock, vehicles included; right click keeps its vanilla
+interactions; reticle contact only while locking. His calls: the blast breaks blocks behind a
+server switch; a lock holds until fired or lost; Astra does the art and sound.
+[D-0028](decisions/D-0028.md) has the design.
+- **Pure layer:** `Seeker`, `Guidance` (lead pursuit, 8° a tick), `Motor`, `TargetFacts`.
+- **Game side:** `LauncherItem`, `LauncherWeapon` (the revolver's shape), `Rocket`, `Seeking`,
+  `Targets`, `RocketConfig` (the server config), and on the client `LockHud`, `LockTones`,
+  `RocketRenderer` and `RocketSounds`.
+- **Network** version "4". Recipes regenerated; `collisions.py` against the pack's 115 jars finds none.
+- **Tests:** 173 JUnit, and 75 GameTests (13 new in `LauncherGameTests`, on a new 20×12×40 `range`
+  structure). Each new rule was run once against a mutation and its test failed:
+  - no steering;
+  - every entity a target;
+  - the switch ignored;
+  - always armed;
+  - the off hand allowed;
+  - the lock needing the sight.
+
+**Not releasable yet:**
+- The art and sound are placeholders. Astra's brief is `devtools/art/ROCKET_LAUNCHER_BRIEF.md`.
+- Rusty's feel test is still to come: lock time, turn rate, blast power.
+- The booth has not been run; nothing in it shows the launcher until the art exists.
+
+Not verified anywhere yet: the tagged modded vehicles in a live client, and the HUD under shaders.
+
 ## The counter — 2.10.0 (2026-09-29), released 2026-09-30 in pack 1.69.0
 
 Rusty: the counter should read the rounds loaded over the total you have, not over the capacity.
