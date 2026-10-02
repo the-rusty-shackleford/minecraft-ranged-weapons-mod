@@ -124,6 +124,7 @@ public final class TriggerInput {
         Aiming.reset();
         SeekReport.reset();
         LockTones.reset();
+        LockHud.reset();
         RecoilCamera.reset();
     }
 }

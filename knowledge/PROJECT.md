@@ -7,12 +7,12 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
-## The rocket launcher — 2.11.0 (2026-10-01), unreleased: waits on Astra's art and sound
+## The rocket launcher — 2.11.0 (2026-10-01), unreleased: review accepted, release handed to Claude
 
 Rusty asked for a rocket launcher with lock-on, dear to make and to feed: hold right click on a
-target to lock, left click fires a rocket that homes; without a lock it flies straight. His
+target to lock, left click fires a rocket that homes; without a lock it flies straight. Their
 follow-ups: only things you could damage lock, vehicles included; right click keeps its vanilla
-interactions; reticle contact only while locking. His calls: the blast breaks blocks behind a
+interactions; reticle contact only while locking. Their calls: the blast breaks blocks behind a
 server switch; a lock holds until fired or lost; Astra does the art and sound.
 [D-0028](decisions/D-0028.md) has the design.
 - **Pure layer:** `Seeker`, `Guidance` (lead pursuit, 8° a tick), `Motor`, `TargetFacts`.
@@ -37,11 +37,22 @@ server switch; a lock holds until fired or lost; Astra does the art and sound.
   - a proximity burst strikes the target's face, since a plane survived a burst 1.5 blocks off;
   - Immersive Aircraft runs only in the booth, since it breaks mock players on the gametest server.
 
-**Not releasable yet:**
-- The art and sound are placeholders. Astra's brief is `devtools/art/ROCKET_LAUNCHER_BRIEF.md`.
-- Rusty's feel test is still to come: lock time, turn rate, blast power.
+**Review accepted; Claude to release (Rusty, 2026-10-02):**
+- The five launcher models, three part/ammunition textures and seven sounds have been replaced.
+  The art shares the rifle atlas; physical sounds use credited CC0 recordings and seeker tones
+  are synthesized under D-0028. Rebuild through `devtools/art/build.py`; source credits:
+  `devtools/art/sounds/SOURCES.md`.
+- Rusty accepted the art and authorized continuous acquisition animation and fractional marker
+  positioning. Latest validation: 179 JUnit tests, 77 required GameTests and 15 launcher-booth
+  checks passed. Server lock timing is unchanged.
+- The marker still looked stuttery to Rusty. They suspected the booth's scripted camera and
+  explicitly accepted stopping here so Claude can release it for their hands-on test. That
+  cause is not proven; live mouse control, lock feel, turn rate and blast power remain to judge.
+- This art session commits locally on `main`; it does not push, tag, release or update the pack.
+  [Review and handoff](../devtools/verification/launcher-art.md).
 
-Not verified anywhere yet: the tagged modded vehicles in a live client, and the HUD under shaders.
+The launcher booth exercises the tagged Immersive Aircraft biplane and HUD under Complementary
+Unbound shaders on the RTX 4070. Other tagged modded vehicles still need live-client verification.
 
 ## The counter — 2.10.0 (2026-09-29), released 2026-09-30 in pack 1.69.0
 

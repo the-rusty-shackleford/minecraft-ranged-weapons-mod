@@ -21,6 +21,7 @@ import com.chunkworks.rangedweaponsmod.LauncherItem;
 import com.chunkworks.rangedweaponsmod.ModData;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.domain.Seeker;
+import com.chunkworks.rangedweaponsmod.domain.SeekerAnimation;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -47,7 +48,15 @@ import org.joml.Vector3f;
  * pack that replaces the renderer does not take the marks away. View bobbing is not modelled; the
  * marks sway a pixel or two from the target with it.
  *
- * <p>Drawn with plain fills, so it needs no textures; Astra may restyle it (the brief).
+ * <p>Acquisition size follows {@link SeekerAnimation} continuously at render time.
+ * AF: animation is the displayed acquisition for owner. RI: animation is non-null;
+ * with no owner it is IDLE. Only the live server seeker decides whether to show a lock.
+ * Player changes and logout discard the display history. The player's tick count plus
+ * partial tick supplies a monotonic clock that stops when the game pauses.
+ *
+ * <p>Drawn with plain fills at fractional GUI coordinates. This client-only animation is
+ * verified through LauncherBooth with the real renderer and shaders; server lock timing
+ * remains covered by SeekerTest and the launcher GameTests.
  */
 @EventBusSubscriber(modid = RangedWeaponsMod.MOD_ID, value = Dist.CLIENT)
 public final class LockHud {
@@ -62,6 +71,17 @@ public final class LockHud {
     /** The world's field of view, degrees, as last computed this frame. */
     private static double worldFov = 70.0;
 
+    private static LocalPlayer owner;
+    private static SeekerAnimation animation = SeekerAnimation.IDLE;
+    private static double animationTime;
+
+    /** effects: discards animation history on logout or putting away the launcher */
+    static void reset() {
+        owner = null;
+        animation = SeekerAnimation.IDLE;
+        animationTime = 0.0;
+    }
+
     /** effects: remembers the world's field of view once every other mod has had its say */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
@@ -74,13 +94,24 @@ public final class LockHud {
     static void render(GuiGraphics graphics, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.options.hideGui || mc.level == null || !LauncherItem.isLauncher(player.getMainHandItem())) {
+        if (player == null || mc.level == null || !LauncherItem.isLauncher(player.getMainHandItem())) {
+            reset();
             return;
+        }
+        if (owner != player) {
+            reset();
+            owner = player;
         }
         Seeker seeker = player.getData(ModData.LOCK);
         int width = graphics.guiWidth();
         int height = graphics.guiHeight();
         float partial = delta.getGameTimeDeltaPartialTick(false);
+        // Freeze/unfreeze can change the partial without ticking the player: never rewind.
+        animationTime = Math.max(animationTime, player.tickCount + (double) partial);
+        animation = animation.updated(seeker, animationTime);
+        if (mc.options.hideGui) {
+            return;
+        }
         Camera camera = mc.gameRenderer.getMainCamera();
         if (player.getData(ModData.AIMING)) {
             corners(graphics, width / 2, height / 2, 12, 4, RING);
@@ -90,8 +121,8 @@ public final class LockHud {
             if (candidate != null) {
                 double[] at = project(centre(candidate, partial), camera, width, height);
                 if (at[2] > 0.0) {
-                    int half = (int) Math.round(40 - 26 * seeker.progress());
-                    corners(graphics, (int) at[0], (int) at[1], half, Math.max(3, half / 3), ACQUIRING);
+                    float half = (float) (40 - 26 * animation.sample(animationTime));
+                    corners(graphics, (float) at[0], (float) at[1], half, Math.max(3.0f, half / 3.0f), ACQUIRING);
                 }
             }
         }
@@ -105,12 +136,10 @@ public final class LockHud {
             double[] at = project(centre(target, partial), camera, width, height);
             boolean onScreen = at[2] > 0.0 && at[0] >= 0 && at[0] < width && at[1] >= 0 && at[1] < height;
             if (onScreen) {
-                diamond(graphics, (int) at[0], (int) at[1], 10, LOCKED);
-                graphics.drawCenteredString(mc.font, label, (int) at[0], (int) at[1] + 14, LOCKED);
+                lockedMarker(graphics, mc, label, at[0], at[1], 10);
             } else {
-                int[] edge = edgeToward(at, width, height);
-                diamond(graphics, edge[0], edge[1], 5, LOCKED);
-                graphics.drawCenteredString(mc.font, label, edge[0], edge[1] + 9, LOCKED);
+                double[] edge = edgeToward(at, width, height);
+                lockedMarker(graphics, mc, label, edge[0], edge[1], 5);
             }
         }
     }
@@ -141,7 +170,7 @@ public final class LockHud {
     }
 
     /** effects: returns the point on a rectangle {@link #EDGE} inside the screen in the direction of {@code at} from the centre */
-    private static int[] edgeToward(double[] at, int width, int height) {
+    private static double[] edgeToward(double[] at, int width, int height) {
         double cx = width / 2.0;
         double cy = height / 2.0;
         double dx = at[0] - cx;
@@ -156,20 +185,38 @@ public final class LockHud {
         double sx = (cx - EDGE) / Math.max(1e-6, Math.abs(dx));
         double sy = (cy - EDGE) / Math.max(1e-6, Math.abs(dy));
         double s = Math.min(sx, sy);
-        return new int[] {(int) Math.round(cx + dx * s), (int) Math.round(cy + dy * s)};
+        return new double[] {cx + dx * s, cy + dy * s};
     }
 
     /** effects: four L-shaped corners of a square of half-side {@code half} centred at (x, y) */
-    private static void corners(GuiGraphics g, int x, int y, int half, int length, int color) {
-        int l = x - half, r = x + half, t = y - half, b = y + half;
-        g.fill(l, t, l + length, t + 1, color);
-        g.fill(l, t, l + 1, t + length, color);
-        g.fill(r - length + 1, t, r + 1, t + 1, color);
-        g.fill(r, t, r + 1, t + length, color);
-        g.fill(l, b, l + length, b + 1, color);
-        g.fill(l, b - length + 1, l + 1, b + 1, color);
-        g.fill(r - length + 1, b, r + 1, b + 1, color);
-        g.fill(r, b - length + 1, r + 1, b + 1, color);
+    private static void corners(GuiGraphics g, float x, float y, float half, float length, int color) {
+        float l = x - half, r = x + half, t = y - half, b = y + half;
+        fill(g, l, t, l + length, t + 1, color);
+        fill(g, l, t, l + 1, t + length, color);
+        fill(g, r - length + 1, t, r + 1, t + 1, color);
+        fill(g, r, t, r + 1, t + length, color);
+        fill(g, l, b, l + length, b + 1, color);
+        fill(g, l, b - length + 1, l + 1, b + 1, color);
+        fill(g, r - length + 1, b, r + 1, b + 1, color);
+        fill(g, r, b - length + 1, r + 1, b + 1, color);
+    }
+
+    /** effects: fills a rectangle without rounding its position or size to whole GUI pixels */
+    private static void fill(GuiGraphics g, float left, float top, float right, float bottom, int color) {
+        g.pose().pushPose();
+        g.pose().translate(left, top, 0.0f);
+        g.pose().scale(right - left, bottom - top, 1.0f);
+        g.fill(0, 0, 1, 1, color);
+        g.pose().popPose();
+    }
+
+    /** effects: draws the diamond and label together at fractional GUI coordinates */
+    private static void lockedMarker(GuiGraphics g, Minecraft mc, Component label, double x, double y, int radius) {
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0.0);
+        diamond(g, 0, 0, radius, LOCKED);
+        g.drawCenteredString(mc.font, label, 0, radius + 4, LOCKED);
+        g.pose().popPose();
     }
 
     /** effects: the outline of a diamond of radius {@code radius} centred at (x, y) */

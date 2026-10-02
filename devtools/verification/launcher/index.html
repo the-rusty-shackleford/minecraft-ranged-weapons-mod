@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Launcher 2.11.0 — art and sound review</title><style>
+body{margin:32px;background:#151b24;color:#eef2f6;font:16px/1.5 system-ui;max-width:1500px}h1,h2{line-height:1.15}p{max-width:850px}a{color:#8ac9ff}.scroll{overflow:auto;border:1px solid #53606e;margin:12px 0 32px}.scroll img{display:block;max-width:none}summary,button{cursor:pointer}details{margin:14px 0;padding:12px;border:1px solid #53606e}audio{vertical-align:middle;margin:8px 16px}label{display:inline-block;min-width:170px}button{padding:8px 16px}input{vertical-align:middle}.note{color:#edcd83}.full{width:2562px;height:1440px;image-rendering:pixelated}.sound{margin:12px 0}
+</style><h1>Rocket launcher · 2.11.0</h1><p>Accepted by Rusty on 2026-10-02; release handed to Claude for a hands-on test. Original launcher and projectile models share the rifle’s material atlas. Inventory icons use the existing sixteen-pixel bevel treatment.</p><p class="note">The extended booth now includes six unobscured model studies through the actual rocket renderer and two live side-on flight frames. The smoke-obscured shooter views are retained below for context.</p><h2>Lock animation replay</h2><p>A muted 60 fps recording of the latest booth's center view. Rusty accepted stopping here despite remaining marker stutter, to judge it with their own mouse control after release.</p><video controls muted loop preload="metadata" width="768" style="max-width:100%" src="lock-animation.mp4">Your browser cannot play this video.</video><h2>Launcher beside the rifle</h2><p>Both were photographed with Complementary Unbound r5.8.1 on the RTX 4070. Crops are enlarged exactly three times with nearest-neighbour scaling. Scroll horizontally if needed. The booth poses differ slightly between scripts.</p>
+<h3>First Person</h3><div class="scroll"><img src="first-person-3x.png" alt="first-person, three times original size"></div>
+<h3>Third Front</h3><div class="scroll"><img src="third-front-3x.png" alt="third-front, three times original size"></div>
+<h3>Third Side</h3><div class="scroll"><img src="third-side-3x.png" alt="third-side, three times original size"></div>
+<h3>Inventory</h3><div class="scroll"><img src="inventory-3x.png" alt="inventory, three times original size"></div>
+<h3>Rocket Side</h3><div class="scroll"><img src="rocket-side-3x.png" alt="rocket-side, three times original size"></div>
+<h2>Sounds</h2><p>Playback starts only when you press Play. Motor, growl and lock repeat so their seams can be heard. Stop one clip before playing another. These are direct exported clips; world distance and in-game volume will affect the result.</p><button onclick="document.querySelectorAll('audio').forEach(a=>a.pause())">Stop all sounds</button>
+<div class="sound"><label for="launcher_fire">launcher_fire</label><audio id="launcher_fire" controls preload="none" src="../../../src/main/resources/assets/rangedweaponsmod/sounds/launcher_fire.ogg"></audio>
+</div>
+<div class="sound"><label for="launcher_reload">launcher_reload</label><audio id="launcher_reload" controls preload="none" src="../../../src/main/resources/assets/rangedweaponsmod/sounds/launcher_reload.ogg"></audio>
+</div>
+<div class="sound"><label for="rocket_motor">rocket_motor</label><audio id="rocket_motor" controls preload="none" loop src="../../../src/main/resources/assets/rangedweaponsmod/sounds/rocket_motor.ogg"></audio>
+</div>
+<div class="sound"><label for="rocket_dud">rocket_dud</label><audio id="rocket_dud" controls preload="none" src="../../../src/main/resources/assets/rangedweaponsmod/sounds/rocket_dud.ogg"></audio>
+</div>
+<div class="sound"><label for="seeker_growl">seeker_growl</label><audio id="seeker_growl" controls preload="none" loop src="../../../src/main/resources/assets/rangedweaponsmod/sounds/seeker_growl.ogg"></audio>
+<label>Pitch <input type="range" min="0.8" max="1.6" value="1" step="0.01" oninput="const a=document.getElementById('seeker_growl');a.preservesPitch=false;a.playbackRate=Number(this.value);document.getElementById('rate').textContent=this.value"><output id="rate">1</output>×</label>
+</div>
+<div class="sound"><label for="seeker_lock">seeker_lock</label><audio id="seeker_lock" controls preload="none" loop src="../../../src/main/resources/assets/rangedweaponsmod/sounds/seeker_lock.ogg"></audio>
+</div>
+<div class="sound"><label for="seeker_lost">seeker_lost</label><audio id="seeker_lost" controls preload="none" src="../../../src/main/resources/assets/rangedweaponsmod/sounds/seeker_lost.ogg"></audio>
+</div>
+<p><a href="../../art/sounds/SOURCES.md">CC0 recordings and exact editing credits</a>. Electronic seeker tones are original synthesis.</p><h2>All booth frames at 3×</h2><p>Each expanded frame is exactly 2562 × 1440, three times its 854 × 480 capture. Use the scrollbars to inspect details.</p>
+<details><summary>launcher-first-hip</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-first-hip.png" alt="launcher-first-hip"></div></details>
+<details><summary>launcher-first-sight</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-first-sight.png" alt="launcher-first-sight"></div></details>
+<details><summary>launcher-hud-acquiring</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-hud-acquiring.png" alt="launcher-hud-acquiring"></div></details>
+<details><summary>launcher-hud-locked</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-hud-locked.png" alt="launcher-hud-locked"></div></details>
+<details><summary>launcher-hud-offscreen</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-hud-offscreen.png" alt="launcher-hud-offscreen"></div></details>
+<details><summary>launcher-rocket-leaving</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-leaving.png" alt="launcher-rocket-leaving"></div></details>
+<details><summary>launcher-rocket-lit</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-lit.png" alt="launcher-rocket-lit"></div></details>
+<details><summary>launcher-rocket-flight</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-flight.png" alt="launcher-rocket-flight"></div></details>
+<details><summary>launcher-first-reloading</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-first-reloading.png" alt="launcher-first-reloading"></div></details>
+<details><summary>launcher-third-front</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-third-front.png" alt="launcher-third-front"></div></details>
+<details><summary>launcher-third-front-sight</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-third-front-sight.png" alt="launcher-third-front-sight"></div></details>
+<details><summary>launcher-third-side</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-third-side.png" alt="launcher-third-side"></div></details>
+<details><summary>launcher-inventory</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-inventory.png" alt="launcher-inventory"></div></details>
+<details><summary>launcher-plane-acquiring</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-plane-acquiring.png" alt="launcher-plane-acquiring"></div></details>
+<details><summary>launcher-plane-locked</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-plane-locked.png" alt="launcher-plane-locked"></div></details>
+<details><summary>launcher-plane-intercept-1</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-plane-intercept-1.png" alt="launcher-plane-intercept-1"></div></details>
+<details><summary>launcher-plane-intercept-2</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-plane-intercept-2.png" alt="launcher-plane-intercept-2"></div></details>
+<details><summary>launcher-plane-intercept-3</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-plane-intercept-3.png" alt="launcher-plane-intercept-3"></div></details>
+<details><summary>launcher-plane-down</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-plane-down.png" alt="launcher-plane-down"></div></details>
+<details><summary>launcher-rocket-model-side</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-model-side.png" alt="launcher-rocket-model-side"></div></details>
+<details><summary>launcher-rocket-model-side-close</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-model-side-close.png" alt="launcher-rocket-model-side-close"></div></details>
+<details><summary>launcher-rocket-model-front-quarter</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-model-front-quarter.png" alt="launcher-rocket-model-front-quarter"></div></details>
+<details><summary>launcher-rocket-model-rear-quarter</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-model-rear-quarter.png" alt="launcher-rocket-model-rear-quarter"></div></details>
+<details><summary>launcher-rocket-model-nose</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-model-nose.png" alt="launcher-rocket-model-nose"></div></details>
+<details><summary>launcher-rocket-model-tail</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-model-tail.png" alt="launcher-rocket-model-tail"></div></details>
+<details><summary>launcher-rocket-live-side</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-live-side.png" alt="launcher-rocket-live-side"></div></details>
+<details><summary>launcher-rocket-live-side-past</summary><div class="scroll"><img class="full" loading="lazy" src="frames/launcher-rocket-live-side-past.png" alt="launcher-rocket-live-side-past"></div></details>
+</html>

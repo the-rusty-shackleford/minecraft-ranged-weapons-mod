@@ -77,64 +77,43 @@
   "launcher_fire": {
     "subtitle": "subtitles.rangedweaponsmod.launcher_fire",
     "sounds": [
-      {
-        "name": "minecraft:entity.firework_rocket.launch",
-        "type": "event"
-      }
+      "rangedweaponsmod:launcher_fire"
     ]
   },
   "launcher_reload": {
     "subtitle": "subtitles.rangedweaponsmod.launcher_reload",
     "sounds": [
-      {
-        "name": "minecraft:item.crossbow.loading_end",
-        "type": "event"
-      }
+      "rangedweaponsmod:launcher_reload"
     ]
   },
   "rocket_motor": {
     "subtitle": "subtitles.rangedweaponsmod.rocket_motor",
     "sounds": [
-      {
-        "name": "minecraft:item.elytra.flying",
-        "type": "event"
-      }
+      "rangedweaponsmod:rocket_motor"
     ]
   },
   "rocket_dud": {
     "subtitle": "subtitles.rangedweaponsmod.rocket_dud",
     "sounds": [
-      {
-        "name": "minecraft:block.fire.extinguish",
-        "type": "event"
-      }
+      "rangedweaponsmod:rocket_dud"
     ]
   },
   "seeker_growl": {
     "subtitle": "subtitles.rangedweaponsmod.seeker_growl",
     "sounds": [
-      {
-        "name": "minecraft:block.beacon.ambient",
-        "type": "event"
-      }
+      "rangedweaponsmod:seeker_growl"
     ]
   },
   "seeker_lock": {
     "subtitle": "subtitles.rangedweaponsmod.seeker_lock",
     "sounds": [
-      {
-        "name": "minecraft:block.note_block.bit",
-        "type": "event"
-      }
+      "rangedweaponsmod:seeker_lock"
     ]
   },
   "seeker_lost": {
     "subtitle": "subtitles.rangedweaponsmod.seeker_lost",
     "sounds": [
-      {
-        "name": "minecraft:block.beacon.deactivate",
-        "type": "event"
-      }
+      "rangedweaponsmod:seeker_lost"
     ]
   }
 }

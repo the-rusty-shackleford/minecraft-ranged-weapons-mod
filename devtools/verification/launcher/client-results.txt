@@ -1,0 +1,16 @@
+[02Oct2026 12:21:06.254] [Render thread/INFO] [com.mojang.blaze3d.platform.Window/]: OpenGL Renderer: NVIDIA GeForce RTX 4070/PCIe/SSE2
+[02Oct2026 12:21:21.484] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS one rocket in the tube
+[02Oct2026 12:21:22.285] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the use key raised a seeker that is acquiring the cow, 50 %
+[02Oct2026 12:21:23.985] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS locked onto the cow
+[02Oct2026 12:21:24.736] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the lock holds with the sight down and the cow behind
+[02Oct2026 12:21:26.487] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the lock was spent by the launch
+[02Oct2026 12:21:27.987] [Server thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the locked rocket killed the cow
+[02Oct2026 12:21:29.388] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS R starts loading the tube
+[02Oct2026 12:21:32.639] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the tube holds a rocket again
+[02Oct2026 12:21:37.541] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS Immersive Aircraft is in the booth (copied in by -PboothLauncher)
+[02Oct2026 12:21:38.142] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS a biplane is flying across the sky
+[02Oct2026 12:21:39.393] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the seeker is acquiring the biplane, 80 %
+[02Oct2026 12:21:40.644] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS locked onto the biplane
+[02Oct2026 12:21:43.644] [Server thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS the rocket brought the biplane down
+[02Oct2026 12:21:51.898] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS a live rocket was photographed side-on as it crossed the view
+[02Oct2026 12:21:52.648] [Render thread/INFO] [com.chunkworks.rangedweaponsmod.RangedWeaponsMod/]: booth: PASS all checks ran

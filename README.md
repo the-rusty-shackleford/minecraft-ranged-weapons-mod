@@ -310,15 +310,24 @@ fails on a mismatch, whatever animation mods are in its `mods/` folder.
 
 ## The rocket launcher
 
-D-0028. **Its art and sound are placeholders** (vanilla textures on plain blocks, vanilla sounds)
-until Astra's brief, `devtools/art/ROCKET_LAUNCHER_BRIEF.md`, is delivered. No release ships them.
+D-0028. The launcher has a steel tube with recessed openings, wooden furniture and a compact
+optical seeker, using the same material atlas as the rifle. Its finned rocket has a stepped nose;
+rocket, launch-tube and seeker icons use the sixteen-pixel part palette and bevels.
+`devtools/art/build.py` rebuilds these through `launcher_art.py`, and the seven dedicated sounds
+through `launcher_sound.py`: CC0 recordings for launch, reload, motor and dud, and periodic
+electronic seeker tones. Sources and exact edits are in `devtools/art/sounds/SOURCES.md`.
+The motor and seeker loops have continuous seams; every Vorbis export passes the decoded .98 peak
+ceiling. Rusty accepted this review on 2026-10-02 and asked Claude to handle release for a
+hands-on test. Version 2.11.0 remains unreleased in this checkout.
+See [asset verification and review](devtools/verification/launcher-art.md).
 
 **Using it.** It is a gun: two hands, one rocket in the tube, left click fires, R or an empty
 trigger reloads (2.5 s) from anything you carry, bags included, and creative needs no rocket.
 - **Locking on.** Hold right click (or the aim key) to raise the seeker. Keep a target in the
   reticle, as your screen shows it, for 1.5 s: amber brackets close on it with a rising growl, then a red diamond and a
   steady tone mean it is locked. Lapses of up to four ticks are forgiven; a different target
-  starts over.
+  starts over. The brackets animate between confirmed progress updates; the red diamond appears
+  only when the server confirms the lock.
 - **After the lock.** You can look away, lower the sight and walk; the lock holds until you fire,
   put the launcher away, or the target dies, leaves for another dimension, gets more than 128
   blocks away or stops being a target. Locking another target replaces it.
@@ -396,8 +405,8 @@ for this run only. The frames are `run/booth/screenshots/launcher-*.png`.
 3. A model and a texture: `devtools/art/build.py` is the generator for the
    ones shipped, run with `uv run devtools/art/build.py`. A shot sound and
    any action sound: a field recording of a real firearm, cut and re-timed
-   by the same script. Nothing is synthesized any more -- three rounds of
-   synthesis each measured realistic and each was heard as arcade. Put the
+   by the same script. Physical sounds use recordings; only the electronic launcher
+   seeker tones are synthesized (D-0028). Put the
    recording under `devtools/art/sounds/src/`, credit it in
    `devtools/art/sounds/SOURCES.md` (Creative Commons Zero only, so it can
    be committed and shipped without terms), and describe the cut in
@@ -413,11 +422,11 @@ read everything from the profile and the handling.
 
 ## Third-party recordings
 
-Every sound the mod plays is cut from a recording listed in
+Physical sounds are cut from recordings listed in
 `devtools/art/sounds/SOURCES.md`, each dedicated to the public domain by its
 recordist under Creative Commons Zero on freesound.org. Attribution is not
 required by that dedication; the recordists are named there because they
-should be. The code and the art stay under this repository's own license.
+should be. The launcher seeker tones are original synthesis. The code and the art stay under this repository's own license.
 
 Long magazine titles and next-round names stay inside their panel, ending in an
 ellipsis when needed. Hover over shortened text to read its full name. The Fill button

@@ -23,6 +23,8 @@ import zlib
 from pathlib import Path
 from material_bevel import bevel
 from sound_export import write_ogg
+import launcher_art
+import launcher_sound
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "src/main/resources/assets/rangedweaponsmod"
@@ -1022,6 +1024,8 @@ def sounds_json():
     # Reuse the credited CC0 rifle recording at a lower pitch; no new recording is claimed.
     sounds["revolver_shot"] = {"subtitle": f"subtitles.{MODID}.revolver_shot",
                                "sounds": [{"name": f"{MODID}:rifle_shot", "pitch": 0.85}]}
+    for name in launcher_sound.EVENTS:
+        sounds[name] = {"subtitle": f"subtitles.{MODID}.{name}", "sounds": [f"{MODID}:{name}"]}
     return sounds
 
 
@@ -1074,7 +1078,9 @@ def main(argv) -> int:
             variant["display"] = display
             (booth_assets / f"models/item/booth_{name}.json").write_text(json.dumps(variant, indent=2) + "\n")
         print(f"booth: axes model under {', '.join(BOOTH_VARIANTS)}")
+    launcher_art.generate(want)
     if "sounds" in want:
+        launcher_sound.generate()
         for name, fn in SOUNDS.items():
             write_ogg(ASSETS / f"sounds/{name}.ogg", fn())
         (ASSETS / "sounds.json").write_text(json.dumps(sounds_json(), indent=2) + "\n")
