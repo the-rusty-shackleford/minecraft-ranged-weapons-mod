@@ -7,7 +7,7 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
-## The weapons workbench and the lock-on chip — 2.12.0 (2026-10-03), built and green, NOT released
+## The weapons workbench and the lock-on chip — 2.12.0 (2026-10-03), released 2026-10-04 in pack 1.72.0
 
 A player asked, through Rusty, that lock-on need a consumable, craftable chip. Rusty folded it
 into his own idea: a **weapons workbench** where every gun is assembled and modified, instead of
@@ -35,9 +35,13 @@ the crafting table. [D-0029](decisions/D-0029.md) has the design. His calls:
   `devtools/verification/release-2.12.0.md`.
 - **Also fixed:** the revolver was missing from vanilla's Combat tab; the rocket ammunition tag had
   no name, which EMI flagged.
-- **To release:** only on Rusty's go, with a protocol bump, so every client updates with the pack.
-  Tell the players that guns no longer craft at a table or through a warehouse manager, and that
-  launchers on the box fire straight until a chip is fitted.
+- **Released 2026-10-04** in pack 1.72.0 beside Village Law 1.0.0, on Rusty's "no batch
+  everything together when done": tag `v2.12.0` at `9dc28ce`, the gate's jar (sha1 `c5eaec88`)
+  as the GitHub asset, which was downloaded back and matches. Restarted at once with nobody on;
+  the log shows "rangedweaponsmod (version 2.11.0 -> 2.12.0)"; 38 baseline errors, 20 TPS,
+  parity clean. The server repo's `knowledge/releases/pack-1.72.0.md` has the deployment.
+  Players are to be told that guns no longer craft at a table or through a warehouse manager, and
+  that launchers on the box fire straight until a chip is fitted. Not yet seen in Rusty's hands.
 
 ## The rocket launcher — 2.11.0 (2026-10-01), released 2026-10-02 in pack 1.71.0
 

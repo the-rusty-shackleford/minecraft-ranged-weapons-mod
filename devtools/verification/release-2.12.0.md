@@ -1,6 +1,6 @@
 # 2.12.0 verification: the weapons workbench and the lock-on chip (D-0029)
 
-Built and checked 2026-10-03. **Not released**: only on Rusty's go.
+Built and checked 2026-10-03. Released 2026-10-04 in pack 1.72.0, this jar as the asset (sha1 matched).
 
 ## The gate
 
