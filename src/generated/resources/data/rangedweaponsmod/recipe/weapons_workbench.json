@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "c:player_workstations/crafting_tables"
+    },
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "S": {
+      "tag": "c:ingots/steel"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "PCP",
+    "PPP"
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:weapons_workbench"
+  }
+}

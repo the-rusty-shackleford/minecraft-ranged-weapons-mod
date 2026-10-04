@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 
 /**
  * One crafting recipe, described in plain strings: what goes in, in what
- * shape, what comes out, and which ingredient in hand should reveal it in
- * the recipe book.
+ * shape, what comes out, where it is made, and which ingredient in hand
+ * should reveal it in the recipe book.
  *
  * <p>Ingredients are item ids ({@code minecraft:paper}) or tags with a
  * leading hash ({@code #c:ingots/iron}); results are item ids. The recipe's
@@ -39,8 +39,21 @@ import java.util.regex.Pattern;
  * out: one to three rows of equal width, one to three columns, at least
  * one filled cell, every symbol in the pattern defined, every defined
  * symbol used, and space never a symbol.
+ *
+ * <p>A recipe made at the crafting table is revealed in the recipe book by
+ * at least one of its ingredients; one made at the weapons workbench
+ * (D-0029) is never in the recipe book, so nothing unlocks it.
  */
 public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless {
+
+    /**
+     * Where a recipe is made (D-0029): the crafting table, or the weapons
+     * workbench, where every gun, part, magazine and fitting is assembled.
+     */
+    enum Station {
+        TABLE,
+        BENCH
+    }
 
     /** Where the recipe book files a recipe; the folder its unlock is written under. */
     enum Category {
@@ -63,6 +76,9 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
 
     Category category();
 
+    /** Where it is made. */
+    Station station();
+
     /** The item made. */
     String result();
 
@@ -71,8 +87,9 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
 
     /**
      * The ingredients any one of which, once held, reveals the recipe in
-     * the recipe book: a non-empty subset of the ingredients, each with a
-     * distinct criterion name.
+     * the recipe book: for a table recipe a non-empty subset of the
+     * ingredients, each with a distinct criterion name; for a bench recipe,
+     * none.
      */
     List<String> unlockedBy();
 
@@ -82,8 +99,14 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
      */
     Map<String, Integer> ingredients();
 
-    /** effects: returns the id of the recipe book unlock the game writes for this recipe */
+    /**
+     * effects: returns the id of the recipe book unlock the game writes for this recipe<br>
+     * throws: {@link IllegalStateException} for a bench recipe, which has none
+     */
     default String advancementId() {
+        if (station() != Station.TABLE) {
+            throw new IllegalStateException(id() + " is made at the bench: nothing unlocks it");
+        }
         return namespace(id()) + ":recipes/" + category().folder + "/" + path(id());
     }
 
@@ -133,16 +156,22 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
         }
     }
 
-    private static void checkCommon(String id, Category category, String result, int count, List<String> unlockedBy, Map<String, Integer> ingredients) {
+    private static void checkCommon(String id, Category category, Station station, String result, int count, List<String> unlockedBy, Map<String, Integer> ingredients) {
         checkId(id, "id", false);
         if (category == null) {
             throw new IllegalArgumentException("category must be given for " + id);
+        }
+        if (station == null) {
+            throw new IllegalArgumentException("station must be given for " + id);
         }
         checkId(result, "result", false);
         if (count < 1) {
             throw new IllegalArgumentException("count must be >= 1 for " + id + ", was " + count);
         }
-        if (unlockedBy == null || unlockedBy.isEmpty()) {
+        if (station == Station.BENCH && !unlockedBy.isEmpty()) {
+            throw new IllegalArgumentException(id + " is made at the bench, which is never in the recipe book: nothing unlocks it");
+        }
+        if (station == Station.TABLE && unlockedBy.isEmpty()) {
             throw new IllegalArgumentException(id + " must be unlocked by at least one ingredient");
         }
         Set<String> names = new HashSet<>();
@@ -159,11 +188,22 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
     /**
      * A recipe with a shape.
      *
+     * @param station    where it is made
      * @param pattern    the rows, top first; a space is an empty cell
      * @param key        what each symbol in the pattern is
      * @param unlockedBy see {@link Blueprint#unlockedBy()}
      */
-    record Shaped(String id, Category category, String result, int count, List<String> pattern, Map<Character, String> key, List<String> unlockedBy) implements Blueprint {
+    record Shaped(String id, Category category, Station station, String result, int count, List<String> pattern, Map<Character, String> key, List<String> unlockedBy) implements Blueprint {
+
+        /** A crafting-table recipe, revealed by holding any of {@code unlockedBy}. */
+        public Shaped(String id, Category category, String result, int count, List<String> pattern, Map<Character, String> key, List<String> unlockedBy) {
+            this(id, category, Station.TABLE, result, count, pattern, key, unlockedBy);
+        }
+
+        /** effects: returns a weapons-workbench recipe (D-0029), which nothing unlocks */
+        public static Shaped bench(String id, Category category, String result, int count, List<String> pattern, Map<Character, String> key) {
+            return new Shaped(id, category, Station.BENCH, result, count, pattern, key, List.of());
+        }
 
         /** @throws IllegalArgumentException if any rule in the class comment is broken */
         public Shaped {
@@ -205,7 +245,7 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
                 }
                 checkId(entry.getValue(), id + " key '" + entry.getKey() + "'", true);
             }
-            checkCommon(id, category, result, count, unlockedBy, ingredientsOf(pattern, key));
+            checkCommon(id, category, station, result, count, unlockedBy, ingredientsOf(pattern, key));
         }
 
         private static Map<String, Integer> ingredientsOf(List<String> pattern, Map<Character, String> key) {
@@ -239,10 +279,21 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
     /**
      * A recipe with no shape: the ingredients anywhere in the grid.
      *
+     * @param station        where it is made
      * @param ingredientList the ingredients, one entry per item, one to nine
      * @param unlockedBy     see {@link Blueprint#unlockedBy()}
      */
-    record Shapeless(String id, Category category, String result, int count, List<String> ingredientList, List<String> unlockedBy) implements Blueprint {
+    record Shapeless(String id, Category category, Station station, String result, int count, List<String> ingredientList, List<String> unlockedBy) implements Blueprint {
+
+        /** A crafting-table recipe, revealed by holding any of {@code unlockedBy}. */
+        public Shapeless(String id, Category category, String result, int count, List<String> ingredientList, List<String> unlockedBy) {
+            this(id, category, Station.TABLE, result, count, ingredientList, unlockedBy);
+        }
+
+        /** effects: returns a weapons-workbench recipe (D-0029), which nothing unlocks */
+        public static Shapeless bench(String id, Category category, String result, int count, List<String> ingredientList) {
+            return new Shapeless(id, category, Station.BENCH, result, count, ingredientList, List.of());
+        }
 
         /** @throws IllegalArgumentException if any rule in the class comment is broken */
         public Shapeless {
@@ -254,7 +305,7 @@ public sealed interface Blueprint permits Blueprint.Shaped, Blueprint.Shapeless 
             for (String ingredient : ingredientList) {
                 checkId(ingredient, id + " ingredient", true);
             }
-            checkCommon(id, category, result, count, unlockedBy, ingredientsOf(ingredientList));
+            checkCommon(id, category, station, result, count, unlockedBy, ingredientsOf(ingredientList));
         }
 
         private static Map<String, Integer> ingredientsOf(List<String> list) {

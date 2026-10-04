@@ -117,6 +117,7 @@ public final class ClientSetup {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(ModData.MAGAZINE_MENU.get(), MagazineScreen::new);
+        event.register(ModData.WORKBENCH_MENU.get(), WorkbenchScreen::new);
     }
 
     /** A magazine's band takes the dye's colour; undyed, it is the band as painted. */

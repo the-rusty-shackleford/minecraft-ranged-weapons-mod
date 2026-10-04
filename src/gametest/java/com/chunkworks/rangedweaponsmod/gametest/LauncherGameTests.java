@@ -19,6 +19,7 @@ package com.chunkworks.rangedweaponsmod.gametest;
 
 import com.chunkworks.backpacksplus.BackpackItems;
 import com.chunkworks.backpacksplus.BagContents;
+import com.chunkworks.rangedweaponsmod.LauncherItem;
 import com.chunkworks.rangedweaponsmod.ModData;
 import com.chunkworks.rangedweaponsmod.ModItems;
 import com.chunkworks.rangedweaponsmod.PlayerGunnery;
@@ -26,6 +27,7 @@ import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.Rocket;
 import com.chunkworks.rangedweaponsmod.RocketConfig;
 import com.chunkworks.rangedweaponsmod.Seeking;
+import com.chunkworks.rangedweaponsmod.domain.Chip;
 import com.chunkworks.rangedweaponsmod.domain.Seeker;
 import com.nfx.rangedweapons.api.RangedWeapon;
 import com.nfx.rangedweapons.api.RangedWeapons;
@@ -65,7 +67,12 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * its heading; a locked boat is broken. Blast: breaks a block with the config on, leaves it with
  * it off and still kills beside it. Arming: a contact inside the arming distance is a dud. Ammo:
  * creative fires with none; an empty launcher reloads one rocket from a carried bag. Hands: the off
- * hand's item use is refused under a launcher and only under a launcher.
+ * hand's item use is refused under a launcher and only under a launcher. The lock-on chip (D-0029):
+ * every shooter but the chipless ones carries a fresh chip; with none the seeker stays idle on a
+ * creature held in the reticle twice the lock's time, and locks once one is fitted; a straight
+ * launch spends no charge, a guided one exactly one, the last burns the chip out and the seeker
+ * idles after; creative locks with no chip and wears none; a launcher worn out hands its chip back
+ * with its wear.
  *
  * <p>Seeker tests step the seeker in a loop within one tick, since a lock on a still target
  * needs no world ticks; flights let the level fly the rocket. Each step first does the client's
@@ -83,8 +90,23 @@ public final class LauncherGameTests {
 
     private record Shooter(Player player, ItemStack launcher, RangedWeapon weapon) {}
 
-    /** effects: a floored range with its backstop, and a mock player at {@link #STANCE} holding a launcher with {@code rounds} rockets in it */
+    /** effects: a lock-on chip with {@code used} of its charges spent */
+    private static ItemStack chip(int used) {
+        ItemStack chip = new ItemStack(ModItems.LOCK_ON_CHIP.get());
+        chip.setDamageValue(used);
+        return chip;
+    }
+
+    /** effects: {@link #shooter(GameTestHelper, GameType, int, ItemStack)} with a fresh chip fitted */
     private static Shooter shooter(GameTestHelper h, GameType mode, int rounds) {
+        return shooter(h, mode, rounds, chip(0));
+    }
+
+    /**
+     * effects: a floored range with its backstop, and a mock player at {@link #STANCE} holding a
+     * launcher with {@code rounds} rockets in it and {@code chip} fitted (none for an empty stack)
+     */
+    private static Shooter shooter(GameTestHelper h, GameType mode, int rounds, ItemStack chip) {
         for (int x = 0; x < WIDTH; x++) {
             for (int z = 0; z < LENGTH; z++) {
                 h.setBlock(new BlockPos(x, 0, z), Blocks.SMOOTH_STONE);
@@ -106,6 +128,7 @@ public final class LauncherGameTests {
         if (rounds > 0) {
             weapon.load(launcher, rounds, ModItems.ROCKET.get());
         }
+        LauncherItem.fit(launcher, chip);
         player.setItemInHand(InteractionHand.MAIN_HAND, launcher);
         return new Shooter(player, launcher, weapon);
     }
@@ -454,6 +477,110 @@ public final class LauncherGameTests {
         NeoForge.EVENT_BUS.post(underRifle);
         h.assertFalse(underRifle.isCanceled(), "under any other gun the off hand is the player's");
         h.assertTrue(Seeking.inReticle(h.getLevel(), s.player()) == null, "nothing in the reticle down an empty range");
+        h.succeed();
+    }
+
+    // --- the lock-on chip (D-0029) --------------------------------------------
+
+    @GameTest(template = "range")
+    public void aChiplessLauncherNeverLocksAndLocksOnceAChipIsFitted(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1, ItemStack.EMPTY);
+        LivingEntity cow = h.spawnWithNoFreeWill(EntityType.COW, new Vec3(3.5, 1.0, 22.5));
+        aimAt(s.player(), cow);
+        PlayerGunnery.onAim(s.player(), true);
+        for (int tick = 0; tick < 2 * Seeker.ACQUIRE_TICKS; tick++) {
+            step(h, s, 1);
+            h.assertValueEqual(seeker(s), Seeker.IDLE, "no chip, no seeker, at tick " + tick);
+        }
+        LauncherItem.fit(s.launcher(), chip(0));
+        step(h, s, Seeker.ACQUIRE_TICKS);
+        h.assertValueEqual(seeker(s).locked(), cow.getId(), "a chip fitted, the cow locks in the usual time");
+        h.succeed();
+    }
+
+    @GameTest(template = "range", timeoutTicks = 100)
+    public void aStraightLaunchSpendsNoCharge(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1, chip(2));
+        PlayerGunnery.onTrigger(s.player(), true);
+        step(h, s, 1);
+        h.assertValueEqual(rockets(h).size(), 1, "launched");
+        h.assertValueEqual(rockets(h).get(0).targetId(), Seeker.NONE, "straight");
+        h.assertValueEqual(LauncherItem.chip(s.launcher()).getDamageValue(), 2, "no charge spent");
+        rockets(h).forEach(Entity::discard);
+        h.succeed();
+    }
+
+    @GameTest(template = "range", timeoutTicks = 100)
+    public void aGuidedLaunchSpendsExactlyOneCharge(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1, chip(2));
+        LivingEntity cow = h.spawnWithNoFreeWill(EntityType.COW, new Vec3(3.5, 1.0, 22.5));
+        aimAt(s.player(), cow);
+        PlayerGunnery.onAim(s.player(), true);
+        step(h, s, Seeker.ACQUIRE_TICKS);
+        h.assertValueEqual(seeker(s).locked(), cow.getId(), "locked");
+        h.assertValueEqual(LauncherItem.chip(s.launcher()).getDamageValue(), 2, "a lock alone spends nothing");
+        PlayerGunnery.onTrigger(s.player(), true);
+        step(h, s, 1);
+        h.assertValueEqual(rockets(h).get(0).targetId(), cow.getId(), "guided");
+        h.assertValueEqual(LauncherItem.chip(s.launcher()).getDamageValue(), 3, "one charge spent");
+        rockets(h).forEach(Entity::discard);
+        h.succeed();
+    }
+
+    @GameTest(template = "range", timeoutTicks = 100)
+    public void theLastChargeBurnsTheChipOutAndTheSeekerIdlesAfter(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1, chip(Chip.CHARGES - 1));
+        LivingEntity cow = h.spawnWithNoFreeWill(EntityType.COW, new Vec3(3.5, 1.0, 22.5));
+        aimAt(s.player(), cow);
+        PlayerGunnery.onAim(s.player(), true);
+        step(h, s, Seeker.ACQUIRE_TICKS);
+        PlayerGunnery.onTrigger(s.player(), true);
+        step(h, s, 1);
+        h.assertValueEqual(rockets(h).get(0).targetId(), cow.getId(), "its last launch is still guided");
+        h.assertTrue(LauncherItem.chip(s.launcher()).isEmpty(), "and burns the chip out");
+        rockets(h).forEach(Entity::discard);
+        PlayerGunnery.onTrigger(s.player(), false);
+        aimAt(s.player(), cow);
+        for (int tick = 0; tick < 2 * Seeker.ACQUIRE_TICKS; tick++) {
+            step(h, s, 1);
+            h.assertValueEqual(seeker(s), Seeker.IDLE, "a burnt chip is no chip, at tick " + tick);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = "range", timeoutTicks = 100)
+    public void creativeLocksWithoutAChipAndWearsNone(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.CREATIVE, 0, ItemStack.EMPTY);
+        LivingEntity cow = h.spawnWithNoFreeWill(EntityType.COW, new Vec3(3.5, 1.0, 22.5));
+        aimAt(s.player(), cow);
+        PlayerGunnery.onAim(s.player(), true);
+        step(h, s, Seeker.ACQUIRE_TICKS);
+        h.assertValueEqual(seeker(s).locked(), cow.getId(), "creative locks with no chip");
+        LauncherItem.fit(s.launcher(), chip(0));
+        PlayerGunnery.onTrigger(s.player(), true);
+        step(h, s, 1);
+        h.assertValueEqual(rockets(h).get(0).targetId(), cow.getId(), "guided");
+        h.assertValueEqual(LauncherItem.chip(s.launcher()).getDamageValue(), 0, "creative wears no chip");
+        rockets(h).forEach(Entity::discard);
+        h.succeed();
+    }
+
+    @GameTest(template = "range", timeoutTicks = 100)
+    public void aLauncherWornOutHandsItsChipBack(GameTestHelper h) {
+        Shooter s = shooter(h, GameType.SURVIVAL, 1, chip(3));
+        s.launcher().setDamageValue(s.launcher().getMaxDamage() - 1);
+        PlayerGunnery.onTrigger(s.player(), true);
+        step(h, s, 1);
+        h.assertValueEqual(s.player().getInventory().countItem(ModItems.ROCKET_LAUNCHER.get()), 0, "the launcher wore out");
+        ItemStack back = ItemStack.EMPTY;
+        for (ItemStack stack : s.player().getInventory().items) {
+            if (stack.is(ModItems.LOCK_ON_CHIP.get())) {
+                back = stack;
+            }
+        }
+        h.assertTrue(!back.isEmpty(), "its chip came back");
+        h.assertValueEqual(back.getDamageValue(), 3, "with its wear");
+        rockets(h).forEach(Entity::discard);
         h.succeed();
     }
 }

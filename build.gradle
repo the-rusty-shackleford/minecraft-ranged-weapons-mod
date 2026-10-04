@@ -29,6 +29,12 @@ repositories {
         url = 'https://api.modrinth.com/maven'
         content { includeGroup('maven.modrinth') }
     }
+    // EMI, the pack's recipe viewer: the bench's plugin compiles against its API (D-0029), and the
+    // workbench booth runs the very jar.
+    maven {
+        url = 'https://maven.terraformersmc.com/releases/'
+        content { includeGroup('dev.emi') }
+    }
     mavenLocal()
 }
 
@@ -67,19 +73,31 @@ var copyGameTestStructures = tasks.register("copyGameTestStructures", Copy) {
 // its library, which re-pose the player) -- jars dropped there load, where
 // jars on the classpath are not discovered as mods by a dev launch.
 // Jars of the pack a booth needs, copied into run/booth/mods for the run that wants them and taken
-// out again for every other: Immersive Aircraft for the launcher booth's biplane (D-0028).
-configurations { boothMods { transitive = false } }
+// out again for every other: Immersive Aircraft for the launcher booth's biplane (D-0028), EMI for
+// the workbench booth's recipe pages (D-0029).
+configurations {
+    boothMods { transitive = false }
+    boothWorkbenchMods { transitive = false }
+}
 var boothModsWanted = project.hasProperty('boothLauncher')
+var boothWorkbenchModsWanted = project.hasProperty('boothWorkbench')
 var copyBoothMods = tasks.register("copyBoothMods") {
     def jars = configurations.boothMods
+    def workbenchJars = configurations.boothWorkbenchMods
     def into = file('run/booth/mods')
     def wanted = boothModsWanted
+    def workbenchWanted = boothWorkbenchModsWanted
     doLast {
         into.mkdirs()
         new File(into, 'immersive-aircraft-RkWu0N4D.jar').delete()
+        new File(into, 'emi-neoforge-1.1.24+1.21.1.jar').delete()
+        def copy = { jar -> java.nio.file.Files.copy(jar.toPath(), new File(into, jar.name).toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
         if (wanted) {
-            jars.files.each { jar -> java.nio.file.Files.copy(jar.toPath(), new File(into, jar.name).toPath(),
-                    java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
+            jars.files.each(copy)
+        }
+        if (workbenchWanted) {
+            workbenchJars.files.each(copy)
         }
     }
 }
@@ -138,6 +156,8 @@ neoForge {
             systemProperty 'rangedweaponsmod.revolver', project.hasProperty('boothRevolver') ? 'true' : 'false'
             // -PboothLauncher: the rocket launcher's frames (D-0028), for its art.
             systemProperty 'rangedweaponsmod.launcher', project.hasProperty('boothLauncher') ? 'true' : 'false'
+            // -PboothWorkbench: the weapons workbench, its screen, EMI's page for it and the chipless sight (D-0029).
+            systemProperty 'rangedweaponsmod.workbench', project.hasProperty('boothWorkbench') ? 'true' : 'false'
             systemProperty 'rangedweaponsmod.observers', project.hasProperty('boothObservers') ? 'true' : 'false'
             // -PboothPose=one photographs the calibration items in the
             // one-handed pose, for a pistol's frame; two-handed otherwise.
@@ -237,6 +257,12 @@ dependencies {
     // Booth only, through run/booth/mods: on the gametest server it sends its own payload to every
     // mock player that joins, which their embedded connections refuse.
     boothMods 'maven.modrinth:immersive-aircraft:RkWu0N4D'
+    // EMI 1.1.24, the pack's: the bench's plugin compiles against its API (D-0029); the workbench
+    // booth runs the full jar, from run/booth/mods.
+    compileOnly 'dev.emi:emi-neoforge:1.1.24+1.21.1:api'
+    // The workbench booth presses EMI's own "+", which is EMI's recipe filler, not its API.
+    gametestCompileOnly 'dev.emi:emi-neoforge:1.1.24+1.21.1'
+    boothWorkbenchMods 'dev.emi:emi-neoforge:1.1.24+1.21.1'
 
     implementation sourceSets.domain.output
 

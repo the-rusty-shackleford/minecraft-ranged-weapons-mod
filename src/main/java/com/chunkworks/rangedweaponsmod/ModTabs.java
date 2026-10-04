@@ -31,9 +31,10 @@ import java.util.List;
 
 /**
  * The creative tab: everything this mod makes in one place, in the order
- * of the tree -- the guns, their ammunition, then the parts a gun is
- * assembled from. The items stay in the vanilla tabs too (Combat,
- * Ingredients), so a search finds them either way.
+ * of the tree -- the guns, their ammunition, the magazines, what is fitted
+ * at the bench, the parts a gun is assembled from, then the bench itself.
+ * The items stay in the vanilla tabs too (Combat, Ingredients, Functional
+ * Blocks), so a search finds them either way.
  */
 public final class ModTabs {
     private ModTabs() {}
@@ -46,7 +47,7 @@ public final class ModTabs {
             .displayItems((parameters, output) -> contents().forEach(output::accept))
             .build());
 
-    /** effects: returns what the tab shows, in order: guns, ammunition, parts */
+    /** effects: returns what the tab shows, in order: guns, ammunition, magazines, fittings, parts, the bench */
     public static List<Item> contents() {
         List<Item> items = new ArrayList<>();
         items.add(ModItems.PISTOL.get());
@@ -62,7 +63,9 @@ public final class ModTabs {
         items.add(ModItems.SLUG.get());
         items.add(ModItems.ROCKET.get());
         items.addAll(ModItems.magazines());
+        items.add(ModItems.LOCK_ON_CHIP.get());
         items.addAll(ModItems.parts());
+        items.add(ModItems.WEAPONS_WORKBENCH.get());
         return items;
     }
 

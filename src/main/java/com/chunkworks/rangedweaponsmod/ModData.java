@@ -24,6 +24,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -38,7 +39,8 @@ import net.neoforged.neoforge.registries.datamaps.RegisterDataMapTypesEvent;
 /**
  * What this mod keeps in the game's own containers: the reload and the
  * inserted magazine on a gun's stack, the contents on a magazine's, the
- * trigger finger on a player, and the handling data map.
+ * lock-on chip on a launcher's, the trigger finger on a player, the
+ * screens, and the handling data map.
  */
 public final class ModData {
     private ModData() {}
@@ -79,9 +81,22 @@ public final class ModData {
                     .persistent(MagazineContents.CODEC)
                     .networkSynchronized(MagazineContents.STREAM_CODEC));
 
+    /**
+     * The lock-on chip fitted to a launcher at the weapons workbench (D-0029), whole, its wear with
+     * it. Persistent and synced: the seeker, the HUD and the tooltip read it on either side.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<FittedChip>> CHIP =
+            COMPONENTS.registerComponentType("chip", builder -> builder
+                    .persistent(FittedChip.CODEC)
+                    .networkSynchronized(FittedChip.STREAM_CODEC));
+
     /** The screen a magazine is filled in. */
     public static final DeferredHolder<MenuType<?>, MenuType<MagazineMenu>> MAGAZINE_MENU =
             MENUS.register("magazine", () -> IMenuTypeExtension.create(MagazineMenu::fromNetwork));
+
+    /** The weapons workbench's screen (D-0029); the client's copy needs nothing sent to open. */
+    public static final DeferredHolder<MenuType<?>, MenuType<WorkbenchMenu>> WORKBENCH_MENU =
+            MENUS.register("weapons_workbench", () -> new MenuType<>(WorkbenchMenu::new, FeatureFlags.DEFAULT_FLAGS));
 
     /**
      * A player's trigger finger. Transient: it is not saved and not synced,

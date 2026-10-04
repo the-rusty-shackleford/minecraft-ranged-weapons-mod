@@ -43,11 +43,13 @@ public final class RangedWeaponsMod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public RangedWeaponsMod(IEventBus modBus, ModContainer container) {
+        ModBlocks.register(modBus);
         ModItems.register(modBus);
         ModTabs.register(modBus);
         ModSounds.register(modBus);
         ModData.register(modBus);
         ModRecipes.register(modBus);
+        AssemblyRecipe.register(modBus);
         modBus.addListener(Payloads::register);
         modBus.addListener(MagazineFedWeapon::registerCapabilities);
         modBus.addListener(RevolverWeapon::registerCapabilities);

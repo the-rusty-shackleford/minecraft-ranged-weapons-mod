@@ -1,0 +1,26 @@
+{
+  "type": "rangedweaponsmod:assembly_shaped",
+  "key": {
+    "C": {
+      "item": "minecraft:comparator"
+    },
+    "N": {
+      "tag": "c:nuggets/gold"
+    },
+    "Q": {
+      "tag": "c:gems/quartz"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "NRN",
+    "QCQ",
+    "NRN"
+  ],
+  "result": {
+    "count": 1,
+    "id": "rangedweaponsmod:lock_on_chip"
+  }
+}

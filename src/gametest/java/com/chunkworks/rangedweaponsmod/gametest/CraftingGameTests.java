@@ -17,9 +17,11 @@
  */
 package com.chunkworks.rangedweaponsmod.gametest;
 
+import com.chunkworks.rangedweaponsmod.AssemblyRecipe;
 import com.chunkworks.rangedweaponsmod.ModTabs;
 import com.chunkworks.rangedweaponsmod.RangedWeaponsMod;
 import com.chunkworks.rangedweaponsmod.domain.Blueprint;
+import com.chunkworks.rangedweaponsmod.domain.Blueprint.Station;
 import com.chunkworks.rangedweaponsmod.domain.Blueprints;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.CriteriaTriggers;
@@ -40,7 +42,6 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -57,15 +58,19 @@ import java.util.Set;
 
 /**
  * The recipes on a real server, held to the blueprints they were written
- * from: every blueprint's grid finds exactly its recipe and assembles its
- * result; nothing else of ours is on the server; every unlock exists,
- * rewards its recipe, and accepts the ingredient it names; every ingredient
- * exists and every tag has something in it; a player who picks up iron
- * finds the barrel in the recipe book; the creative tab, built the way
- * the creative screen builds it, shows every gun, round and part of ours
- * in the order of the tree and nothing else; and steel, which was ours
- * before 2.3.0, is Metals and Materials': the tag has their ingot in it, the
- * old id is not an item, and a stack saved under the old id loads as theirs.
+ * from: every blueprint's grid finds exactly its recipe at its station and
+ * none at the other -- a gun, part, magazine or fitting at the weapons
+ * workbench and never at a crafting table, a round, a rocket or the bench
+ * at the table and never at the bench (D-0029) -- and assembles its result;
+ * nothing else of ours is on the server; every table recipe's unlock exists,
+ * rewards its recipe, and accepts the ingredient it names, and no bench
+ * recipe has one; every ingredient exists and every tag has something in
+ * it; a player who picks up steel finds the bench in the recipe book; the
+ * creative tab, built the way the creative screen builds it, shows every
+ * item of ours in the order of the tree and nothing else; and steel, which
+ * was ours before 2.3.0, is Metals and Materials': the tag has their ingot
+ * in it, the old id is not an item, and a stack saved under the old id
+ * loads as theirs.
  *
  * <p>A grid is filled from a tag by the <em>last</em> item in it, so a tag
  * is proven honoured rather than matched by its usual item (charcoal for
@@ -79,17 +84,23 @@ public final class CraftingGameTests {
     public CraftingGameTests() {}
 
     @GameTest(template = "arena")
-    public void everyBlueprintIsTheRecipeTheServerFinds(GameTestHelper helper) {
+    public void everyBlueprintIsTheRecipeTheServerFindsAtItsStationAndNoneAtTheOther(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         for (Blueprint blueprint : Blueprints.all()) {
             CraftingInput input = input(blueprint);
-            List<RecipeHolder<CraftingRecipe>> found = level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, input, level);
-            helper.assertValueEqual(found.size(), 1,
-                    blueprint.id() + ": recipes matching its grid " + found.stream().map(r -> r.id().toString()).toList()
-                            + " (a blueprint edited without ./gradlew runData?)");
-            RecipeHolder<CraftingRecipe> recipe = found.get(0);
-            helper.assertValueEqual(recipe.id().toString(), blueprint.id(), "the recipe the grid finds");
-            ItemStack result = recipe.value().assemble(input, level.registryAccess());
+            List<String> atTable = level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, input, level).stream()
+                    .map(r -> r.id().toString()).toList();
+            List<RecipeHolder<AssemblyRecipe>> bench = level.getRecipeManager().getRecipesFor(AssemblyRecipe.TYPE.get(), input, level);
+            List<String> atBench = bench.stream().map(r -> r.id().toString()).toList();
+            boolean benchMade = blueprint.station() == Station.BENCH;
+            List<String> found = benchMade ? atBench : atTable;
+            List<String> elsewhere = benchMade ? atTable : atBench;
+            helper.assertValueEqual(found, List.of(blueprint.id()),
+                    blueprint.id() + ": recipes matching its grid at the " + blueprint.station() + " (a blueprint edited without ./gradlew runData?)");
+            helper.assertValueEqual(elsewhere, List.of(), blueprint.id() + ": recipes matching its grid at the other station");
+            ItemStack result = benchMade
+                    ? bench.get(0).value().assemble(input, level.registryAccess())
+                    : level.getRecipeManager().getRecipesFor(RecipeType.CRAFTING, input, level).get(0).value().assemble(input, level.registryAccess());
             helper.assertValueEqual(BuiltInRegistries.ITEM.getKey(result.getItem()).toString(), blueprint.result(), blueprint.id() + " makes");
             helper.assertValueEqual(result.getCount(), blueprint.count(), blueprint.id() + " makes this many");
         }
@@ -99,22 +110,34 @@ public final class CraftingGameTests {
     @GameTest(template = "arena")
     public void noRecipeOfOursIsOutsideTheBlueprints(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        Set<String> onServer = new HashSet<>();
+        Set<String> atTable = new HashSet<>();
         for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
             if (holder.id().getNamespace().equals(RangedWeaponsMod.MOD_ID)) {
-                onServer.add(holder.id().toString());
+                atTable.add(holder.id().toString());
             }
         }
-        Set<String> blueprints = new HashSet<>();
-        Blueprints.all().forEach(b -> blueprints.add(b.id()));
-        helper.assertValueEqual(onServer, blueprints, "this mod's crafting recipes on the server (stale generated files?)");
+        Set<String> atBench = new HashSet<>();
+        for (RecipeHolder<AssemblyRecipe> holder : level.getRecipeManager().getAllRecipesFor(AssemblyRecipe.TYPE.get())) {
+            atBench.add(holder.id().toString());
+        }
+        Set<String> tableBlueprints = new HashSet<>();
+        Set<String> benchBlueprints = new HashSet<>();
+        Blueprints.all().forEach(b -> (b.station() == Station.BENCH ? benchBlueprints : tableBlueprints).add(b.id()));
+        helper.assertValueEqual(atTable, tableBlueprints, "this mod's crafting recipes on the server (stale generated files?)");
+        helper.assertValueEqual(atBench, benchBlueprints, "the bench's recipes on the server");
         helper.succeed();
     }
 
     @GameTest(template = "arena")
-    public void everyBlueprintHasItsUnlock(GameTestHelper helper) {
+    public void everyTableBlueprintHasItsUnlockAndNoBenchBlueprintHasOne(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         for (Blueprint blueprint : Blueprints.all()) {
+            if (blueprint.station() == Station.BENCH) {
+                String would = Blueprint.namespace(blueprint.id()) + ":recipes/" + blueprint.category().folder + "/" + Blueprint.path(blueprint.id());
+                helper.assertTrue(server.getAdvancements().get(ResourceLocation.parse(would)) == null,
+                        blueprint.id() + " is made at the bench, yet " + would + " unlocks it (stale generated files?)");
+                continue;
+            }
             AdvancementHolder unlock = server.getAdvancements().get(ResourceLocation.parse(blueprint.advancementId()));
             if (unlock == null) {
                 helper.fail(blueprint.id() + " has no unlock at " + blueprint.advancementId());
@@ -154,23 +177,25 @@ public final class CraftingGameTests {
 
     @SuppressWarnings("removal")
     @GameTest(template = "arena")
-    public void pickingUpIronPutsTheBarrelInTheRecipeBook(GameTestHelper helper) {
+    public void pickingUpSteelPutsTheWorkbenchInTheRecipeBook(GameTestHelper helper) {
         MinecraftServer server = helper.getLevel().getServer();
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         try {
-            ResourceLocation barrel = ResourceLocation.parse(Blueprints.BARREL);
-            ResourceLocation stock = ResourceLocation.parse(Blueprints.STOCK);
-            helper.assertFalse(player.getRecipeBook().contains(barrel), "the barrel is unknown at first");
-            ItemStack iron = new ItemStack(Items.IRON_INGOT);
+            ResourceLocation bench = ResourceLocation.parse(Blueprints.WEAPONS_WORKBENCH);
+            ResourceLocation round = ResourceLocation.parse(Blueprints.ROUND);
+            helper.assertFalse(player.getRecipeBook().contains(bench), "the bench is unknown at first");
+            ItemStack steel = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(Blueprints.STEEL_INGOT)));
             // Adding drains the stack handed in; the trigger gets what sits in
             // the slot, as the container listener reports on a real tick -- a
             // placed player is never ticked, so it is reported here.
-            player.getInventory().add(iron.copy());
-            CriteriaTriggers.INVENTORY_CHANGED.trigger(player, player.getInventory(), iron);
-            helper.assertTrue(player.getRecipeBook().contains(barrel), "iron in hand reveals the barrel");
-            helper.assertFalse(player.getRecipeBook().contains(stock), "iron in hand does not reveal the stock");
-            AdvancementHolder unlock = server.getAdvancements().get(ResourceLocation.parse(Blueprints.BARREL_RECIPE.advancementId()));
-            helper.assertTrue(unlock != null && player.getAdvancements().getOrStartProgress(unlock).isDone(), "the barrel's unlock is done");
+            player.getInventory().add(steel.copy());
+            CriteriaTriggers.INVENTORY_CHANGED.trigger(player, player.getInventory(), steel);
+            helper.assertTrue(player.getRecipeBook().contains(bench), "steel in hand reveals the bench");
+            helper.assertFalse(player.getRecipeBook().contains(round), "steel in hand does not reveal the round");
+            helper.assertFalse(player.getRecipeBook().contains(ResourceLocation.parse(Blueprints.BARREL)),
+                    "a bench recipe is never in the recipe book");
+            AdvancementHolder unlock = server.getAdvancements().get(ResourceLocation.parse(Blueprints.WEAPONS_WORKBENCH_RECIPE.advancementId()));
+            helper.assertTrue(unlock != null && player.getAdvancements().getOrStartProgress(unlock).isDone(), "the bench's unlock is done");
         } finally {
             server.getPlayerList().remove(player);
         }
@@ -188,7 +213,9 @@ public final class CraftingGameTests {
         expected.addAll(Blueprints.launchers());
         expected.addAll(Blueprints.ammunition());
         expected.addAll(Blueprints.magazines());
+        expected.addAll(Blueprints.fittings());
         expected.addAll(Blueprints.parts());
+        expected.addAll(Blueprints.stations());
         helper.assertValueEqual(shown, expected, "the tab's contents");
         Set<String> ours = new HashSet<>();
         for (Item item : BuiltInRegistries.ITEM) {

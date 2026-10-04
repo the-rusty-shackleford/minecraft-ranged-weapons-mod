@@ -280,7 +280,13 @@ public final class PlayerGunnery {
                 Magazines.pop(stack, weapon);
             }
         }
+        // A launcher worn out takes nothing with it: its lock-on chip comes back (D-0029). Read
+        // first, since a broken stack shows no components.
+        ItemStack chip = LauncherItem.chip(stack);
         stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);   // a no-op for creative, as vanilla has it
+        if (stack.isEmpty() && !chip.isEmpty()) {
+            Carried.giveOrDrop(player, chip);
+        }
         ShotReport.play(level, player, weapon.profile(), origin, SoundSource.PLAYERS,
                 0.95f + player.getRandom().nextFloat() * 0.1f);
         // Firing breaks a sprint, the way drawing a bow does.

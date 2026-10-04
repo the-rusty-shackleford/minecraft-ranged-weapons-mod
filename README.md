@@ -4,7 +4,8 @@ Guns for players, on the [Ranged Weapons](../minecraft-ranged-weapons)
 protocol. NeoForge 1.21.1.
 
 Six guns: a pistol, a revolver, a shotgun, a rifle, a scoped rifle and a machine gun; and a
-rocket launcher that locks onto what you hold it on (below).
+rocket launcher that locks onto what you hold it on, with a lock-on chip fitted (below). Every
+gun, part, magazine and chip is made at the **weapons workbench**, not the crafting table.
 The mod is the part of a gun that is about the player holding it: a trigger
 you pull or hold, a fire clock that is not the item cooldown, a reload from
 your inventory, recoil that settles instead of fighting your mouse, sights to
@@ -231,6 +232,22 @@ worth of damage and swallowing two rounds in three of a burst.
 
 ### Crafting
 
+**The weapons workbench** (D-0029) is where every gun, part, magazine and lock-on chip is made;
+rounds, shells, slugs and rockets stay at the crafting table. The bench is three steel over a
+plank, a crafting table and a plank, over three planks, made at the crafting table; holding steel
+reveals it in the recipe book. Use it to open its screen:
+- **On the left, a 3×3 grid** that works as the crafting table's does, for the bench's own
+  recipes (the type `rangedweaponsmod:assembly`). A crafting table makes none of them, and a
+  warehouse manager, which crafts only the table's recipes, cannot either.
+- **On the right, the fittings:** a weapon slot, and under a rocket launcher a slot for its
+  lock-on chip (see the launcher, below). Shift-click sends a launcher and a chip to their slots.
+- Like a crafting table it keeps nothing: on closing, what is in the grid and the weapon slot
+  goes back to you.
+
+Bench recipes are not in the recipe book (no unlock gates them, and the limited-crafting rule does
+not apply); **EMI** shows them under "Weapons Workbench", with the bench as the workstation, and
+its "+" fills the bench's grid.
+
 A gun is assembled from parts made separately. Materials are taken by their
 common tags, so any mod's iron, planks or glass panes serve. Steel is
 `#c:ingots/steel`: in the pack that is Metals and Materials' ingot (three
@@ -259,23 +276,26 @@ loads as it.
 | **Machine Gun** | as the rifle, with a heavy barrel |
 
 By iron, counting steel as the iron it came from: pistol 6, shotgun 6 and
-some wood, revolver 10, rifle 10, scoped rifle 11 and two panes, machine gun 12. Every
-recipe unlocks in the recipe book the moment a player holds one of its
-ingredients. In creative, the **Ranged Weapons** tab holds everything of
-this mod's in the order of the tree -- guns, ammunition, parts; the parts
-are in Ingredients and the guns and ammunition in Combat as well.
+some wood, revolver 10, rifle 10, scoped rifle 11 and two panes, machine gun 12. A crafting-table
+recipe (the rounds, the rocket, the bench) unlocks in the recipe book the moment a player holds one
+of its ingredients. In creative, the **Ranged Weapons** tab holds everything of
+this mod's in the order of the tree -- guns, ammunition, magazines, the chip, parts, the bench;
+the parts are in Ingredients, the guns, ammunition and chip in Combat, and the bench in Functional
+Blocks as well.
 
 The recipes are not written by hand. `Blueprints` in the `domain` source
-set is the one description of the tree; `./gradlew runData` writes the
-recipe files and their unlocks from it into `src/generated/resources`
+set is the one description of the tree, each recipe with the station it is made at;
+`./gradlew runData` writes the table's recipe files and their unlocks, and the bench's recipe
+files, from it into `src/generated/resources`
 (committed); the plain-JUnit tests hold the tree to its rules -- the pistol
 cheapest, every long gun with one stock and the pistol none, one lower
 receiver and one barrel in every gun, the scoped rifle exactly a rifle and
-a scope, no cycles; and a gametest asks the running server for every grid
-and expects exactly our recipe back. `devtools/recipes/collisions.py`
-checks the part and ammunition recipes against every recipe in a pack's
+a scope, every gun, part, magazine and chip at the bench and every round at the table, no two
+recipes at one station answering one grid, no cycles; and a gametest asks the running server for
+every grid at its station, expects exactly our recipe back, and none at the other station.
+`devtools/recipes/collisions.py` checks the table's recipes against every recipe in a pack's
 jars for a grid two recipes would both answer to (the game would pick one
-at random), and is run against the pack this mod ships in.
+at random), and is run against the pack this mod ships in; nothing else can answer a bench grid.
 
 ### The hold
 
@@ -317,12 +337,20 @@ rocket, launch-tube and seeker icons use the sixteen-pixel part palette and beve
 through `launcher_sound.py`: CC0 recordings for launch, reload, motor and dud, and periodic
 electronic seeker tones. Sources and exact edits are in `devtools/art/sounds/SOURCES.md`.
 The motor and seeker loops have continuous seams; every Vorbis export passes the decoded .98 peak
-ceiling. Rusty accepted this review on 2026-10-02 and asked Claude to handle release for a
-hands-on test. Version 2.11.0 remains unreleased in this checkout.
-See [asset verification and review](devtools/verification/launcher-art.md).
+ceiling. Released as 2.11.0 in pack 1.71.0. See [asset verification and review](devtools/verification/launcher-art.md).
 
 **Using it.** It is a gun: two hands, one rocket in the tube, left click fires, R or an empty
 trigger reloads (2.5 s) from anything you carry, bags included, and creative needs no rocket.
+- **The lock-on chip** (D-0029). The seeker locks only with a lock-on chip fitted, at a weapons
+  workbench: the launcher in the bench's weapon slot, the chip in the slot that opens under it.
+  Without one the launcher fires straight, and the raised sight shows "No lock-on chip" under the
+  crosshair instead of its ring.
+  - A chip gives 8 guided launches; its durability bar and the launcher's tooltip ("Lock-on chip:
+    5 of 8 locks left") count them down. Straight launches, and locks you never fire, cost nothing.
+  - The last guided launch burns the chip out, with the sound of a breaking tool and "Lock-on chip
+    burnt out" on the action bar; the launcher fires straight until another is fitted.
+  - A chip comes off at the bench whole, its wear with it, and a launcher worn out by its 300 shots
+    hands its chip back. Creative needs no chip, and wears none.
 - **Locking on.** Hold right click (or the aim key) to raise the seeker. Keep a target in the
   reticle, as your screen shows it, for 1.5 s: amber brackets close on it with a rising growl, then a red diamond and a
   steady tone mean it is locked. Lapses of up to four ticks are forgiven; a different target
@@ -357,17 +385,20 @@ trigger reloads (2.5 s) from anything you carry, bags included, and creative nee
   are the world's: `config/rangedweaponsmod-server.toml` (on the box `/data/config/`), `[rocket] power = 3.0` (a creeper)
   and `breakBlocks = true`. Warehouse Manager's claimed chests are blast-proof whatever this says.
 
-**Crafting.** Dear by design:
+**Crafting.** Dear by design. The tube, the seeker, the launcher and the chip at the weapons
+workbench; the rocket at the crafting table.
 
 | Item | Recipe |
 |---|---|
 | Launch tube | eight steel in a ring |
 | Seeker | two gold ingots and a diamond over a scope, over a block of redstone |
 | Launcher | the seeker over a stock, a lower receiver and the tube |
+| Lock-on chip | gold nuggets in the corners, redstone above and below, quartz either side of a comparator |
 | Rocket, one a craft | redstone over steel, TNT and steel, over blaze powder |
 
 That is 13 iron, 2 gold, a diamond and a block of redstone for the launcher, and a TNT, a blaze
-powder and 3 iron for every rocket. No recipe collides with the pack's.
+powder and 3 iron for every rocket; a chip is four gold nuggets, two redstone, two quartz and a
+comparator for every eight guided launches. No recipe collides with the pack's.
 
 **How contact is judged.** Your client finds what your reticle is on, by what it draws, and tells
 the server (`SeekPayload`). The server counts it only for a valid target within 128 blocks that it
@@ -375,13 +406,15 @@ can see from your eye, and that is within 30° of where it has you looking. A mo
 your screen shows it, which trails the server by your connection.
 
 **Diagnosing.**
+- **No lock on anything, and "No lock-on chip" under the crosshair:** no chip is fitted, or the last
+  one burnt out. Fit one at a weapons workbench.
 - **No lock on something:** it is not a target by the rules above. A modded vehicle that is not
   built on vanilla's needs the tag. Line of sight from the eye is required while locking, and a
   target more than 30° off where the server has you looking is refused.
 - **"LOCK" shown at the crosshair without a diamond:** the target is beyond what your client is
   told about (entity tracking range); the lock still holds on the server.
 - **A rocket that went off at your feet without a blast:** a dud; it hit something within 4 blocks.
-- **Network version "4":** a client on 2.10.0 or earlier cannot join.
+- **Network version "5":** a client on 2.11.0 or earlier cannot join.
 
 **The launcher booth.** `tools/booth/run_iconified.sh <repo> run/booth runPhotoBooth -PboothLauncher`
 runs a real client through the real keys. It photographs:
@@ -395,6 +428,19 @@ runs a real client through the real keys. It photographs:
 
 Each step is checked. The build copies the pack's own Immersive Aircraft jar into `run/booth/mods`
 for this run only. The frames are `run/booth/screenshots/launcher-*.png`.
+
+**The workbench booth.** `./gradlew runPhotoBooth -PboothWorkbench` (on the booth's Xephyr, or
+through `tools/booth/run_iconified.sh`) photographs and checks:
+- the bench between a crafting table and a smithing table, front on and from a corner;
+- a chipless launcher's raised sight, with its hint and no ring;
+- the use key on the bench opening its screen: empty, with a launcher shift-clicked into the
+  weapon slot (the chip slot opens), and with a chip shift-clicked onto it;
+- EMI's "Weapons Workbench" page for the rifle, every bench recipe listed under it, and EMI's own
+  "+" filling the bench's grid from the inventory until the bench offers a rifle;
+- the fitted launcher's raised sight, with its ring.
+
+The build copies the pack's EMI jar into `run/booth/mods` for this run only. The frames are
+`run/booth/screenshots/workbench-*.png`.
 
 ## Adding a gun
 
@@ -490,8 +536,9 @@ other two are for eyes and hands.
   reload plan, the magazine (runs, order, fill) and which magazine or kind a
   change takes, the pockets a loose reload draws on (kinds in the order met,
   counts, the draw plan first pocket first) and the feed mode, the recoil
-  model, stance spread, the recipe tree, and the rocket launcher's seeker, guidance (whole flights
-  through the real motor and turn cap), motor and target rules. That source set is compiled against nothing but the
+  model, stance spread, the recipe tree and where each recipe is made, the rocket launcher's seeker,
+  guidance (whole flights through the real motor and turn cap), motor and target rules, and the
+  lock-on chip's wear. That source set is compiled against nothing but the
   JDK, so a `net.minecraft` import there is a compile error. Partitions are
   written at the top of each test class.
 - `./gradlew runGameTestServer` -- gametests on a real headless server. The
@@ -503,7 +550,15 @@ other two are for eyes and hands.
   heading; the blast with the switch on and off (in its own batch, as the switch is global); the
   dud; creative; a reload from a carried bag; the off hand under the launcher; an end crystal the
   test pack's tag names, locked through the tag; and reports a lying client might send (a target
-  behind the player, behind a wall, or no target at all), each refused. And: the data resolves to a weapon with the right capacity; a held
+  behind the player, behind a wall, or no target at all), each refused. The lock-on chip: no
+  chip, no seeker, and a chip fitted locks in the usual time; a straight launch spends no charge, a
+  guided one exactly one, the last burns the chip out and the seeker idles after; creative locks
+  with none and wears none; a launcher worn out hands its chip back. `WorkbenchGameTests`, on a
+  real server player and real clicks: a rifle assembled at the bench and nothing of the same grid
+  at a crafting table; rounds at the table and none at the bench; the grid and the weapon handed
+  back on closing; a chip fitted rides the launcher and comes off with its wear; the slots' rules;
+  shift-click's routing; the block opening the bench when used and dropping itself when broken.
+  `CraftingGameTests` holds every recipe to its station. And: the data resolves to a weapon with the right capacity; a held
   trigger fires at the profile's rate and a release stops it; loose rounds
   in a magazine-fed gun become a magazine; an empty pull takes the first
   loaded magazine carried and only a loaded one; `R` changes a part

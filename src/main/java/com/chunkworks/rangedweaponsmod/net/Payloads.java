@@ -37,7 +37,8 @@ public final class Payloads {
 
     /** Bumped when a payload's shape changes; a mismatch refuses the connection early. */
     // "4": the rocket launcher's synced seeker and its reticle report (D-0028); a "3" client knows neither.
-    private static final String VERSION = "4";
+    // "5": the weapons workbench's screen and the lock-on chip on a launcher (D-0029).
+    private static final String VERSION = "5";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(VERSION);

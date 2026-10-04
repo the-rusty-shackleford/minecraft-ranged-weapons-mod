@@ -68,12 +68,19 @@ public final class LauncherWeapon implements RangedWeapon {
 
     /**
      * effects: launches one rocket from the shot's origin along its direction, owned by
-     * {@code shooter}; a player's lock, if it still holds, is its target and is spent. Consumes no
+     * {@code shooter}; a player's lock, if it still holds, is its target and is spent, and the
+     * guided launch wears the launcher's lock-on chip by a charge (D-0029). Consumes no
      * ammunition and plays no sound, as the protocol requires.
      */
     @Override
     public void fire(ServerLevel level, LivingEntity shooter, ItemStack stack, Shot shot) {
-        Entity target = shooter instanceof Player player ? Seeking.spend(player, level) : null;
+        Entity target = null;
+        if (shooter instanceof Player player) {
+            target = Seeking.spend(player, level);
+            if (target != null) {
+                LauncherItem.wearChip(player, stack);
+            }
+        }
         Rocket.launch(level, shooter, shot.origin(), shot.direction(), target);
     }
 }

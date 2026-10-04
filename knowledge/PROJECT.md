@@ -7,6 +7,38 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
+## The weapons workbench and the lock-on chip — 2.12.0 (2026-10-03), built and green, NOT released
+
+A player asked, through Rusty, that lock-on need a consumable, craftable chip. Rusty folded it
+into his own idea: a **weapons workbench** where every gun is assembled and modified, instead of
+the crafting table. [D-0029](decisions/D-0029.md) has the design. His calls:
+- the chip wears per guided shot;
+- the bench takes guns, parts, magazines and chips, and ammunition stays at the table;
+- the art is ours, since Astra is gone.
+
+- **The bench:**
+  - `WorkbenchBlock` and `WorkbenchMenu`: a 3×3 grid for the bench's own recipe type
+    (`AssemblyRecipe`, `rangedweaponsmod:assembly`), and a weapon slot with a chip slot under a
+    launcher, which is a view of the launcher's `FittedChip` component;
+  - EMI's category and "+" (`integration/emi/WorkbenchEmiPlugin`);
+  - the art by `devtools/art/workbench_art.py`.
+- **The chip:** `ChipItem`, with 8 guided launches as its durability (`domain/Chip`).
+  - `Seeking` idles without a chip; `SeekReport` searches nothing; `LockHud` shows "No lock-on
+    chip".
+  - `LauncherWeapon` wears the chip on a guided launch; `PlayerGunnery` hands the chip back from a
+    worn-out launcher.
+  - Creative needs none.
+- **Blueprints** carry a station; `ModRecipes` writes the bench's as assembly recipes, with no
+  unlock. Network "5".
+- **Gate (2026-10-03):** 190 JUnit, 90 GameTests (13 new), the workbench booth's 17 checks, frames
+  judged; 9 mutations caught; no recipe collisions in the pack's 115 jars. Record:
+  `devtools/verification/release-2.12.0.md`.
+- **Also fixed:** the revolver was missing from vanilla's Combat tab; the rocket ammunition tag had
+  no name, which EMI flagged.
+- **To release:** only on Rusty's go, with a protocol bump, so every client updates with the pack.
+  Tell the players that guns no longer craft at a table or through a warehouse manager, and that
+  launchers on the box fire straight until a chip is fitted.
+
 ## The rocket launcher — 2.11.0 (2026-10-01), released 2026-10-02 in pack 1.71.0
 
 Released on Rusty's "Astra is done, ready to release this in a new pack", after Astra's art and
@@ -54,7 +86,7 @@ server switch; a lock holds until fired or lost; Astra does the art and sound.
 - Rusty accepted the art and authorized continuous acquisition animation and fractional marker
   positioning. Latest validation: 179 JUnit tests, 77 required GameTests and 15 launcher-booth
   checks passed. Server lock timing is unchanged.
-- The marker still looked stuttery to Rusty. They suspected the booth's scripted camera and
+- The marker still looked stuttery to Rusty. He suspected the booth's scripted camera and
   explicitly accepted stopping here so Claude can release it for their hands-on test. That
   cause is not proven; live mouse control, lock feel, turn rate and blast power remain to judge.
 - This art session commits locally on `main`; it does not push, tag, release or update the pack.

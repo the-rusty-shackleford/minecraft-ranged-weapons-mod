@@ -31,7 +31,11 @@ import net.minecraft.data.recipes.ShapelessRecipeBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
@@ -41,9 +45,11 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The recipes, written from the domain's blueprints by the loader's data
- * generation ({@code ./gradlew runData}): one recipe file and one
- * recipe-book unlock each, into {@code src/generated/resources}, which
- * ships. The blueprints are the source; nothing here decides a shape.
+ * generation ({@code ./gradlew runData}) into {@code src/generated/resources},
+ * which ships: a crafting-table recipe and its recipe-book unlock for each
+ * table blueprint, and a bench recipe ({@link AssemblyRecipe}), which
+ * nothing unlocks, for each bench one (D-0029). The blueprints are the
+ * source; nothing here decides a shape.
  */
 public final class ModRecipes {
     private ModRecipes() {}
@@ -57,7 +63,7 @@ public final class ModRecipes {
                 new Provider(event.getGenerator().getPackOutput(), event.getLookupProvider()));
     }
 
-    /** Every blueprint as a recipe and its unlock. */
+    /** Every blueprint as a recipe: the table's with its unlock, the bench's alone. */
     static final class Provider extends RecipeProvider {
         Provider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
             super(output, registries);
@@ -67,6 +73,10 @@ public final class ModRecipes {
         protected void buildRecipes(RecipeOutput out) {
             for (Blueprint blueprint : Blueprints.all()) {
                 ResourceLocation id = ResourceLocation.parse(blueprint.id());
+                if (blueprint.station() == Blueprint.Station.BENCH) {
+                    out.accept(id, assembly(blueprint), null);
+                    continue;
+                }
                 switch (blueprint) {
                     case Blueprint.Shaped shaped -> {
                         ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(category(shaped), item(shaped.result()), shaped.count());
@@ -95,6 +105,27 @@ public final class ModRecipes {
                     }
                 }
             }
+        }
+
+        /** effects: returns {@code blueprint} as the bench's recipe: the same shape, or the same handful, and result */
+        private static AssemblyRecipe assembly(Blueprint blueprint) {
+            ItemStack result = new ItemStack(item(blueprint.result()), blueprint.count());
+            return switch (blueprint) {
+                case Blueprint.Shaped shaped -> {
+                    Map<Character, Ingredient> key = new LinkedHashMap<>();
+                    shaped.key().forEach((symbol, ingredient) -> key.put(symbol, ingredient(ingredient)));
+                    yield new AssemblyRecipe.Shaped(ShapedRecipePattern.of(key, shaped.pattern()), result);
+                }
+                case Blueprint.Shapeless shapeless -> {
+                    NonNullList<Ingredient> ingredients = NonNullList.create();
+                    shapeless.ingredientList().forEach(ingredient -> ingredients.add(ingredient(ingredient)));
+                    yield new AssemblyRecipe.Shapeless(ingredients, result);
+                }
+            };
+        }
+
+        private static Ingredient ingredient(String id) {
+            return Blueprint.isTag(id) ? Ingredient.of(tag(id)) : Ingredient.of(item(id));
         }
 
         /** The unlock criteria: holding any listed ingredient, named as the blueprint names them. */

@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "category": "misc",
+  "type": "rangedweaponsmod:assembly_shapeless",
   "ingredients": [
     {
       "item": "rangedweaponsmod:barrel"

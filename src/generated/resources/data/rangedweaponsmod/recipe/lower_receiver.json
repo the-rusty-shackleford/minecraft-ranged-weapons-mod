@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "misc",
+  "type": "rangedweaponsmod:assembly_shaped",
   "key": {
     "R": {
       "tag": "c:dusts/redstone"

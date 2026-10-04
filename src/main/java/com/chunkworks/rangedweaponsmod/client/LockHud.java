@@ -41,7 +41,8 @@ import org.joml.Vector3f;
  * The seeker on the holder's screen (D-0028), read off the synced {@link ModData#LOCK}: with the
  * sight up, a ring at the centre; while acquiring, amber brackets on the candidate that close in
  * as the lock nears; once locked, a red diamond on the target wherever it is, and an edge marker
- * pointing to it when it is off the screen or behind.
+ * pointing to it when it is off the screen or behind. With no lock-on chip fitted (D-0029), the
+ * sight up shows "No lock-on chip" under the crosshair instead of the ring, and nothing else.
  *
  * <p>Targets are placed by projecting their centre through the camera's own axes and the world's
  * field of view as last computed this frame, not through the world's render matrices, so a shader
@@ -65,6 +66,7 @@ public final class LockHud {
     private static final int RING = 0x99FFFFFF;
     private static final int ACQUIRING = 0xFFFFB000;
     private static final int LOCKED = 0xFFFF4040;
+    private static final int NO_CHIP = 0xCCFFFFFF;
     /** Pixels the edge marker keeps from the screen's edge. */
     private static final int EDGE = 24;
 
@@ -113,6 +115,12 @@ public final class LockHud {
             return;
         }
         Camera camera = mc.gameRenderer.getMainCamera();
+        if (!LauncherItem.canLock(player, player.getMainHandItem())) {
+            if (player.getData(ModData.AIMING)) {
+                graphics.drawCenteredString(mc.font, Component.translatable("hud.rangedweaponsmod.no_chip"), width / 2, height / 2 + 14, NO_CHIP);
+            }
+            return;
+        }
         if (player.getData(ModData.AIMING)) {
             corners(graphics, width / 2, height / 2, 12, 4, RING);
         }

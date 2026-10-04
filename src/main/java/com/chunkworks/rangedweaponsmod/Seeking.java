@@ -85,12 +85,13 @@ public final class Seeking {
     /**
      * requires: the logical server<br>
      * effects: steps {@code player}'s seeker one tick and stores it if it changed: idle unless a
-     * launcher is in the main hand of a living, non-spectator player
+     * launcher that may lock ({@link LauncherItem#canLock}: a lock-on chip fitted, or creative) is
+     * in the main hand of a living, non-spectator player
      */
     public static void tick(Player player, ServerLevel level) {
         Seeker before = player.getData(ModData.LOCK);
         Seeker after;
-        if (!player.isAlive() || player.isSpectator() || !LauncherItem.isLauncher(player.getMainHandItem())) {
+        if (!player.isAlive() || player.isSpectator() || !LauncherItem.canLock(player, player.getMainHandItem())) {
             after = Seeker.IDLE;
         } else {
             boolean seeking = player.getData(ModData.AIMING);

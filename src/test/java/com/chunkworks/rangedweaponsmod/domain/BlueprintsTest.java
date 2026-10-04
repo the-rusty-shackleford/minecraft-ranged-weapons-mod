@@ -19,8 +19,11 @@ package com.chunkworks.rangedweaponsmod.domain;
 
 import com.chunkworks.rangedweaponsmod.domain.Blueprint.Category;
 import com.chunkworks.rangedweaponsmod.domain.Blueprint.Shaped;
+import com.chunkworks.rangedweaponsmod.domain.Blueprint.Shapeless;
+import com.chunkworks.rangedweaponsmod.domain.Blueprint.Station;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +61,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * transitively; a raw item is its own tally; a cycle is caught. Ammunition
  * yields. Every material constant used. The launcher (D-0028): parts only, a
  * seeker and a tube, dearer than any gun in what it takes beyond iron.
+ * Stations (D-0029): every gun, launcher, part, magazine and fitting at the
+ * bench, every round, the rocket and the bench itself at the table; no two
+ * recipes at one station accept one grid (shaped against shaped, mirrored
+ * too, and anything against a shapeless one with the same ingredients); the
+ * bench a steel top over a crafting table, revealed by steel; the chip a
+ * comparator on a quartz board, an ingredient of nothing.
  */
 final class BlueprintsTest {
 
@@ -181,7 +190,8 @@ final class BlueprintsTest {
         // Coal is not here: only steel's recipe took it, and that is Metals and Materials' now.
         for (String material : List.of(IRON, Blueprints.REDSTONE, Blueprints.PLANKS, Blueprints.STICK, Blueprints.GLASS_PANE,
                 Blueprints.COPPER_NUGGET, Blueprints.IRON_NUGGET, Blueprints.GUNPOWDER, Blueprints.PAPER, Blueprints.STEEL,
-                Blueprints.GOLD, Blueprints.DIAMOND, Blueprints.REDSTONE_BLOCK, Blueprints.TNT, Blueprints.BLAZE_POWDER)) {
+                Blueprints.GOLD, Blueprints.DIAMOND, Blueprints.REDSTONE_BLOCK, Blueprints.TNT, Blueprints.BLAZE_POWDER,
+                Blueprints.CRAFTING_TABLE, Blueprints.GOLD_NUGGET, Blueprints.QUARTZ, Blueprints.COMPARATOR)) {
             assertTrue(used.contains(material), material + " is never used");
         }
         assertTrue(Blueprints.external().stream().anyMatch(b -> b.ingredients().containsKey(COAL)), "coal is used by the steel we count through");
@@ -217,5 +227,112 @@ final class BlueprintsTest {
         assertEquals(1, rocket.get(Blueprints.TNT));
         assertEquals(1, rocket.get(Blueprints.BLAZE_POWDER));
         assertTrue(Blueprints.ironEquivalent(Blueprints.ROCKET) >= 2, "two steel in every rocket");
+    }
+
+    @Test
+    void gunsPartsMagazinesAndFittingsAreMadeAtTheBenchAndTheRestAtTheTable() {
+        List<String> bench = new ArrayList<>();
+        bench.addAll(Blueprints.guns());
+        bench.addAll(Blueprints.launchers());
+        bench.addAll(Blueprints.parts());
+        bench.addAll(Blueprints.magazines());
+        bench.addAll(Blueprints.fittings());
+        List<String> table = new ArrayList<>(Blueprints.ammunition());
+        table.addAll(Blueprints.stations());
+        for (String item : bench) {
+            assertEquals(Station.BENCH, Blueprints.byResult(item).orElseThrow().station(), item);
+        }
+        for (String item : table) {
+            assertEquals(Station.TABLE, Blueprints.byResult(item).orElseThrow().station(), item);
+        }
+        Set<String> classified = new HashSet<>(bench);
+        classified.addAll(table);
+        for (Blueprint b : Blueprints.all()) {
+            assertTrue(classified.contains(b.result()), b.id() + " is in no list");
+        }
+        assertEquals(Blueprints.all().size(), classified.size(), "every recipe in exactly one list");
+    }
+
+    @Test
+    void noTwoRecipesAtOneStationAcceptTheSameGrid() {
+        List<Blueprint> all = Blueprints.all();
+        for (int i = 0; i < all.size(); i++) {
+            for (int j = i + 1; j < all.size(); j++) {
+                Blueprint a = all.get(i), b = all.get(j);
+                if (a.station() == b.station()) {
+                    assertFalse(collide(a, b), a.id() + " and " + b.id() + " accept the same grid at the " + a.station());
+                }
+            }
+        }
+        // The check itself bites: a mirrored copy of the rifle magazine's diagonal, and a
+        // shapeless pair of steel, both collide with it.
+        Shaped mirrored = Shaped.bench("rangedweaponsmod:x", Category.MISC, "rangedweaponsmod:x", 1, List.of(" T", "T "), Map.of('T', Blueprints.STEEL));
+        assertTrue(collide(Blueprints.RIFLE_MAGAZINE_RECIPE, mirrored));
+        Shapeless pair = Shapeless.bench("rangedweaponsmod:y", Category.MISC, "rangedweaponsmod:y", 1, List.of(Blueprints.STEEL, Blueprints.STEEL));
+        assertTrue(collide(Blueprints.RIFLE_MAGAZINE_RECIPE, pair));
+    }
+
+    @Test
+    void theWorkbenchIsASteelTopOverACraftingTableAndSteelRevealsIt() {
+        Blueprint bench = Blueprints.byResult(Blueprints.WEAPONS_WORKBENCH).orElseThrow();
+        assertEquals(Station.TABLE, bench.station(), "the one station made at the table");
+        assertEquals(Map.of(Blueprints.STEEL, 3, Blueprints.PLANKS, 5, Blueprints.CRAFTING_TABLE, 1), bench.ingredients());
+        assertEquals(List.of(Blueprints.STEEL), bench.unlockedBy());
+        assertEquals(List.of(Blueprints.WEAPONS_WORKBENCH), Blueprints.stations());
+    }
+
+    @Test
+    void theLockOnChipIsAComparatorOnAQuartzBoardAndAnIngredientOfNothing() {
+        Blueprint chip = Blueprints.byResult(Blueprints.LOCK_ON_CHIP).orElseThrow();
+        assertEquals(Station.BENCH, chip.station());
+        assertEquals(Map.of(Blueprints.GOLD_NUGGET, 4, Blueprints.REDSTONE, 2, Blueprints.QUARTZ, 2, Blueprints.COMPARATOR, 1), chip.ingredients());
+        assertEquals(List.of(Blueprints.LOCK_ON_CHIP), Blueprints.fittings());
+        for (Blueprint b : Blueprints.all()) {
+            assertFalse(b.ingredients().containsKey(Blueprints.LOCK_ON_CHIP), "a chip is fitted, never crafted into " + b.id());
+        }
+    }
+
+    /** effects: returns whether one grid at the bench or table could match both recipes */
+    private static boolean collide(Blueprint a, Blueprint b) {
+        if (a instanceof Shaped sa && b instanceof Shaped sb) {
+            List<List<String>> ga = grid(sa), gb = grid(sb);
+            return ga.equals(gb) || ga.equals(mirror(gb));
+        }
+        return a.ingredients().equals(b.ingredients());
+    }
+
+    /** effects: returns the pattern's cells as ingredient ids ("" for empty), empty rows and columns at the edges trimmed, as the game trims them */
+    private static List<List<String>> grid(Shaped s) {
+        List<List<String>> rows = new ArrayList<>();
+        for (String row : s.pattern()) {
+            List<String> cells = new ArrayList<>();
+            for (char c : row.toCharArray()) {
+                cells.add(c == ' ' ? "" : s.key().get(c));
+            }
+            rows.add(cells);
+        }
+        while (rows.stream().allMatch(r -> r.get(0).isEmpty())) {
+            rows.forEach(r -> r.remove(0));
+        }
+        while (rows.stream().allMatch(r -> r.get(r.size() - 1).isEmpty())) {
+            rows.forEach(r -> r.remove(r.size() - 1));
+        }
+        while (rows.get(0).stream().allMatch(String::isEmpty)) {
+            rows.remove(0);
+        }
+        while (rows.get(rows.size() - 1).stream().allMatch(String::isEmpty)) {
+            rows.remove(rows.size() - 1);
+        }
+        return rows;
+    }
+
+    private static List<List<String>> mirror(List<List<String>> grid) {
+        List<List<String>> mirrored = new ArrayList<>();
+        for (List<String> row : grid) {
+            List<String> copy = new ArrayList<>(row);
+            java.util.Collections.reverse(copy);
+            mirrored.add(copy);
+        }
+        return mirrored;
     }
 }

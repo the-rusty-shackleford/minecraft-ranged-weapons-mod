@@ -38,6 +38,9 @@ import java.util.Set;
  * The pistol is the simplest and cheapest; the machine gun is the most
  * involved, the only gun whose barrel is itself a two-step part.
  *
+ * <p>Every gun, part, magazine and fitting is made at the weapons workbench
+ * (D-0029); rounds, rockets and the bench itself at the crafting table.
+ *
  * <p>This catalogue is the single source: the recipe files and their
  * recipe-book unlocks are written from it, the tests hold it to the rules
  * above, and the gametests check the running server finds exactly these.
@@ -71,6 +74,11 @@ public final class Blueprints {
     public static final String BLAZE_POWDER = "minecraft:blaze_powder";
     /** The ingot that fills the tag in the pack: Metals and Materials', not ours since 2.3.0. */
     public static final String STEEL_INGOT = "metalsandmaterials:steel_ingot";
+    // The bench's and the lock-on chip's (D-0029).
+    public static final String CRAFTING_TABLE = "#c:player_workstations/crafting_tables";
+    public static final String GOLD_NUGGET = "#c:nuggets/gold";
+    public static final String QUARTZ = "#c:gems/quartz";
+    public static final String COMPARATOR = "minecraft:comparator";
 
     // Parts, by item id.
     public static final String LOWER_RECEIVER = NS + ":lower_receiver";
@@ -97,6 +105,10 @@ public final class Blueprints {
     public static final String SLUG = NS + ":slug";
     public static final String ROCKET = NS + ":rocket";
 
+    // The workbench and what is fitted at it (D-0029), by item id.
+    public static final String WEAPONS_WORKBENCH = NS + ":weapons_workbench";
+    public static final String LOCK_ON_CHIP = NS + ":lock_on_chip";
+
     /**
      * Three iron and a little carbon make three steel -- Metals and Materials'
      * recipe, known here so the tally can count steel as the iron it was made
@@ -107,56 +119,56 @@ public final class Blueprints {
             List.of(IRON, IRON, IRON, COAL), List.of(IRON, COAL));
 
     /** The body over the trigger group. */
-    public static final Blueprint LOWER_RECEIVER_RECIPE = new Shaped(LOWER_RECEIVER, Category.MISC, LOWER_RECEIVER, 1,
-            List.of("TTT", " R "), Map.of('T', STEEL, 'R', REDSTONE), List.of(STEEL, REDSTONE));
+    public static final Blueprint LOWER_RECEIVER_RECIPE = Shaped.bench(LOWER_RECEIVER, Category.MISC, LOWER_RECEIVER, 1,
+            List.of("TTT", " R "), Map.of('T', STEEL, 'R', REDSTONE));
 
     /** A block of steel that houses the action. */
-    public static final Blueprint UPPER_RECEIVER_RECIPE = new Shaped(UPPER_RECEIVER, Category.MISC, UPPER_RECEIVER, 1,
-            List.of("TT", "TT"), Map.of('T', STEEL), List.of(STEEL));
+    public static final Blueprint UPPER_RECEIVER_RECIPE = Shaped.bench(UPPER_RECEIVER, Category.MISC, UPPER_RECEIVER, 1,
+            List.of("TT", "TT"), Map.of('T', STEEL));
 
     /** A tube of iron. */
-    public static final Blueprint BARREL_RECIPE = new Shaped(BARREL, Category.MISC, BARREL, 1,
-            List.of("III"), Map.of('I', IRON), List.of(IRON));
+    public static final Blueprint BARREL_RECIPE = Shaped.bench(BARREL, Category.MISC, BARREL, 1,
+            List.of("III"), Map.of('I', IRON));
 
     /** A barrel wrapped in steel, for fire that does not stop. */
-    public static final Blueprint HEAVY_BARREL_RECIPE = new Shapeless(HEAVY_BARREL, Category.MISC, HEAVY_BARREL, 1,
-            List.of(BARREL, STEEL, STEEL), List.of(BARREL, STEEL));
+    public static final Blueprint HEAVY_BARREL_RECIPE = Shapeless.bench(HEAVY_BARREL, Category.MISC, HEAVY_BARREL, 1,
+            List.of(BARREL, STEEL, STEEL));
 
     /** A wooden butt with a raked wrist. */
-    public static final Blueprint STOCK_RECIPE = new Shaped(STOCK, Category.MISC, STOCK, 1,
-            List.of("PP", "PS"), Map.of('P', PLANKS, 'S', STICK), List.of(PLANKS, STICK));
+    public static final Blueprint STOCK_RECIPE = Shaped.bench(STOCK, Category.MISC, STOCK, 1,
+            List.of("PP", "PS"), Map.of('P', PLANKS, 'S', STICK));
 
     /** The shotgun's forend: wood around a rod. */
-    public static final Blueprint PUMP_RECIPE = new Shaped(PUMP, Category.MISC, PUMP, 1,
-            List.of("P", "S", "P"), Map.of('P', PLANKS, 'S', STICK), List.of(PLANKS, STICK));
+    public static final Blueprint PUMP_RECIPE = Shaped.bench(PUMP, Category.MISC, PUMP, 1,
+            List.of("P", "S", "P"), Map.of('P', PLANKS, 'S', STICK));
 
     /** A lens, a tube, a lens. */
-    public static final Blueprint SCOPE_RECIPE = new Shaped(SCOPE, Category.MISC, SCOPE, 1,
-            List.of("GIG"), Map.of('G', GLASS_PANE, 'I', IRON), List.of(GLASS_PANE, IRON));
+    public static final Blueprint SCOPE_RECIPE = Shaped.bench(SCOPE, Category.MISC, SCOPE, 1,
+            List.of("GIG"), Map.of('G', GLASS_PANE, 'I', IRON));
 
     /** A lower receiver with a barrel: the grip and what it fires from. */
-    public static final Blueprint PISTOL_RECIPE = new Shaped(PISTOL, Category.COMBAT, PISTOL, 1,
-            List.of("LB"), Map.of('L', LOWER_RECEIVER, 'B', BARREL), List.of(LOWER_RECEIVER, BARREL));
+    public static final Blueprint PISTOL_RECIPE = Shaped.bench(PISTOL, Category.COMBAT, PISTOL, 1,
+            List.of("LB"), Map.of('L', LOWER_RECEIVER, 'B', BARREL));
 
     /** A receiver for the cylinder over the grip, beside a short barrel. */
-    public static final Blueprint REVOLVER_RECIPE = new Shaped(REVOLVER, Category.COMBAT, REVOLVER, 1,
-            List.of("UB", "L "), Map.of('U', UPPER_RECEIVER, 'B', BARREL, 'L', LOWER_RECEIVER), List.of(UPPER_RECEIVER, LOWER_RECEIVER));
+    public static final Blueprint REVOLVER_RECIPE = Shaped.bench(REVOLVER, Category.COMBAT, REVOLVER, 1,
+            List.of("UB", "L "), Map.of('U', UPPER_RECEIVER, 'B', BARREL, 'L', LOWER_RECEIVER));
 
     /** Stock, receiver, barrel, and the pump under the barrel. */
-    public static final Blueprint SHOTGUN_RECIPE = new Shaped(SHOTGUN, Category.COMBAT, SHOTGUN, 1,
-            List.of("KLB", "  M"), Map.of('K', STOCK, 'L', LOWER_RECEIVER, 'B', BARREL, 'M', PUMP), List.of(LOWER_RECEIVER, PUMP));
+    public static final Blueprint SHOTGUN_RECIPE = Shaped.bench(SHOTGUN, Category.COMBAT, SHOTGUN, 1,
+            List.of("KLB", "  M"), Map.of('K', STOCK, 'L', LOWER_RECEIVER, 'B', BARREL, 'M', PUMP));
 
     /** Stock, both receivers, barrel. */
-    public static final Blueprint RIFLE_RECIPE = new Shaped(RIFLE, Category.COMBAT, RIFLE, 1,
-            List.of(" U ", "KLB"), Map.of('U', UPPER_RECEIVER, 'K', STOCK, 'L', LOWER_RECEIVER, 'B', BARREL), List.of(UPPER_RECEIVER, LOWER_RECEIVER));
+    public static final Blueprint RIFLE_RECIPE = Shaped.bench(RIFLE, Category.COMBAT, RIFLE, 1,
+            List.of(" U ", "KLB"), Map.of('U', UPPER_RECEIVER, 'K', STOCK, 'L', LOWER_RECEIVER, 'B', BARREL));
 
     /** A rifle with a scope on top. */
-    public static final Blueprint SCOPED_RIFLE_RECIPE = new Shaped(SCOPED_RIFLE, Category.COMBAT, SCOPED_RIFLE, 1,
-            List.of("O", "F"), Map.of('O', SCOPE, 'F', RIFLE), List.of(SCOPE, RIFLE));
+    public static final Blueprint SCOPED_RIFLE_RECIPE = Shaped.bench(SCOPED_RIFLE, Category.COMBAT, SCOPED_RIFLE, 1,
+            List.of("O", "F"), Map.of('O', SCOPE, 'F', RIFLE));
 
     /** A rifle's build on a heavy barrel. */
-    public static final Blueprint MACHINE_GUN_RECIPE = new Shaped(MACHINE_GUN, Category.COMBAT, MACHINE_GUN, 1,
-            List.of(" U ", "KLH"), Map.of('U', UPPER_RECEIVER, 'K', STOCK, 'L', LOWER_RECEIVER, 'H', HEAVY_BARREL), List.of(HEAVY_BARREL, UPPER_RECEIVER));
+    public static final Blueprint MACHINE_GUN_RECIPE = Shaped.bench(MACHINE_GUN, Category.COMBAT, MACHINE_GUN, 1,
+            List.of(" U ", "KLH"), Map.of('U', UPPER_RECEIVER, 'K', STOCK, 'L', LOWER_RECEIVER, 'H', HEAVY_BARREL));
 
     public static final Blueprint SMALL_ROUND_RECIPE = new Shaped(SMALL_ROUND, Category.COMBAT, SMALL_ROUND, 10,
             List.of("N", "G", "N"), Map.of('N', IRON_NUGGET, 'G', GUNPOWDER), List.of(GUNPOWDER));
@@ -172,18 +184,16 @@ public final class Blueprints {
             List.of("P", "G", "I"), Map.of('P', PAPER, 'G', GUNPOWDER, 'I', IRON), List.of(GUNPOWDER, IRON));
 
     /** The rocket launcher's tube: eight steel, a pipe seen end-on (D-0028). */
-    public static final Blueprint LAUNCH_TUBE_RECIPE = new Shaped(LAUNCH_TUBE, Category.MISC, LAUNCH_TUBE, 1,
-            List.of("TTT", "T T", "TTT"), Map.of('T', STEEL), List.of(STEEL));
+    public static final Blueprint LAUNCH_TUBE_RECIPE = Shaped.bench(LAUNCH_TUBE, Category.MISC, LAUNCH_TUBE, 1,
+            List.of("TTT", "T T", "TTT"), Map.of('T', STEEL));
 
     /** The seeker: a scope behind a diamond lens, gold contacts, a block of redstone to think with. */
-    public static final Blueprint SEEKER_RECIPE = new Shaped(SEEKER, Category.MISC, SEEKER, 1,
-            List.of("GDG", " O ", " R "), Map.of('G', GOLD, 'D', DIAMOND, 'O', SCOPE, 'R', REDSTONE_BLOCK),
-            List.of(DIAMOND, SCOPE));
+    public static final Blueprint SEEKER_RECIPE = Shaped.bench(SEEKER, Category.MISC, SEEKER, 1,
+            List.of("GDG", " O ", " R "), Map.of('G', GOLD, 'D', DIAMOND, 'O', SCOPE, 'R', REDSTONE_BLOCK));
 
     /** The launcher: the seeker over a stock, a lower receiver and the tube, in its silhouette. */
-    public static final Blueprint ROCKET_LAUNCHER_RECIPE = new Shaped(ROCKET_LAUNCHER, Category.COMBAT, ROCKET_LAUNCHER, 1,
-            List.of(" S ", "KLU"), Map.of('S', SEEKER, 'K', STOCK, 'L', LOWER_RECEIVER, 'U', LAUNCH_TUBE),
-            List.of(SEEKER, LAUNCH_TUBE));
+    public static final Blueprint ROCKET_LAUNCHER_RECIPE = Shaped.bench(ROCKET_LAUNCHER, Category.COMBAT, ROCKET_LAUNCHER, 1,
+            List.of(" S ", "KLU"), Map.of('S', SEEKER, 'K', STOCK, 'L', LOWER_RECEIVER, 'U', LAUNCH_TUBE));
 
     /** A rocket, one a craft: a TNT charge in a steel body, blaze powder for the motor, redstone to steer. */
     public static final Blueprint ROCKET_RECIPE = new Shaped(ROCKET, Category.COMBAT, ROCKET, 1,
@@ -198,12 +208,26 @@ public final class Blueprints {
     // stack for the pistol's, a staggered pair for the rifle's curve, a
     // pair side by side for the squat box. Steel, so a magazine costs a
     // little more than the rounds it holds and less than any gun.
-    public static final Blueprint PISTOL_MAGAZINE_RECIPE = new Shaped(PISTOL_MAGAZINE, Category.COMBAT, PISTOL_MAGAZINE, 1,
-            List.of("T", "T"), Map.of('T', STEEL), List.of(STEEL));
-    public static final Blueprint RIFLE_MAGAZINE_RECIPE = new Shaped(RIFLE_MAGAZINE, Category.COMBAT, RIFLE_MAGAZINE, 1,
-            List.of("T ", " T"), Map.of('T', STEEL), List.of(STEEL));
-    public static final Blueprint MACHINE_GUN_BOX_RECIPE = new Shaped(MACHINE_GUN_BOX, Category.COMBAT, MACHINE_GUN_BOX, 1,
-            List.of("TT"), Map.of('T', STEEL), List.of(STEEL));
+    public static final Blueprint PISTOL_MAGAZINE_RECIPE = Shaped.bench(PISTOL_MAGAZINE, Category.COMBAT, PISTOL_MAGAZINE, 1,
+            List.of("T", "T"), Map.of('T', STEEL));
+    public static final Blueprint RIFLE_MAGAZINE_RECIPE = Shaped.bench(RIFLE_MAGAZINE, Category.COMBAT, RIFLE_MAGAZINE, 1,
+            List.of("T ", " T"), Map.of('T', STEEL));
+    public static final Blueprint MACHINE_GUN_BOX_RECIPE = Shaped.bench(MACHINE_GUN_BOX, Category.COMBAT, MACHINE_GUN_BOX, 1,
+            List.of("TT"), Map.of('T', STEEL));
+
+    /**
+     * The weapons workbench (D-0029): a steel top over planks and a crafting table. Made at the
+     * crafting table, the one recipe on the way to a gun that is; holding steel reveals it.
+     */
+    public static final Blueprint WEAPONS_WORKBENCH_RECIPE = new Shaped(WEAPONS_WORKBENCH, Category.MISC, WEAPONS_WORKBENCH, 1,
+            List.of("SSS", "PCP", "PPP"), Map.of('S', STEEL, 'P', PLANKS, 'C', CRAFTING_TABLE), List.of(STEEL));
+
+    /**
+     * The lock-on chip (D-0029): a comparator on a quartz board with gold contacts and redstone
+     * traces. Made at the bench and fitted there, into nothing else.
+     */
+    public static final Blueprint LOCK_ON_CHIP_RECIPE = Shaped.bench(LOCK_ON_CHIP, Category.MISC, LOCK_ON_CHIP, 1,
+            List.of("NRN", "QCQ", "NRN"), Map.of('N', GOLD_NUGGET, 'R', REDSTONE, 'Q', QUARTZ, 'C', COMPARATOR));
 
     private static final List<Blueprint> ALL = List.of(
             LOWER_RECEIVER_RECIPE, UPPER_RECEIVER_RECIPE, BARREL_RECIPE, HEAVY_BARREL_RECIPE,
@@ -211,7 +235,8 @@ public final class Blueprints {
             PISTOL_RECIPE, REVOLVER_RECIPE, SHOTGUN_RECIPE, RIFLE_RECIPE, SCOPED_RIFLE_RECIPE, MACHINE_GUN_RECIPE,
             ROCKET_LAUNCHER_RECIPE,
             SMALL_ROUND_RECIPE, ROUND_RECIPE, SHELL_RECIPE, SLUG_RECIPE, ROCKET_RECIPE,
-            PISTOL_MAGAZINE_RECIPE, RIFLE_MAGAZINE_RECIPE, MACHINE_GUN_BOX_RECIPE);
+            PISTOL_MAGAZINE_RECIPE, RIFLE_MAGAZINE_RECIPE, MACHINE_GUN_BOX_RECIPE,
+            LOCK_ON_CHIP_RECIPE, WEAPONS_WORKBENCH_RECIPE);
 
     /** Recipes another mod makes that the tally counts through: steel's. */
     private static final List<Blueprint> EXTERNAL = List.of(STEEL_INGOT_RECIPE);
@@ -233,7 +258,7 @@ public final class Blueprints {
         return List.copyOf(both);
     }
 
-    /** effects: returns every recipe of ours, parts first, then guns, then ammunition */
+    /** effects: returns every recipe of ours, parts first, then guns, ammunition, magazines, the chip and the bench */
     public static List<Blueprint> all() {
         return ALL;
     }
@@ -266,6 +291,16 @@ public final class Blueprints {
     /** effects: returns the parts' item ids: the ones this mod makes, so not steel */
     public static List<String> parts() {
         return PARTS;
+    }
+
+    /** effects: returns the item ids of what is fitted to a weapon at the bench, in tab order (D-0029) */
+    public static List<String> fittings() {
+        return List.of(LOCK_ON_CHIP);
+    }
+
+    /** effects: returns the item ids of the stations this mod makes: the weapons workbench (D-0029) */
+    public static List<String> stations() {
+        return List.of(WEAPONS_WORKBENCH);
     }
 
     /** effects: returns the recipe whose result is {@code itemId}, if this mod makes it */

@@ -24,6 +24,7 @@ from pathlib import Path
 from material_bevel import bevel
 from sound_export import write_ogg
 import launcher_art
+import workbench_art
 import launcher_sound
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -1079,6 +1080,7 @@ def main(argv) -> int:
             (booth_assets / f"models/item/booth_{name}.json").write_text(json.dumps(variant, indent=2) + "\n")
         print(f"booth: axes model under {', '.join(BOOTH_VARIANTS)}")
     launcher_art.generate(want)
+    workbench_art.generate(want)
     if "sounds" in want:
         launcher_sound.generate()
         for name, fn in SOUNDS.items():

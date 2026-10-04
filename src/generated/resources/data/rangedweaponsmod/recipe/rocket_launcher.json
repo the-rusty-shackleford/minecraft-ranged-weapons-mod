@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
+  "type": "rangedweaponsmod:assembly_shaped",
   "key": {
     "K": {
       "item": "rangedweaponsmod:stock"

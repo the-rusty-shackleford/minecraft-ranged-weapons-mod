@@ -53,3 +53,5 @@ thought and someone later would want to know *why*.
 - [D-0027](D-0027.md): The counter reads the rounds loaded over every round a reload can reach, the loaded ones included (a full rifle and two full magazines: 30 / 90); loose rounds count only for a gun loaded directly; creative reads one infinity sign.
 
 - [D-0028](D-0028.md): The rocket launcher: the use key raises a seeker that locks onto creatures and vehicles in 1.5 s and holds until fired or lost; rockets lead their target at 8° a tick; the blast is the game's, its power and block-breaking the world's server config.
+
+- [D-0029](D-0029.md): The weapons workbench makes every gun, part, magazine and chip under a recipe type of its own (no crafting table or warehouse finds them; EMI shows them); the launcher locks only with a lock-on chip fitted there, worn one charge per guided launch (8), creative needing none.

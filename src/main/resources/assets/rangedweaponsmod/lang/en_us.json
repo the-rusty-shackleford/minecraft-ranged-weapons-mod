@@ -70,5 +70,20 @@
   "item.rangedweaponsmod.seeker": "Seeker",
   "entity.rangedweaponsmod.rocket": "Rocket",
   "hud.rangedweaponsmod.lock": "LOCK",
-  "ammo_family.rangedweaponsmod.ammo/rocket": "rockets"
+  "ammo_family.rangedweaponsmod.ammo/rocket": "rockets",
+  "block.rangedweaponsmod.weapons_workbench": "Weapons Workbench",
+  "container.rangedweaponsmod.weapons_workbench": "Weapons Workbench",
+  "screen.rangedweaponsmod.workbench.fittings": "Fittings",
+  "screen.rangedweaponsmod.workbench.weapon": "A rocket launcher, to fit a chip to",
+  "screen.rangedweaponsmod.workbench.chip": "A lock-on chip",
+  "emi.category.rangedweaponsmod.assembly": "Weapons Workbench",
+  "item.rangedweaponsmod.lock_on_chip": "Lock-on Chip",
+  "item.rangedweaponsmod.lock_on_chip.left": "Locks left: %s of %s",
+  "item.rangedweaponsmod.lock_on_chip.where": "Fitted to a rocket launcher at a weapons workbench",
+  "item.rangedweaponsmod.lock_on_chip.burnt_out": "Lock-on chip burnt out",
+  "item.rangedweaponsmod.rocket_launcher.no_chip": "No lock-on chip: fires straight",
+  "item.rangedweaponsmod.rocket_launcher.fit_chip": "Fit one at a weapons workbench",
+  "item.rangedweaponsmod.rocket_launcher.chip": "Lock-on chip: %s of %s locks left",
+  "hud.rangedweaponsmod.no_chip": "No lock-on chip",
+  "tag.item.rangedweaponsmod.ammo.rocket": "Rockets"
 }

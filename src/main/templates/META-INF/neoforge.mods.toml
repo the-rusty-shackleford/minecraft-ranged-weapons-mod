@@ -53,6 +53,13 @@ protocol - Armed Pillagers, for one - can use them too.
     ordering="AFTER"
     side="BOTH"
 
+# EMI shows the weapons workbench's recipes (D-0029); its plugin is loaded only when EMI is.
+[[dependencies.${mod_id}]]
+    modId="emi"
+    type="optional"
+    versionRange="[1.1,)"
+    ordering="NONE"
+    side="CLIENT"
 [[dependencies.${mod_id}]]
 modId="backpacksplus"
 type="optional"

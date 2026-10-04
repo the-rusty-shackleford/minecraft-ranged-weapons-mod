@@ -262,6 +262,8 @@ public final class LauncherBooth {
         p.getInventory().selected = 0;
         ItemStack launcher = new ItemStack(ModItems.ROCKET_LAUNCHER.get());
         RangedWeapons.resolve(launcher).load(launcher, 1, ModItems.ROCKET.get());
+        // The seeker locks only with a lock-on chip fitted (D-0029).
+        com.chunkworks.rangedweaponsmod.LauncherItem.fit(launcher, new ItemStack(ModItems.LOCK_ON_CHIP.get()));
         p.setItemInHand(InteractionHand.MAIN_HAND, launcher);
         // Beside it in the inventory, for scale: the rifle, the two parts and the scope; the
         // spare rockets come after the launch (tick 200).

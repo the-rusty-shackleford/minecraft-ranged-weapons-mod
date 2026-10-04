@@ -20,6 +20,7 @@ package com.chunkworks.rangedweaponsmod.domain;
 import com.chunkworks.rangedweaponsmod.domain.Blueprint.Category;
 import com.chunkworks.rangedweaponsmod.domain.Blueprint.Shaped;
 import com.chunkworks.rangedweaponsmod.domain.Blueprint.Shapeless;
+import com.chunkworks.rangedweaponsmod.domain.Blueprint.Station;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -40,7 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * not an ingredient / two with one criterion name. Shapeless: one
  * ingredient / nine / none / ten. Helpers: namespace, path and criterion
  * name of an item and of a tag; the advancement id per category; the
- * ingredient multiset with repeats and spaces.
+ * ingredient multiset with repeats and spaces. Stations (D-0029): a table
+ * recipe with unlocks / with none; a bench recipe, shaped and shapeless,
+ * with none / with some; no station; the advancement id of a bench recipe.
  */
 final class BlueprintTest {
 
@@ -136,6 +139,31 @@ final class BlueprintTest {
         assertEquals("rangedweaponsmod:recipes/misc/thing", misc.advancementId());
         Shaped combat = new Shaped("rangedweaponsmod:pistol", Category.COMBAT, "rangedweaponsmod:pistol", 1, List.of("I"), Map.of('I', IRON), List.of(IRON));
         assertEquals("rangedweaponsmod:recipes/combat/pistol", combat.advancementId());
+    }
+
+    @Test
+    void aBenchRecipeHasNoUnlocksAndATableRecipeAtLeastOne() {
+        assertEquals(Station.TABLE, shaped(List.of("I"), Map.of('I', IRON), List.of(IRON)).station(), "the old constructor is the table's");
+        Shaped bench = Shaped.bench("rangedweaponsmod:thing", Category.MISC, "rangedweaponsmod:thing", 1, List.of("I"), Map.of('I', IRON));
+        assertEquals(Station.BENCH, bench.station());
+        assertEquals(List.of(), bench.unlockedBy());
+        Shapeless shapeless = Shapeless.bench("rangedweaponsmod:thing", Category.MISC, "rangedweaponsmod:thing", 1, List.of(IRON, STICK));
+        assertEquals(Station.BENCH, shapeless.station());
+        assertEquals(List.of(), shapeless.unlockedBy());
+        assertThrows(IllegalArgumentException.class, () -> new Shaped("rangedweaponsmod:thing", Category.MISC, Station.BENCH,
+                "rangedweaponsmod:thing", 1, List.of("I"), Map.of('I', IRON), List.of(IRON)), "a bench recipe is never in the recipe book");
+        assertThrows(IllegalArgumentException.class, () -> new Shapeless("rangedweaponsmod:thing", Category.MISC, Station.BENCH,
+                "rangedweaponsmod:thing", 1, List.of(IRON), List.of(IRON)));
+        assertThrows(IllegalArgumentException.class, () -> new Shapeless("rangedweaponsmod:thing", Category.MISC, Station.TABLE,
+                "rangedweaponsmod:thing", 1, List.of(IRON), List.of()));
+        assertThrows(IllegalArgumentException.class, () -> new Shaped("rangedweaponsmod:thing", Category.MISC, null,
+                "rangedweaponsmod:thing", 1, List.of("I"), Map.of('I', IRON), List.of(IRON)));
+    }
+
+    @Test
+    void onlyATableRecipeHasAnUnlock() {
+        Shaped bench = Shaped.bench("rangedweaponsmod:pistol", Category.COMBAT, "rangedweaponsmod:pistol", 1, List.of("I"), Map.of('I', IRON));
+        assertThrows(IllegalStateException.class, bench::advancementId);
     }
 
     @Test

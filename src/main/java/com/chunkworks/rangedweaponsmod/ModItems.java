@@ -99,6 +99,14 @@ public final class ModItems {
     public static final DeferredItem<Item> ROCKET =
             ITEMS.registerItem("rocket", Item::new, new Item.Properties().stacksTo(16));
 
+    /** The lock-on chip (D-0029): fitted to a launcher at the bench, worn one charge per guided launch. */
+    public static final DeferredItem<ChipItem> LOCK_ON_CHIP =
+            ITEMS.registerItem("lock_on_chip", ChipItem::new, new Item.Properties());
+
+    /** The weapons workbench, as an item to place (D-0029). */
+    public static final DeferredItem<net.minecraft.world.item.BlockItem> WEAPONS_WORKBENCH =
+            ITEMS.registerSimpleBlockItem(ModBlocks.WEAPONS_WORKBENCH);
+
     // The magazines: one default per family that a magazine-fed gun takes.
     // Capacity is the item's, so an extended or a double-stack magazine is
     // another item here with other numbers, and every gun of the family
@@ -179,6 +187,7 @@ public final class ModItems {
     private static void buildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.COMBAT) {
             event.accept(PISTOL.get());
+            event.accept(REVOLVER.get());
             event.accept(SHOTGUN.get());
             event.accept(RIFLE.get());
             event.accept(SCOPED_RIFLE.get());
@@ -190,9 +199,13 @@ public final class ModItems {
             event.accept(SLUG.get());
             event.accept(ROCKET.get());
             magazines().forEach(event::accept);
+            event.accept(LOCK_ON_CHIP.get());
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             parts().forEach(event::accept);
+        }
+        if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
+            event.accept(WEAPONS_WORKBENCH.get());
         }
     }
 }

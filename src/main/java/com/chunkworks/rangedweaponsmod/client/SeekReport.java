@@ -33,8 +33,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * moving target is where the client shows it, not where the server has it by the time the aim
  * arrives.
  *
- * <p>Cost, stated: with the launcher's sight up, {@link Seeking#inReticle}'s eight entity queries and
- * a block ray or two per client tick; otherwise one comparison.
+ * <p>A launcher with no lock-on chip (D-0029) searches nothing: the server would not lock on it.
+ *
+ * <p>Cost, stated: with a chipped launcher's sight up, {@link Seeking#inReticle}'s eight entity
+ * queries and a block ray or two per client tick; otherwise a comparison or two.
  */
 public final class SeekReport {
     private SeekReport() {}
@@ -44,7 +46,7 @@ public final class SeekReport {
     /** effects: reports a change of what the reticle is on */
     static void tick(Minecraft mc, LocalPlayer player) {
         int seen = Seeker.NONE;
-        if (player != null && mc.level != null && Aiming.isUp() && LauncherItem.isLauncher(player.getMainHandItem())) {
+        if (player != null && mc.level != null && Aiming.isUp() && LauncherItem.canLock(player, player.getMainHandItem())) {
             Entity target = Seeking.inReticle(mc.level, player);
             seen = target == null ? Seeker.NONE : target.getId();
         }
