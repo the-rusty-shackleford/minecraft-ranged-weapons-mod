@@ -1,0 +1,19 @@
+{
+  "shots": [
+    {"from": "run/booth/screenshots/booth-burst-2.png", "to": "img/burst.webp"},
+    {"from": "run/booth/screenshots/booth-lineup-inventory.png", "to": "img/everything.webp", "crop": [230, 40, 624, 420], "screen": true},
+    {"from": "run/booth/screenshots/booth-pistol-third-side.png", "to": "img/pistol.webp"},
+    {"from": "run/booth/screenshots/revolver-reloading.png", "to": "img/revolver-reload.webp"},
+    {"from": "run/booth/screenshots/booth-scoped_rifle-aimed.png", "to": "img/scope.webp"},
+    {"from": "run/booth/screenshots/booth-magazine-screen.png", "to": "img/magazine-screen.webp", "crop": [252, 76, 600, 240], "screen": true},
+    {"from": "run/booth/screenshots/booth-magazine-hud.png", "to": "img/counter.webp", "crop": [560, 360, 854, 480], "screen": true},
+    {"from": "run/booth/screenshots/workbench-blocks-corner.png", "to": "img/workbench.webp"},
+    {"from": "run/booth/screenshots/workbench-screen-fitted.png", "to": "img/workbench-screen.webp", "crop": [252, 76, 600, 218], "screen": true},
+    {"from": "run/booth/screenshots/workbench-emi-rifle.png", "to": "img/workbench-emi.webp"},
+    {"from": "run/booth/screenshots/launcher-first-sight.png", "to": "img/launcher-acquiring.webp"},
+    {"from": "run/booth/screenshots/launcher-plane-locked.png", "to": "img/launcher-locked.webp"},
+    {"from": "run/booth/screenshots/launcher-rocket-flight.png", "to": "img/rocket.webp"},
+    {"from": "run/booth/screenshots/launcher-plane-down.png", "to": "img/plane-down.webp"},
+    {"from": "run/booth/screenshots/workbench-hud-no-chip.png", "to": "img/no-chip.webp"}
+  ]
+}
