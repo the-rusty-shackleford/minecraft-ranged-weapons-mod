@@ -1,7 +1,7 @@
 # 2.13.0 verification: rounds crack, never break (the protocol's D-0011)
 
-Built and checked 2026-10-07, for pack 1.76.0 on Rusty's "Build it, test and confirm it, then
-release everything".
+Built and checked 2026-10-07. Released the same day in pack 1.76.0 on Rusty's "Build it, test and
+confirm it, then release everything", this jar as the asset (sha1 matched on GitHub and the server).
 
 Rusty: "I don't want the ranged weapons mod guns to break blocks anymore. They should still break
 glass and other glass items such as lanterns, but thats it", then "I'm open to them cracking
@@ -30,7 +30,9 @@ code and config, and is untouched.
 
 ## Not verified
 
-- The modded lanterns in the tag (Amendments' wall lanterns, Bosses'Rise's ship lantern, Dusty
-  Decorations' nautilus lantern) are optional entries for mods absent from the GameTest server;
-  that they resolve is checked on the box after the release.
-- A shot at a lantern in live play.
+- A shot at a lantern, or at anything, in live play.
+
+The modded lanterns in the tag (Amendments' wall lanterns, Bosses'Rise's ship lantern, Dusty
+Decorations' nautilus lantern) are optional entries for mods absent from the GameTest server; on
+the box after the release, each one set and tested in `#rangedweapons:shatters` passed, and ice,
+stone and a beacon failed.

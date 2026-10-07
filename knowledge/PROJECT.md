@@ -7,13 +7,15 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
-## Rounds crack, never break — 2.13.0 (2026-10-07), for pack 1.76.0
+## Rounds crack, never break — 2.13.0 (2026-10-07), released 2026-10-07 in pack 1.76.0
 
 Rusty: the guns were "too destructive". Rounds now shatter only glass and lanterns, at once from
 any gun, and crack everything else without ever breaking it; the rocket launcher's blast still
 breaks blocks. The rule is the protocol's (its 1.8.0, D-0011 there); this release nests it, now
 `[1.8,2.0)`. New GameTest `aBurstCracksStoneButNeverBreaksIt` (ten machine-gun rounds into stone;
-it failed on protocol 1.7.0). Record: `devtools/verification/release-2.13.0.md`.
+it failed on protocol 1.7.0). Record: `devtools/verification/release-2.13.0.md`. Released with
+Huey 1.1.0: tag `v2.13.0` at `5f89efc`, jar sha1 `015adf3f` on GitHub and on the server, which
+loads protocol 1.8.0 from it. Not yet seen: a shot at a block in live play.
 
 ## The weapons workbench and the lock-on chip — 2.12.0 (2026-10-03), released 2026-10-04 in pack 1.72.0
 
