@@ -51,7 +51,7 @@ show what's loaded in a counter beside the hotbar.
 
 - The pistol and revolver are one-handed; the rest are held in both hands.
 - Every shot pushes what it hits. Every pellet and every round counts.
-- Rounds shatter glass at once, wear stone down over several hits, and never mark obsidian.
+- Rounds shatter glass and lanterns at once, from any gun. Nothing else ever breaks: other blocks only crack, and the cracks heal. (The rocket launcher's blast still breaks blocks.)
 - Nearby players hear the shot; players 16 to 64 blocks away hear a far report.
 
 ![The revolver's cylinder swung out to reload](img/revolver-reload.webp)

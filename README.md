@@ -137,10 +137,13 @@ themselves into its exclusion list on the first client tick so they are held
 as their models say rather than in that mod's one-handed pose; see the
 protocol's README.
 
-**Blocks and bullets** are the protocol's: a round throws debris and sparks
-off what it hits, and a player's rounds shatter glass at once, wear stone
-down over several, and never mark obsidian. Whose rounds may break what is
-the protocol's config.
+**Blocks and bullets** are the protocol's (its D-0011, from 1.8.0): a round
+throws debris and sparks off what it hits, and a player's round shatters
+glass, panes, lanterns, glowstone and lamps at once, from any gun. Nothing
+else ever breaks: stone, wood, ice and the rest only crack, fully after a
+few rounds, and heal twenty seconds after the last; obsidian is never
+marked. Whose rounds may shatter or crack anything is the protocol's
+config. The rocket launcher's blast still breaks blocks (below).
 
 **Aim down the sights.** Hold the aim key (Left Alt by default; rebindable)
 and spread tightens by the gun's `aiming` factor and the view leans in a

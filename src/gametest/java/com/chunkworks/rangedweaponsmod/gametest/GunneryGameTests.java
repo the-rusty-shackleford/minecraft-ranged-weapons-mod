@@ -53,6 +53,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.tags.ItemTags;
@@ -464,6 +465,25 @@ public final class GunneryGameTests {
         helper.runAtTickTime(2, () -> PlayerGunnery.onTrigger(g.player(), false));
         helper.runAtTickTime(6, () -> {
             helper.assertBlockPresent(Blocks.AIR, new BlockPos(4, 2, 4));
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "arena", timeoutTicks = 60)
+    public void aBurstCracksStoneButNeverBreaksIt(GameTestHelper helper) {
+        // The protocol's D-0011: only glass and lanterns break. Ten rounds of
+        // six into stone, which used to fall to the fourth.
+        Gunner g = gunner(helper, CAPACITY, 0);
+        g.player().setXRot(10.0f);
+        BlockPos wall = new BlockPos(4, 2, 4);
+        helper.setBlock(wall, Blocks.STONE);
+        PlayerGunnery.onTrigger(g.player(), true);
+        driveTicks(helper, g, 1, 28);
+        helper.runAtTickTime(29, () -> PlayerGunnery.onTrigger(g.player(), false));
+        helper.runAtTickTime(34, () -> {
+            helper.assertValueEqual(g.weapon().rounds(g.gun()), CAPACITY - 10, "rounds fired");
+            helper.assertBlockPresent(Blocks.STONE, wall);
+            helper.assertEntityNotPresent(EntityType.ITEM);
             helper.succeed();
         });
     }

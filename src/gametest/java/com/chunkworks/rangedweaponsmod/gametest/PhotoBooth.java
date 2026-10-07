@@ -196,8 +196,8 @@ public final class PhotoBooth {
             shippedKick();
             sp.setGameMode(GameType.SURVIVAL);
             // A stone block three blocks ahead at eye height: the burst hits
-            // it, so the frames show debris, sparks and cracks, and the
-            // fifth round takes it down.
+            // it, so the frames show debris, sparks and cracks, the last
+            // crack by the fourth round; it never breaks (the protocol's D-0011).
             BlockPos ahead = BlockPos.containing(sp.getEyePosition().add(0.0, 0.0, 3.0));
             sp.serverLevel().setBlock(ahead, Blocks.STONE.defaultBlockState(), 3);
             ItemStack gun = new ItemStack(ModItems.MACHINE_GUN.get());

@@ -7,6 +7,14 @@ tags: [overview]
 
 # Ranged Weapons Mod
 
+## Rounds crack, never break — 2.13.0 (2026-10-07), for pack 1.76.0
+
+Rusty: the guns were "too destructive". Rounds now shatter only glass and lanterns, at once from
+any gun, and crack everything else without ever breaking it; the rocket launcher's blast still
+breaks blocks. The rule is the protocol's (its 1.8.0, D-0011 there); this release nests it, now
+`[1.8,2.0)`. New GameTest `aBurstCracksStoneButNeverBreaksIt` (ten machine-gun rounds into stone;
+it failed on protocol 1.7.0). Record: `devtools/verification/release-2.13.0.md`.
+
 ## The weapons workbench and the lock-on chip — 2.12.0 (2026-10-03), released 2026-10-04 in pack 1.72.0
 
 A player asked, through Rusty, that lock-on need a consumable, craftable chip. Rusty folded it
